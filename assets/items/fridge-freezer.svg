@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="680" viewBox="0 0 900 680" role="img" aria-labelledby="title desc">
+  <title id="title">Fridge freezer</title>
+  <desc id="desc">Clean white fridge freezer appliance illustration.</desc>
+  <rect width="900" height="680" fill="#f7f3e8"/>
+  <ellipse cx="450" cy="594" rx="260" ry="36" fill="#d6e6f6"/>
+  <rect x="302" y="78" width="296" height="500" rx="28" fill="#fff" stroke="#0c1e3a" stroke-width="12"/>
+  <path d="M302 280h296" stroke="#0c1e3a" stroke-width="10"/>
+  <rect x="340" y="128" width="176" height="102" rx="10" fill="#d6e6f6"/>
+  <rect x="340" y="324" width="176" height="182" rx="10" fill="#eef7ff"/>
+  <path d="M546 136v92M546 330v140" stroke="#0a84e0" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="545" cy="530" r="20" fill="#0a84e0"/>
+  <path d="M536 530l7 8 15-20" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+

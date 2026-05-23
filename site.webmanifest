@@ -1,0 +1,17 @@
+{
+  "name": "RentalReady Appliances",
+  "short_name": "RentalReady",
+  "description": "Clean, tested appliances for UK handovers, lettings, and property refreshes.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0d141d",
+  "theme_color": "#0d141d",
+  "icons": [
+    {
+      "src": "brand/rentalready_mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

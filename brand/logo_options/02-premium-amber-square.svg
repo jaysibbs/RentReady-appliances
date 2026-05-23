@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">RentalReady Appliances profile logo - Premium Amber</title>
+  <desc id="desc">Warmer and more premium, useful if the site should feel established.</desc>
+  <rect width="1200" height="1200" fill="#141414"/>
+  
+    <g transform="translate(355 145) scale(1.55)">
+      <path d="M26 116 L150 28 L274 116" fill="none" stroke="#F7F2E8" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="72" y="106" width="150" height="190" rx="24" fill="none" stroke="#F7F2E8" stroke-width="22"/>
+      <path d="M83 164 H211" stroke="#F7F2E8" stroke-width="18" stroke-linecap="round"/>
+      <path d="M101 222 H101" stroke="#F7F2E8" stroke-width="34" stroke-linecap="round"/>
+      <path d="M196 206 C224 206 224 176 254 176 H306" fill="none" stroke="#F5A623" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M306 157 V195" stroke="#F5A623" stroke-width="16" stroke-linecap="round"/>
+      <path d="M335 157 V195" stroke="#F5A623" stroke-width="16" stroke-linecap="round"/>
+      <path d="M254 151 H318 C333 151 344 162 344 176 C344 190 333 201 318 201 H254 Z" fill="none" stroke="#F5A623" stroke-width="18" stroke-linejoin="round"/>
+      <path d="M184 178 V248" stroke="#F5A623" stroke-width="22" stroke-linecap="round"/>
+    </g>
+  <g transform="translate(0 740)">
+    <text x="600" y="120" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="128" font-weight="900" fill="#F7F2E8" letter-spacing="0">RentalReady</text>
+    <text x="600" y="225" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#F5A623" letter-spacing="0">Appliances</text>
+  </g>
+</svg>

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /sourcing-dashboard.html
+Disallow: /sourcing-dashboard
+
+Sitemap: https://rentalreadyappliances.com/sitemap.xml

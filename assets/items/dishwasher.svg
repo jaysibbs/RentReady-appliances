@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="680" viewBox="0 0 900 680" role="img" aria-labelledby="title desc">
+  <title id="title">Dishwasher</title>
+  <desc id="desc">Clean white dishwasher appliance illustration.</desc>
+  <rect width="900" height="680" fill="#f7f3e8"/>
+  <ellipse cx="450" cy="594" rx="260" ry="36" fill="#d6e6f6"/>
+  <rect x="290" y="146" width="320" height="392" rx="24" fill="#fff" stroke="#0c1e3a" stroke-width="12"/>
+  <rect x="330" y="188" width="180" height="34" rx="17" fill="#0c1e3a"/>
+  <circle cx="550" cy="205" r="18" fill="#0a84e0"/>
+  <path d="M330 296h240M330 352h240M330 408h240" stroke="#d6e6f6" stroke-width="14" stroke-linecap="round"/>
+  <path d="M360 294v118M450 294v118M540 294v118" stroke="#0c1e3a" stroke-width="8" stroke-linecap="round"/>
+  <path d="M356 464c55 34 132 34 188 0" fill="none" stroke="#0a84e0" stroke-width="14" stroke-linecap="round"/>
+</svg>
+

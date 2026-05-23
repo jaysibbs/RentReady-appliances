@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Clean appliances ready for UK rental turns</title>
+  <desc id="desc">A fridge freezer, electric cooker, washing machine, and dryer staged for a rental property refresh.</desc>
+  <rect width="1600" height="900" fill="#d6e6f6"/>
+  <rect y="610" width="1600" height="290" fill="#f7f3e8"/>
+  <rect x="130" y="130" width="1340" height="520" fill="#ffffff"/>
+  <g opacity=".22">
+    <path d="M130 642h1340" stroke="#0c1e3a" stroke-width="7"/>
+    <path d="M130 168h1340" stroke="#ffffff" stroke-width="4"/>
+  </g>
+  <g transform="translate(220 172)">
+    <rect x="0" y="0" width="260" height="494" rx="18" fill="#f9fafb" stroke="#cbd5df" stroke-width="8"/>
+    <line x1="0" y1="198" x2="260" y2="198" stroke="#cbd5df" stroke-width="8"/>
+    <rect x="32" y="52" width="14" height="88" rx="7" fill="#7b8794"/>
+    <rect x="32" y="252" width="14" height="132" rx="7" fill="#7b8794"/>
+    <circle cx="210" cy="438" r="18" fill="#0a84e0"/>
+    <path d="M202 438l6 7 15-19" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(540 258)">
+    <rect x="0" y="0" width="255" height="408" rx="16" fill="#fdfdfb" stroke="#cbd5df" stroke-width="8"/>
+    <rect x="0" y="0" width="255" height="88" rx="16" fill="#0c1e3a"/>
+    <circle cx="49" cy="44" r="14" fill="#0a84e0"/>
+    <circle cx="96" cy="44" r="14" fill="#0a84e0"/>
+    <circle cx="143" cy="44" r="14" fill="#0a84e0"/>
+    <circle cx="190" cy="44" r="14" fill="#0a84e0"/>
+    <rect x="44" y="128" width="168" height="230" rx="10" fill="#293b49" opacity=".18"/>
+    <path d="M72 172h112M72 224h112M72 276h112" stroke="#ffffff" stroke-width="7" stroke-linecap="round" opacity=".8"/>
+  </g>
+  <g transform="translate(862 294)">
+    <rect x="0" y="0" width="225" height="372" rx="18" fill="#f9fafb" stroke="#cbd5df" stroke-width="8"/>
+    <circle cx="113" cy="174" r="82" fill="#e5e9ee" stroke="#9aa6b2" stroke-width="8"/>
+    <circle cx="113" cy="174" r="48" fill="#dce8ea"/>
+    <rect x="32" y="36" width="160" height="24" rx="12" fill="#0c1e3a"/>
+    <circle cx="184" cy="328" r="16" fill="#0a84e0"/>
+  </g>
+  <g transform="translate(1142 294)">
+    <rect x="0" y="0" width="225" height="372" rx="18" fill="#f9fafb" stroke="#cbd5df" stroke-width="8"/>
+    <circle cx="113" cy="174" r="82" fill="#e5e9ee" stroke="#9aa6b2" stroke-width="8"/>
+    <path d="M73 174c30-44 74-44 110 0-34 44-79 44-110 0Z" fill="#dce8ea"/>
+    <rect x="32" y="36" width="160" height="24" rx="12" fill="#0c1e3a"/>
+    <circle cx="184" cy="328" r="16" fill="#0a84e0"/>
+  </g>
+  <g transform="translate(155 700)">
+    <rect width="1290" height="60" rx="8" fill="#0c1e3a"/>
+    <text x="42" y="40" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#ffffff">Cleaned • Tested • Priced Low • UK Rental Ready</text>
+  </g>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="680" viewBox="0 0 900 680" role="img" aria-labelledby="title desc">
+  <title id="title">Electric cooker</title>
+  <desc id="desc">Clean white electric cooker appliance illustration.</desc>
+  <rect width="900" height="680" fill="#f7f3e8"/>
+  <ellipse cx="450" cy="594" rx="260" ry="36" fill="#d6e6f6"/>
+  <rect x="282" y="128" width="336" height="430" rx="24" fill="#fff" stroke="#0c1e3a" stroke-width="12"/>
+  <rect x="282" y="128" width="336" height="94" rx="24" fill="#0c1e3a"/>
+  <circle cx="344" cy="176" r="14" fill="#0a84e0"/>
+  <circle cx="414" cy="176" r="14" fill="#d6e6f6"/>
+  <circle cx="484" cy="176" r="14" fill="#0a84e0"/>
+  <circle cx="554" cy="176" r="14" fill="#d6e6f6"/>
+  <rect x="336" y="274" width="228" height="218" rx="14" fill="#eef7ff" stroke="#0c1e3a" stroke-width="10"/>
+  <path d="M370 326h160M370 382h160M370 438h160" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+</svg>
+

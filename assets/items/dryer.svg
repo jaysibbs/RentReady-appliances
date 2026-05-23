@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="680" viewBox="0 0 900 680" role="img" aria-labelledby="title desc">
+  <title id="title">Dryer</title>
+  <desc id="desc">Clean white tumble dryer appliance illustration.</desc>
+  <rect width="900" height="680" fill="#f7f3e8"/>
+  <ellipse cx="450" cy="594" rx="260" ry="36" fill="#d6e6f6"/>
+  <rect x="300" y="118" width="300" height="450" rx="28" fill="#fff" stroke="#0c1e3a" stroke-width="12"/>
+  <rect x="338" y="160" width="168" height="34" rx="17" fill="#0c1e3a"/>
+  <circle cx="538" cy="177" r="22" fill="#0a84e0"/>
+  <circle cx="450" cy="360" r="118" fill="#eef7ff" stroke="#0c1e3a" stroke-width="12"/>
+  <path d="M388 360c42-50 82-50 124 0-42 50-82 50-124 0Z" fill="#d6e6f6"/>
+  <path d="M408 416c28 18 56 18 84 0" fill="none" stroke="#0a84e0" stroke-width="13" stroke-linecap="round"/>
+</svg>
+

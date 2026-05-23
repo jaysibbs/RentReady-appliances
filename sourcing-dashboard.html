@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>AI Sourcing Dashboard - RentalReady Appliances</title>
+    <meta name="description" content="Internal RentalReady Appliances sourcing review dashboard.">
+    <meta name="theme-color" content="#0d141d">
+    <link rel="icon" href="brand/rentalready_mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css?v=20260521d">
+  </head>
+  <body class="dashboard-body">
+    <header class="site-header dashboard-header">
+      <a class="brand" href="index.html" aria-label="RentalReady Appliances home">
+        <img src="brand/rentalready_mark.svg" alt="">
+        <span class="brand-name"><strong>RentalReady</strong><em>Appliances</em></span>
+      </a>
+      <nav aria-label="Dashboard navigation">
+        <a href="#brief">Brief</a>
+        <a href="#candidate">Candidate</a>
+        <a href="#shortlist">Shortlist</a>
+        <a href="#learning">Learning</a>
+      </nav>
+      <div class="header-actions">
+        <a class="header-action secondary-action" href="index.html">Website</a>
+      </div>
+    </header>
+
+    <main class="dashboard-main">
+      <section class="dashboard-hero" aria-labelledby="dashboard-title">
+        <div>
+          <p class="eyebrow">Internal sourcing assistant</p>
+          <h1 id="dashboard-title">Match enquiries to supplier products before you buy.</h1>
+          <p>This dashboard turns email or WhatsApp enquiries into a sourcing brief, scores products you find on John Pye-style auction and clearance sites, and learns from the items you approve or reject.</p>
+        </div>
+        <div class="dashboard-alert">
+          <strong>Review-first workflow</strong>
+          <span>The assistant does not auto-buy or scrape suppliers. Paste candidate links, review the score, then approve the best product manually.</span>
+        </div>
+      </section>
+
+      <section class="dashboard-grid" id="brief" aria-labelledby="brief-title">
+        <form class="dashboard-panel sourcing-form" id="briefForm">
+          <div class="panel-heading">
+            <p class="eyebrow">Step 1</p>
+            <h2 id="brief-title">Customer requirement</h2>
+            <p>Paste from email, quote form, or WhatsApp, then tidy the key fields.</p>
+          </div>
+
+          <label>
+            Customer / company
+            <input name="customer" type="text" placeholder="Example: ABC Lettings">
+          </label>
+          <label>
+            Enquiry source
+            <select name="source">
+              <option>Email</option>
+              <option>WhatsApp</option>
+              <option>Website quote form</option>
+              <option>Phone call</option>
+            </select>
+          </label>
+          <label>
+            Appliance needed
+            <select name="item">
+              <option>Fridge freezer</option>
+              <option>Electric cooker</option>
+              <option>Washing machine</option>
+              <option>Dryer</option>
+              <option>Dishwasher</option>
+              <option>Microwave</option>
+              <option>Landlord turnover set</option>
+              <option>Serviced apartment pack</option>
+              <option>Portfolio / batch request</option>
+            </select>
+          </label>
+          <label>
+            Quantity
+            <input name="quantity" type="number" min="1" value="1">
+          </label>
+          <label>
+            Property postcode
+            <input name="postcode" type="text" placeholder="Example: B1 1AA">
+          </label>
+          <label>
+            Budget per item
+            <input name="budget" type="number" min="0" step="1" placeholder="Example: 250">
+          </label>
+          <label>
+            Quality level
+            <select name="quality">
+              <option>Value</option>
+              <option selected>Standard</option>
+              <option>Premium</option>
+            </select>
+          </label>
+          <label>
+            Urgency
+            <select name="urgency">
+              <option>Today / emergency</option>
+              <option selected>This week</option>
+              <option>This month</option>
+              <option>Flexible</option>
+            </select>
+          </label>
+          <label class="span-2">
+            Raw enquiry notes
+            <textarea name="notes" rows="7" placeholder="Paste the email, quote form, or WhatsApp message here."></textarea>
+          </label>
+          <button class="button primary span-2" type="button" id="saveBrief">Save requirement</button>
+        </form>
+
+        <form class="dashboard-panel sourcing-form" id="candidateForm">
+          <div class="panel-heading">
+            <p class="eyebrow">Step 2</p>
+            <h2 id="candidate">Supplier candidate</h2>
+            <p>Paste product details from John Pye or similar sources. The assistant scores fit and risk.</p>
+          </div>
+
+          <label>
+            Supplier
+            <input name="supplier" type="text" placeholder="John Pye, local clearance, retailer outlet">
+          </label>
+          <label>
+            Product link
+            <input name="url" type="url" placeholder="https://...">
+          </label>
+          <label class="span-2">
+            Product title
+            <input name="title" type="text" placeholder="Example: Beko 8kg washing machine">
+          </label>
+          <label>
+            Category
+            <select name="category">
+              <option>Fridge freezer</option>
+              <option>Electric cooker</option>
+              <option>Washing machine</option>
+              <option>Dryer</option>
+              <option>Dishwasher</option>
+              <option>Microwave</option>
+              <option>Landlord turnover set</option>
+              <option>Serviced apartment pack</option>
+              <option>Portfolio / batch request</option>
+            </select>
+          </label>
+          <label>
+            Brand
+            <input name="brand" type="text" placeholder="Bosch, Beko, Samsung, AEG...">
+          </label>
+          <label>
+            Item price / current bid
+            <input name="price" type="number" min="0" step="1" placeholder="Example: 80">
+          </label>
+          <label>
+            Fees / delivery estimate
+            <input name="fees" type="number" min="0" step="1" placeholder="Example: 40">
+          </label>
+          <label>
+            Item location
+            <input name="location" type="text" placeholder="Example: Birmingham / Nottingham">
+          </label>
+          <label>
+            Condition route
+            <select name="condition">
+              <option>New boxed</option>
+              <option>Graded</option>
+              <option selected>Refurbished / used</option>
+              <option>Unknown / needs checking</option>
+            </select>
+          </label>
+          <label>
+            Auction ends / available by
+            <input name="availableBy" type="date">
+          </label>
+          <label>
+            Visual quality
+            <select name="visual">
+              <option>Excellent</option>
+              <option selected>Good</option>
+              <option>Acceptable</option>
+              <option>Risky</option>
+            </select>
+          </label>
+          <label class="span-2">
+            Notes / concerns
+            <textarea name="notes" rows="5" placeholder="Damage, missing parts, access, warranty, lot details, measurements..."></textarea>
+          </label>
+          <div class="dashboard-actions span-2">
+            <button class="button secondary" type="button" id="scoreCandidate">Score only</button>
+            <button class="button primary" type="submit">Add to shortlist</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="dashboard-results" id="shortlist" aria-labelledby="shortlist-title">
+        <div class="section-heading">
+          <p class="eyebrow">Step 3</p>
+          <h2 id="shortlist-title">Sourcing shortlist</h2>
+          <p class="section-copy">Approve the candidate you would actually buy. Rejections matter too: the assistant adjusts future scoring based on your selections.</p>
+        </div>
+        <div class="score-preview" id="scorePreview" aria-live="polite">Add a customer requirement and a supplier candidate to generate a fit score.</div>
+        <div class="candidate-list" id="candidateList"></div>
+      </section>
+
+      <section class="dashboard-results" id="learning" aria-labelledby="learning-title">
+        <div class="section-heading">
+          <p class="eyebrow">Feedback loop</p>
+          <h2 id="learning-title">What the sourcing assistant is learning.</h2>
+          <p class="section-copy">The current version stores feedback in this browser. Export the data when you want to turn it into a proper AI model or shared CRM workflow.</p>
+        </div>
+        <div class="learning-grid">
+          <article class="dashboard-panel">
+            <h3>Current scoring weights</h3>
+            <div class="weights-list" id="weightsList"></div>
+          </article>
+          <article class="dashboard-panel">
+            <h3>Selection memory</h3>
+            <div class="memory-stats" id="memoryStats"></div>
+            <div class="dashboard-actions">
+              <button class="button secondary" type="button" id="exportData">Export learning data</button>
+              <button class="button secondary danger" type="button" id="clearData">Clear dashboard data</button>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script src="sourcing-dashboard.js?v=20260521a"></script>
+  </body>
+</html>

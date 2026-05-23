@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="680" viewBox="0 0 900 680" role="img" aria-labelledby="title desc">
+  <title id="title">Microwave</title>
+  <desc id="desc">Clean white over-hob microwave appliance illustration.</desc>
+  <rect width="900" height="680" fill="#f7f3e8"/>
+  <ellipse cx="450" cy="594" rx="260" ry="36" fill="#d6e6f6"/>
+  <rect x="214" y="218" width="472" height="230" rx="26" fill="#fff" stroke="#0c1e3a" stroke-width="12"/>
+  <rect x="258" y="262" width="270" height="124" rx="14" fill="#eef7ff" stroke="#0c1e3a" stroke-width="10"/>
+  <rect x="564" y="258" width="74" height="134" rx="12" fill="#0c1e3a"/>
+  <circle cx="601" cy="294" r="16" fill="#0a84e0"/>
+  <path d="M586 334h30M586 364h30" stroke="#d6e6f6" stroke-width="8" stroke-linecap="round"/>
+  <path d="M298 322c48-32 116-32 164 0" fill="none" stroke="#0a84e0" stroke-width="12" stroke-linecap="round"/>
+</svg>
+
