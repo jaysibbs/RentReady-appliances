@@ -26,6 +26,7 @@ const files = [
   "sourcing-dashboard.js",
   "styles.css",
   "terms.html",
+  "theme-init.js",
   "warranty-returns.html",
   "washing-machines.html",
 ];
