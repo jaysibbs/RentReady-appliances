@@ -24,7 +24,7 @@
   --shadow: 0 16px 42px rgba(0, 0, 0, .26);
 }
 
-html[data-theme="day"] {
+html[data-theme="night"] {
   color-scheme: light;
   --navy: #111922;
   --green: #9b623f;
@@ -50,91 +50,91 @@ html[data-theme="day"] {
   --shadow: 0 16px 40px rgba(25, 37, 50, .12);
 }
 
-html[data-theme="day"] body {
+html[data-theme="night"] body {
   background: var(--paper);
 }
 
-html[data-theme="day"] .site-header {
+html[data-theme="night"] .site-header {
   box-shadow: 0 10px 32px rgba(25, 37, 50, .08);
 }
 
-html[data-theme="day"] .secondary-action,
-html[data-theme="day"] .button.secondary {
+html[data-theme="night"] .secondary-action,
+html[data-theme="night"] .button.secondary {
   color: var(--ink);
   border-color: var(--line);
   background: rgba(255, 255, 255, .84);
 }
 
-html[data-theme="day"] .hero,
-html[data-theme="day"] footer,
-html[data-theme="day"] th {
+html[data-theme="night"] .hero,
+html[data-theme="night"] footer,
+html[data-theme="night"] th {
   background: var(--navy);
 }
 
-html[data-theme="day"] .hero-content,
-html[data-theme="day"] .category-hero,
-html[data-theme="day"] .category-hero h1 {
+html[data-theme="night"] .hero-content,
+html[data-theme="night"] .category-hero,
+html[data-theme="night"] .category-hero h1 {
   color: var(--ink);
 }
 
-html[data-theme="day"] .hero-copy,
-html[data-theme="day"] .category-hero p {
+html[data-theme="night"] .hero-copy,
+html[data-theme="night"] .category-hero p {
   color: #344354;
 }
 
-html[data-theme="day"] .corporate-proof {
+html[data-theme="night"] .corporate-proof {
   background:
     linear-gradient(180deg, rgba(155, 98, 63, .045), rgba(255, 255, 255, 0)),
     var(--surface);
 }
 
-html[data-theme="day"] .proof-grid article {
+html[data-theme="night"] .proof-grid article {
   background: var(--surface);
   box-shadow: var(--shadow);
 }
 
-html[data-theme="day"] .quick-flow a {
+html[data-theme="night"] .quick-flow a {
   color: var(--ink);
   background: rgba(255, 255, 255, .72);
 }
 
-html[data-theme="day"] .category-hero {
+html[data-theme="night"] .category-hero {
   background:
     var(--hero-gradient),
     url("assets/product-photos/modern-appliance-package.jpg") center / cover no-repeat;
 }
 
-html[data-theme="day"] .category-meta span {
+html[data-theme="night"] .category-meta span {
   color: var(--ink);
   background: rgba(255, 255, 255, .78);
 }
 
-html[data-theme="day"] .category-kicker {
+html[data-theme="night"] .category-kicker {
   color: #fff;
 }
 
-html[data-theme="day"] .hero-media,
-html[data-theme="day"] .items,
-html[data-theme="day"] .product-range {
+html[data-theme="night"] .hero-media,
+html[data-theme="night"] .items,
+html[data-theme="night"] .product-range {
   background-attachment: scroll;
 }
 
-html[data-theme="day"] .item-card > img[src*="stock-"],
-html[data-theme="day"] .range-card img[src*="stock-"],
-html[data-theme="day"] .showcase-row img[src*="stock-"],
-html[data-theme="day"] .category-hero > img[src*="stock-"],
-html[data-theme="day"] .item-card > img[src*="washing-machine.jpg"],
-html[data-theme="day"] .item-card > img[src*="dryer.jpg"],
-html[data-theme="day"] .item-card > img[src*="dishwasher.jpg"],
-html[data-theme="day"] .item-card > img[src*="microwave.jpg"],
-html[data-theme="day"] .range-card img[src*="washing-machine.jpg"],
-html[data-theme="day"] .range-card img[src*="dryer.jpg"],
-html[data-theme="day"] .range-card img[src*="dishwasher.jpg"],
-html[data-theme="day"] .range-card img[src*="microwave.jpg"],
-html[data-theme="day"] .category-hero > img[src*="washing-machine.jpg"],
-html[data-theme="day"] .category-hero > img[src*="dryer.jpg"],
-html[data-theme="day"] .category-hero > img[src*="dishwasher.jpg"],
-html[data-theme="day"] .category-hero > img[src*="microwave.jpg"] {
+html[data-theme="night"] .item-card > img[src*="stock-"],
+html[data-theme="night"] .range-card img[src*="stock-"],
+html[data-theme="night"] .showcase-row img[src*="stock-"],
+html[data-theme="night"] .category-hero > img[src*="stock-"],
+html[data-theme="night"] .item-card > img[src*="washing-machine.jpg"],
+html[data-theme="night"] .item-card > img[src*="dryer.jpg"],
+html[data-theme="night"] .item-card > img[src*="dishwasher.jpg"],
+html[data-theme="night"] .item-card > img[src*="microwave.jpg"],
+html[data-theme="night"] .range-card img[src*="washing-machine.jpg"],
+html[data-theme="night"] .range-card img[src*="dryer.jpg"],
+html[data-theme="night"] .range-card img[src*="dishwasher.jpg"],
+html[data-theme="night"] .range-card img[src*="microwave.jpg"],
+html[data-theme="night"] .category-hero > img[src*="washing-machine.jpg"],
+html[data-theme="night"] .category-hero > img[src*="dryer.jpg"],
+html[data-theme="night"] .category-hero > img[src*="dishwasher.jpg"],
+html[data-theme="night"] .category-hero > img[src*="microwave.jpg"] {
   background:
     radial-gradient(circle at 50% 22%, rgba(255, 255, 255, .9), rgba(238, 242, 245, .78) 48%, rgba(225, 232, 238, .92) 100%),
     var(--surface-2);

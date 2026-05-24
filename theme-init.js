@@ -7,5 +7,5 @@
 
   var theme = hour >= 7 && hour < 19 ? "day" : "night";
   document.documentElement.setAttribute("data-theme", theme);
-  document.documentElement.style.colorScheme = theme === "day" ? "light" : "dark";
+  document.documentElement.style.colorScheme = theme === "night" ? "light" : "dark";
 }());
