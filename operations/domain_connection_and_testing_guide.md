@@ -95,7 +95,30 @@ Recommended final behaviour:
 
 In Cloudflare, add `rentalreadyappliances.uk` as a zone if it is not already added.
 
-Recommended redirect:
+Current status to fix:
+
+- `rentalreadyappliances.uk` is using Cloudflare nameservers.
+- The domain still needs DNS/custom-domain routing before the redirect can work.
+- `www.rentalreadyappliances.com` also needs a DNS/custom-domain record.
+
+Recommended Cloudflare Pages setup:
+
+1. Open Cloudflare.
+2. Go to **Workers & Pages**.
+3. Open the `rentalreadyappliances` Pages project.
+4. Go to **Custom domains**.
+5. Add these domains:
+   - `www.rentalreadyappliances.com`
+   - `rentalreadyappliances.uk`
+   - `www.rentalreadyappliances.uk`
+6. Let Cloudflare create the DNS records automatically where possible.
+7. If Cloudflare asks for manual DNS records, create proxied CNAME records:
+   - `www` in the `.com` zone -> `rentalreadyappliances.pages.dev`
+   - `@` in the `.uk` zone -> `rentalreadyappliances.pages.dev`
+   - `www` in the `.uk` zone -> `rentalreadyappliances.pages.dev`
+8. Wait for SSL/HTTPS to become active for each custom domain.
+
+The site redirect file now also includes domain-level redirects:
 
 `https://rentalreadyappliances.uk/*` -> `https://rentalreadyappliances.com/$1`
 
