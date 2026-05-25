@@ -184,6 +184,7 @@ After the number is added, test:
 - Quote form submits.
 - Email fallback opens correctly.
 - WhatsApp opens correctly.
+- Payment instructions are not published until the business account, refund policy, and payment reference process are ready.
 - Sitemap loads at `https://rentalreadyappliances.com/sitemap.xml`.
 - Robots file loads at `https://rentalreadyappliances.com/robots.txt`.
 - Clean links work:
@@ -191,3 +192,18 @@ After the number is added, test:
   - `/fridges`
   - `/landlord-turnover-sets`
   - `/delivery-haul-away`
+
+## 10. Payment And Refund Readiness
+
+Before linking any business account to the website:
+
+1. Open the business account.
+2. Decide whether first payments will be bank transfer, invoice, Stripe Payment Links, or another provider.
+3. Keep customer sourcing funds separate from operating funds in the CRM and accounts.
+4. Decide the sourcing window and refund timing.
+5. Add clear payment wording to quote emails and WhatsApp replies.
+6. Confirm the first live refund test can be completed before taking marketing traffic at scale.
+
+Internal plan:
+
+`operations/payments_refunds_readiness.md`
