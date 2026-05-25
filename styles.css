@@ -2864,3 +2864,180 @@ body .brief-preview {
     grid-row: auto;
   }
 }
+
+/* Night white mode: final overrides so the later dark layout rules do not win. */
+html[data-theme="night"] body {
+  color: var(--ink);
+  background: var(--paper);
+}
+
+html[data-theme="night"] .site-header {
+  color: var(--ink);
+  background: rgba(255, 255, 255, .96);
+  border-bottom-color: rgba(17, 25, 34, .12);
+  box-shadow: 0 12px 36px rgba(25, 37, 50, .09);
+}
+
+html[data-theme="night"] nav {
+  color: #536474;
+}
+
+html[data-theme="night"] nav a {
+  background: rgba(255, 255, 255, .72);
+}
+
+html[data-theme="night"] .brand img {
+  border-color: rgba(155, 98, 63, .22);
+  background: #ffffff;
+}
+
+html[data-theme="night"] .brand-name strong,
+html[data-theme="night"] .brand-name em,
+html[data-theme="night"] h2,
+html[data-theme="night"] h3,
+html[data-theme="night"] label,
+html[data-theme="night"] legend,
+html[data-theme="night"] td:nth-child(2),
+html[data-theme="night"] .summary-grid strong,
+html[data-theme="night"] .detail-accordion summary,
+html[data-theme="night"] .quote-extra summary,
+html[data-theme="night"] .package-scope strong,
+html[data-theme="night"] .brief-preview strong,
+html[data-theme="night"] .brand-list span {
+  color: var(--ink);
+}
+
+html[data-theme="night"] .hero,
+html[data-theme="night"] .status-strip,
+html[data-theme="night"] .positioning,
+html[data-theme="night"] .homepage-summary,
+html[data-theme="night"] .detail-links,
+html[data-theme="night"] .packages,
+html[data-theme="night"] .trust,
+html[data-theme="night"] .operations,
+html[data-theme="night"] .portfolio-system,
+html[data-theme="night"] .quote-section,
+html[data-theme="night"] .prices,
+html[data-theme="night"] .service,
+html[data-theme="night"] .quality,
+html[data-theme="night"] .refurbished,
+html[data-theme="night"] .detail-section,
+html[data-theme="night"] .credits-page,
+html[data-theme="night"] .corporate-proof {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(238, 242, 245, .68)),
+    var(--paper);
+}
+
+html[data-theme="night"] .hero-media,
+html[data-theme="night"] .items,
+html[data-theme="night"] .product-range {
+  background:
+    linear-gradient(90deg, rgba(246, 248, 249, .98) 0%, rgba(246, 248, 249, .9) 48%, rgba(246, 248, 249, .7) 100%),
+    url("assets/product-photos/modern-appliance-package.jpg") center / cover no-repeat;
+}
+
+html[data-theme="night"] .hero-content,
+html[data-theme="night"] .category-hero,
+html[data-theme="night"] .category-hero h1,
+html[data-theme="night"] .category-cta h2 {
+  color: var(--ink);
+}
+
+html[data-theme="night"] .hero-copy,
+html[data-theme="night"] .category-hero p,
+html[data-theme="night"] .category-cta p,
+html[data-theme="night"] .section-copy,
+html[data-theme="night"] .status-strip span,
+html[data-theme="night"] .summary-grid p,
+html[data-theme="night"] .detail-accordion details > p,
+html[data-theme="night"] .assurance p,
+html[data-theme="night"] .impact-panel p,
+html[data-theme="night"] .trust-grid p,
+html[data-theme="night"] .tier-grid p,
+html[data-theme="night"] .ops-grid p,
+html[data-theme="night"] .refurbished p,
+html[data-theme="night"] .proof-list,
+html[data-theme="night"] .item-grid p,
+html[data-theme="night"] .package-card p,
+html[data-theme="night"] .package-card li,
+html[data-theme="night"] .portfolio-flow p,
+html[data-theme="night"] .range-card p,
+html[data-theme="night"] .detail-card ul,
+html[data-theme="night"] .credit-list li,
+html[data-theme="night"] td,
+html[data-theme="night"] .service-grid p,
+html[data-theme="night"] .brief-preview p,
+html[data-theme="night"] .brief-preview small,
+html[data-theme="night"] .field-note span {
+  color: var(--muted);
+}
+
+html[data-theme="night"] .button.secondary,
+html[data-theme="night"] .secondary-action,
+html[data-theme="night"] .summary-grid a,
+html[data-theme="night"] .detail-accordion details,
+html[data-theme="night"] .quote-extra,
+html[data-theme="night"] .assurance div,
+html[data-theme="night"] .impact-panel div,
+html[data-theme="night"] .trust-grid article,
+html[data-theme="night"] .tier-grid article,
+html[data-theme="night"] .ops-grid article,
+html[data-theme="night"] .package-card,
+html[data-theme="night"] .package-clarity article,
+html[data-theme="night"] .portfolio-flow article,
+html[data-theme="night"] .refurbished-visual,
+html[data-theme="night"] .item-card,
+html[data-theme="night"] .quote-form,
+html[data-theme="night"] .brief-preview,
+html[data-theme="night"] .field-note,
+html[data-theme="night"] .price-table-wrap,
+html[data-theme="night"] .service-grid article,
+html[data-theme="night"] .credit-list,
+html[data-theme="night"] .range-card,
+html[data-theme="night"] .detail-card {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+html[data-theme="night"] input,
+html[data-theme="night"] select,
+html[data-theme="night"] textarea {
+  color: var(--ink);
+  border-color: var(--field-border);
+  background: var(--field-bg);
+}
+
+html[data-theme="night"] input::placeholder,
+html[data-theme="night"] textarea::placeholder {
+  color: #8a97a5;
+}
+
+html[data-theme="night"] .category-meta span,
+html[data-theme="night"] .quick-flow a {
+  color: var(--ink);
+  background: rgba(255, 255, 255, .78);
+}
+
+html[data-theme="night"] .category-cta,
+html[data-theme="night"] footer {
+  color: var(--ink);
+  background: #ffffff;
+  border-top: 1px solid var(--line);
+}
+
+html[data-theme="night"] footer span,
+html[data-theme="night"] footer small,
+html[data-theme="night"] footer small a {
+  color: var(--muted);
+}
+
+html[data-theme="night"] th {
+  color: #ffffff;
+  background: #111922;
+}
+
+html[data-theme="night"] td {
+  background: #ffffff;
+}
