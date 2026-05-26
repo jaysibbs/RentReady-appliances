@@ -3041,3 +3041,144 @@ html[data-theme="night"] th {
 html[data-theme="night"] td {
   background: #ffffff;
 }
+
+/* Marketing refinement pass */
+.hero-content {
+  width: min(820px, 100%);
+}
+
+.hero-copy {
+  max-width: 660px;
+}
+
+.proof-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+body .proof-grid article {
+  min-height: 174px;
+}
+
+.corporate-proof .section-copy {
+  max-width: 390px;
+}
+
+.package-card.featured {
+  order: -1;
+}
+
+.package-card.featured .package-label {
+  color: var(--cream);
+  background: rgba(185, 130, 88, .96);
+  border-color: rgba(185, 130, 88, .96);
+}
+
+.detail-links .section-heading {
+  max-width: 500px;
+}
+
+.quote-section {
+  background:
+    linear-gradient(180deg, rgba(226, 232, 238, .035), rgba(226, 232, 238, 0)),
+    var(--paper);
+}
+
+.quote-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.quote-form > label:nth-of-type(1),
+.quote-form > label:nth-of-type(2),
+.quote-form > label:nth-of-type(3),
+.quote-form > label:nth-of-type(4),
+.quote-form > label:nth-of-type(5),
+.quote-form > label:nth-of-type(6) {
+  min-width: 0;
+}
+
+.quote-extra,
+.quote-form .full,
+.quote-form > button,
+.quote-form > a {
+  grid-column: 1 / -1;
+}
+
+.quote-extra summary {
+  color: var(--cream);
+  background:
+    linear-gradient(90deg, rgba(185, 130, 88, .16), rgba(226, 232, 238, .035));
+}
+
+.quote-form > .button.secondary,
+.quote-form > .button.primary {
+  min-height: 48px;
+}
+
+.brief-preview {
+  box-shadow: none;
+}
+
+.brief-preview strong::after {
+  content: " - optional";
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+@media (max-width: 1180px) {
+  .proof-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quote-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  body .corporate-proof {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-header {
+    overflow: hidden;
+  }
+
+  nav {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    white-space: normal;
+  }
+
+  nav a {
+    flex: 0 1 auto;
+  }
+
+  body .corporate-proof,
+  .proof-grid,
+  .quote-form {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-points span {
+    width: auto;
+  }
+
+  .package-card.featured {
+    order: 0;
+  }
+}
+
+html[data-theme="night"] .quote-section {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(238, 242, 245, .68)),
+    var(--paper);
+}
+
+html[data-theme="night"] .quote-extra summary {
+  color: var(--ink);
+  background:
+    linear-gradient(90deg, rgba(155, 98, 63, .1), rgba(17, 25, 34, .025));
+}
