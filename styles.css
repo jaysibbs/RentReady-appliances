@@ -3182,3 +3182,48 @@ html[data-theme="night"] .quote-extra summary {
   background:
     linear-gradient(90deg, rgba(155, 98, 63, .1), rgba(17, 25, 34, .025));
 }
+
+/* Contrast repair pass */
+html:not([data-theme="night"]) .brand-name strong,
+html:not([data-theme="night"]) .brand-name em,
+html:not([data-theme="night"]) h2,
+html:not([data-theme="night"]) h3,
+html:not([data-theme="night"]) label,
+html:not([data-theme="night"]) legend,
+html:not([data-theme="night"]) .summary-grid strong,
+html:not([data-theme="night"]) .detail-accordion summary,
+html:not([data-theme="night"]) .quote-extra summary,
+html:not([data-theme="night"]) .status-strip strong,
+html:not([data-theme="night"]) .assurance strong,
+html:not([data-theme="night"]) .impact-panel strong,
+html:not([data-theme="night"]) .trust-grid h3,
+html:not([data-theme="night"]) .tier-grid h3,
+html:not([data-theme="night"]) .ops-grid h3,
+html:not([data-theme="night"]) .item-grid h3,
+html:not([data-theme="night"]) .package-card h3,
+html:not([data-theme="night"]) .package-clarity h3,
+html:not([data-theme="night"]) .portfolio-flow h3,
+html:not([data-theme="night"]) .service-grid h3,
+html:not([data-theme="night"]) .range-card h3,
+html:not([data-theme="night"]) .detail-card h3,
+html:not([data-theme="night"]) .brief-preview strong,
+html:not([data-theme="night"]) td:nth-child(2) {
+  color: var(--ink);
+}
+
+html:not([data-theme="night"]) .package-card.featured .package-label {
+  color: #0a1118;
+}
+
+html[data-theme="night"] .package-price,
+html[data-theme="night"] .learn-more,
+html[data-theme="night"] .brand-tag,
+html[data-theme="night"] .package-label,
+html[data-theme="night"] .proof-grid span,
+html[data-theme="night"] .quick-flow span {
+  color: var(--rust);
+}
+
+html[data-theme="night"] .package-card.featured .package-label {
+  color: #ffffff;
+}
