@@ -47,6 +47,7 @@
           <div class="hero-points" aria-label="Service highlights">
             <span>Requirement-led sourcing</span>
             <span>Starter prices, final quote confirmed</span>
+            <span>VAT status confirmed on invoice</span>
             <span>Delivery and haul-away quoted separately</span>
           </div>
           <div class="hero-actions">
@@ -256,7 +257,7 @@
         <div class="detail-accordion">
           <details>
             <summary>Starting price guide</summary>
-            <p>Starter prices help buyers decide the budget route. Final quotes change depending on brand, age, condition, size, finish, energy preference, stock availability, delivery route, and quality tier.</p>
+            <p>Starter prices help buyers decide the budget route. Final quotes change depending on brand, age, condition, size, finish, energy preference, stock availability, delivery route, quality tier, and VAT status where applicable.</p>
             <div class="price-table-wrap compact-price-table">
               <table>
                 <thead>
@@ -278,6 +279,10 @@
             <summary>Delivery, haul-away, and access</summary>
             <p>Delivery and old appliance haul-away are separate operations. They are quoted by postcode, access, timing, route availability, stairs, parking, and whether specialist installation is needed.</p>
           </details>
+          <details>
+            <summary>VAT and invoice status</summary>
+            <p>VAT registration status will be confirmed on invoices where applicable. Until VAT registration is active, quotes should be treated as total payable guide prices unless a written quote states otherwise.</p>
+          </details>
         </div>
       </section>
 
@@ -296,7 +301,8 @@
           <input type="hidden" name="_subject" value="New RentalReady Appliances procurement brief">
           <input type="hidden" name="_template" value="table">
           <input type="hidden" name="_captcha" value="false">
-          <input type="hidden" name="pricing_note" value="Starter prices are sourcing guides, not fixed retail prices. Choose Value, Standard, or Premium depending on the property standard. Final quotes can change depending on brand, condition, size, finish, availability, access, and quality.">
+          <input type="hidden" name="pricing_note" value="Starter prices are sourcing guides, not fixed retail prices. Choose Value, Standard, or Premium depending on the property standard. Final quotes can change depending on brand, condition, size, finish, availability, access, quality, and VAT status where applicable.">
+          <input type="hidden" name="vat_note" value="VAT registration status will be confirmed on invoices where applicable. Until VAT registration is active, quotes should be treated as total payable guide prices unless a written quote states otherwise.">
           <input type="hidden" name="smart_quote_brief" id="smartQuoteBrief" value="">
           <input type="text" name="_honey" tabindex="-1" autocomplete="off" style="display:none">
           <label>
@@ -419,6 +425,6 @@
       <small><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="warranty-returns.html">Warranty and returns</a> · <a href="delivery-haul-away.html">Delivery and haul-away</a></small>
     </footer>
 
-    <script src="script.js?v=20260526a"></script>
+    <script src="script.js?v=20260527a"></script>
   </body>
 </html>

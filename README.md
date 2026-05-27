@@ -27,3 +27,9 @@ https://formsubmit.co/sibbslani@rentreadyappliances.org
 ```
 
 After the first live test submission, check `sibbslani@rentreadyappliances.org` for the FormSubmit activation email.
+
+## Commercial Copy Notes
+
+- Do not claim that RentalReady Appliances is VAT registered until registration is complete.
+- Use the current website wording: VAT registration status will be confirmed on invoices where applicable.
+- Starter prices are sourcing guide prices. Final quotes can change by brand, condition, size, finish, availability, access, warranty route, logistics, quality tier, and VAT status where applicable.

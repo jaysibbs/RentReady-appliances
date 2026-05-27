@@ -69,6 +69,7 @@ function buildSmartBrief() {
     `Measurements/access: ${measurements}`,
     `Timing: ${urgency}; preferred date ${date}`,
     `Operations to quote separately: ${services}`,
+    "VAT/invoice note: VAT status to be confirmed on invoice where applicable",
     notes ? `Customer notes: ${notes}` : "Customer notes: none added yet",
   ].join("\n");
 
@@ -76,7 +77,7 @@ function buildSmartBrief() {
   if (briefOutput) briefOutput.textContent = brief;
   if (emailBrief) {
     const subject = encodeURIComponent(`RentalReady procurement brief - ${appliance}`);
-    const body = encodeURIComponent(`${brief}\n\nPlease reply with sourcing route, warranty/returns notes, logistics assumptions, and any questions needed before approval.`);
+    const body = encodeURIComponent(`${brief}\n\nPlease reply with sourcing route, warranty/returns notes, VAT/invoice status where applicable, logistics assumptions, and any questions needed before approval.`);
     emailBrief.setAttribute("href", `mailto:sibbslani@rentreadyappliances.org?subject=${subject}&body=${body}`);
   }
   return brief;
