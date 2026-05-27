@@ -16,6 +16,7 @@ const files = [
   "image-credits.html",
   "index.html",
   "landlord-turnover-sets.html",
+  "letting-agencies.html",
   "microwaves.html",
   "privacy.html",
   "robots.txt",

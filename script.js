@@ -61,22 +61,22 @@ function buildSmartBrief() {
   const notes = fieldValue("notes");
 
   const brief = [
-    `Request: ${quantity} x ${appliance}`,
+    `Procurement brief: ${quantity} x ${appliance}`,
     `Property: ${propertyType}`,
     `Postcode: ${postcode}`,
     `Quality: ${quality}`,
     `Condition route: ${condition}`,
     `Measurements/access: ${measurements}`,
     `Timing: ${urgency}; preferred date ${date}`,
-    `Extra services: ${services}`,
+    `Operations to quote separately: ${services}`,
     notes ? `Customer notes: ${notes}` : "Customer notes: none added yet",
   ].join("\n");
 
   if (smartQuoteBrief) smartQuoteBrief.value = brief;
   if (briefOutput) briefOutput.textContent = brief;
   if (emailBrief) {
-    const subject = encodeURIComponent(`RentalReady quote request - ${appliance}`);
-    const body = encodeURIComponent(`${brief}\n\nPlease reply with next steps and any questions needed to prepare the quote.`);
+    const subject = encodeURIComponent(`RentalReady procurement brief - ${appliance}`);
+    const body = encodeURIComponent(`${brief}\n\nPlease reply with sourcing route, warranty/returns notes, logistics assumptions, and any questions needed before approval.`);
     emailBrief.setAttribute("href", `mailto:sibbslani@rentreadyappliances.org?subject=${subject}&body=${body}`);
   }
   return brief;

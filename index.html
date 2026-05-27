@@ -26,6 +26,7 @@
       <nav aria-label="Main navigation">
         <a href="#items">Sourcing</a>
         <a href="#packages">Packages</a>
+        <a href="letting-agencies.html">Agencies</a>
         <a href="#prices">Prices</a>
         <a href="how-it-works.html">How it works</a>
         <a href="#quote">Quote</a>
@@ -159,7 +160,7 @@
         <div class="section-heading">
           <p class="eyebrow">Appliance packages</p>
           <h2 id="packages-title">Start with the property standard, then choose the appliance route.</h2>
-          <p class="section-copy">Packages keep repeat requests cleaner for landlords, agencies, serviced apartment operators, and property teams.</p>
+          <p class="section-copy">Packages keep repeat requests cleaner for landlords, agencies, serviced apartment operators, and property teams. Each route separates included appliances, optional upgrades, and logistics before approval.</p>
         </div>
         <div class="package-grid">
           <article class="package-card compact-package featured">
@@ -167,12 +168,16 @@
             <h3>Landlord Turnover Set</h3>
             <strong class="package-price">From £1,299</strong>
             <p>For rental listings, move-ins, and kitchen refreshes without sourcing every appliance separately.</p>
+            <div class="package-scope">
+              <strong>Best for</strong>
+              <span>Single-property landlords and letting-agency managed turnovers.</span>
+            </div>
             <details open>
-              <summary>Typical scope</summary>
+              <summary>Included and optional</summary>
               <ul>
-                <li>Fridge freezer, cooker or oven route</li>
-                <li>Washing machine or laundry bundle</li>
-                <li>Microwave and dishwasher requests available</li>
+                <li>Core: fridge freezer, cooking route, and laundry route</li>
+                <li>Optional: microwave, dishwasher, dryer, or stronger brand tier</li>
+                <li>Separate: delivery, haul-away, specialist installation, and access costs</li>
               </ul>
             </details>
           </article>
@@ -181,12 +186,16 @@
             <h3>Studio Stay Pack</h3>
             <strong class="package-price">From £799</strong>
             <p>For compact serviced apartments, studios, and short-stay units.</p>
+            <div class="package-scope">
+              <strong>Best for</strong>
+              <span>Studios, short-stay lets, compact flats, and simple guest-ready appliance briefs.</span>
+            </div>
             <details>
-              <summary>Typical scope</summary>
+              <summary>Included and optional</summary>
               <ul>
-                <li>Fridge option and microwave route</li>
-                <li>Washer, washer-dryer, or laundry alternative</li>
-                <li>Value, Standard, or Premium condition route</li>
+                <li>Core: fridge route, microwave route, and compact laundry decision</li>
+                <li>Optional: washer-dryer, dishwasher, better finish, or premium route</li>
+                <li>Separate: delivery, haul-away, installation, and access assumptions</li>
               </ul>
             </details>
           </article>
@@ -195,15 +204,45 @@
             <h3>Operator Refresh Pack</h3>
             <strong class="package-price">Quote-led</strong>
             <p>For HMOs, serviced apartment operators, letting agencies, contractors, and portfolio replacements.</p>
+            <div class="package-scope">
+              <strong>Best for</strong>
+              <span>Repeat replacements, batch sourcing, construction handovers, and managed portfolios.</span>
+            </div>
             <details>
-              <summary>Typical scope</summary>
+              <summary>Included and optional</summary>
               <ul>
-                <li>Consistent spec across multiple units</li>
-                <li>Brand and energy preference captured</li>
-                <li>New, graded, and refurbished routes compared</li>
+                <li>Core: repeatable spec, appliance list, condition tier, and approval trail</li>
+                <li>Optional: multi-unit standards, brand rules, energy preference, and phased supply</li>
+                <li>Separate: site logistics, access, haul-away, and installation coordination</li>
               </ul>
             </details>
           </article>
+        </div>
+      </section>
+
+      <section class="positioning" id="corporate" aria-labelledby="corporate-title">
+        <div class="section-heading">
+          <p class="eyebrow">For agencies and property teams</p>
+          <h2 id="corporate-title">A cleaner appliance intake for managed properties.</h2>
+          <p class="section-copy">Use RentalReady when the buyer needs a shortlist, not a loose product list. The request is structured around the property, quality route, timing, access, and approval needs.</p>
+          <a class="button secondary" href="letting-agencies.html">Open agency route</a>
+        </div>
+        <div class="impact-panel">
+          <div>
+            <span>Letting agencies</span>
+            <strong>Send one property brief and keep the decision trail clear.</strong>
+            <p>Useful for managed replacements, landlord approvals, move-in dates, and properties where the appliance standard needs to be explained.</p>
+          </div>
+          <div>
+            <span>Construction teams</span>
+            <strong>Match appliance routes to handover standards.</strong>
+            <p>Batch requests can be shaped around finish, access, timing, and whether the client wants value, standard, or premium sourcing.</p>
+          </div>
+          <div>
+            <span>Portfolio landlords</span>
+            <strong>Repeat the same appliance logic across future units.</strong>
+            <p>Condition route, brand level, measurements, warranty position, delivery assumptions, and approval notes stay separated.</p>
+          </div>
         </div>
       </section>
 
@@ -245,8 +284,8 @@
       <section class="quote-section" id="quote" aria-labelledby="quote-title">
         <div class="section-heading quote-intro">
           <p class="eyebrow">Quote request</p>
-          <h2 id="quote-title">Send the essentials first. Add detail only if needed.</h2>
-          <p class="section-copy">The short form gives enough context to respond. The extra fields are there for agencies, contractors, and multi-unit requests.</p>
+          <h2 id="quote-title">Start the procurement brief.</h2>
+          <p class="section-copy">Send the property requirement, preferred quality route, timing, and postcode. We use that to shape a shortlist and confirm what needs approval before purchase.</p>
           <div class="brief-preview" aria-live="polite">
             <strong>Smart brief preview</strong>
             <p id="briefOutput">Complete the required fields, then build the brief before sending.</p>
@@ -254,7 +293,7 @@
           </div>
         </div>
         <form class="quote-form compact-quote-form" id="quoteForm" action="https://formsubmit.co/sibbslani@rentreadyappliances.org" method="POST">
-          <input type="hidden" name="_subject" value="New RentalReady Appliances quote request">
+          <input type="hidden" name="_subject" value="New RentalReady Appliances procurement brief">
           <input type="hidden" name="_template" value="table">
           <input type="hidden" name="_captcha" value="false">
           <input type="hidden" name="pricing_note" value="Starter prices are sourcing guides, not fixed retail prices. Choose Value, Standard, or Premium depending on the property standard. Final quotes can change depending on brand, condition, size, finish, availability, access, and quality.">
@@ -355,7 +394,7 @@
                 <input name="date" type="date">
               </label>
               <fieldset>
-                <legend>Optional requests</legend>
+                <legend>Operations to quote separately</legend>
                 <label class="check"><input type="checkbox" name="services" value="Delivery request"> Delivery</label>
                 <label class="check"><input type="checkbox" name="services" value="Old appliance removal request"> Old appliance removal</label>
               </fieldset>
@@ -365,10 +404,10 @@
               </label>
             </div>
           </details>
-          <button class="button secondary full" type="button" id="buildBrief">Build quote brief</button>
+          <button class="button secondary full" type="button" id="buildBrief">Build procurement brief</button>
           <a class="button secondary full" id="emailBrief" href="mailto:sibbslani@rentreadyappliances.org?subject=RentalReady%20Appliances%20quote%20request">Email quote brief</a>
           <a class="button secondary full whatsapp-link" href="https://wa.me/447440454109?text=Hi%20RentalReady%20Appliances%2C%20I%20would%20like%20a%20quote.%0A%0A1.%20Name%2Fcompany%3A%0A2.%20Property%20postcode%3A%0A3.%20Appliance(s)%20needed%3A%0A4.%20Quantity%20%2F%20number%20of%20units%3A%0A5.%20Property%20type%3A%0A6.%20Budget%20or%20quality%20level%3A%20Value%20%2F%20Standard%20%2F%20Premium%0A7.%20Needed%20by%20%2F%20urgency%3A%0A8.%20Delivery%20needed%3F%20Yes%20%2F%20No%0A9.%20Old%20appliance%20removal%3F%20Yes%20%2F%20No%0A10.%20Access%20notes%20or%20measurements%3A" target="_blank" rel="noopener">WhatsApp quote request</a>
-          <button class="button primary full" type="submit">Send quote request</button>
+          <button class="button primary full" type="submit">Send procurement brief</button>
         </form>
       </section>
 
@@ -376,10 +415,10 @@
 
     <footer>
       <strong>RentalReady Appliances</strong>
-      <span>Clean, tested appliances for UK handovers, lettings, and property refreshes.</span>
+      <span>Appliance sourcing for UK rental-ready properties, managed portfolios, and move-in deadlines.</span>
       <small><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="warranty-returns.html">Warranty and returns</a> · <a href="delivery-haul-away.html">Delivery and haul-away</a></small>
     </footer>
 
-    <script src="script.js?v=20260520a"></script>
+    <script src="script.js?v=20260526a"></script>
   </body>
 </html>
