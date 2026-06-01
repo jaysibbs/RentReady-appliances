@@ -1107,67 +1107,91 @@ function renderTenderMatches(tenders, settings, sourceNote = "") {
 
   tenderResults.innerHTML = `
     ${sourceNote ? `<div class="live-tender-source">${escapeHtml(sourceNote)}</div>` : ""}
+    <div class="tender-result-list">
     ${ranked.map((item, index) => {
     const terms = tenderSearchTerms(item.tender);
     const required = number(item.tender.quantity) || 1;
     const value = number(item.tender.value);
     const valuePerUnit = value && required ? value / required : 0;
+    const deadlineLabel = item.tender.deadline || "TBC";
+    const daysLabel = Number.isFinite(item.result.deadlineDays) ? `${item.result.deadlineDays} day(s)` : "Confirm";
     return `
-      <article class="tender-result-card ${item.result.tone}">
-        <div class="tender-result-header">
-          <div>
-            <span class="result-rank">#${index + 1}</span>
+      <details class="tender-result-card ${item.result.tone}">
+        <summary class="tender-result-summary">
+          <span class="result-rank">#${index + 1}</span>
+          <div class="tender-summary-main">
             <h3>${escapeHtml(item.tender.title)}</h3>
             <p>${escapeHtml(item.tender.authority)} • ${escapeHtml(item.tender.region || "region TBC")}</p>
           </div>
+          <div class="summary-metrics">
+            <div><span>Match</span><strong>${Math.round(item.result.score)}%</strong></div>
+            <div><span>Value</span><strong>${value ? money(value) : "TBC"}</strong></div>
+            <div><span>Stock</span><strong>${required}</strong></div>
+            <div><span>Deadline</span><strong>${deadlineLabel}</strong></div>
+          </div>
           <div class="decision-badge ${item.result.tone}">
             <strong>${item.result.decision}</strong>
-            <span>${Math.round(item.result.score)}% fit</span>
+            <span>${daysLabel} left</span>
+          </div>
+        </summary>
+
+        <div class="tender-result-body">
+          <div class="tender-result-header">
+            <div>
+              <span class="result-rank">Tender / contract detail</span>
+              <h3>${escapeHtml(item.tender.title)}</h3>
+              <p>${escapeHtml(item.tender.authority)} • ${escapeHtml(item.tender.region || "region TBC")}</p>
+            </div>
+            <div class="decision-badge ${item.result.tone}">
+              <strong>${Math.round(item.result.score)}% match</strong>
+              <span>${item.result.decision}</span>
+            </div>
+          </div>
+
+          <div class="tender-fact-grid">
+            <div><span>Estimated value</span><strong>${value ? money(value) : "TBC"}</strong><em>${valuePerUnit ? `${money(valuePerUnit)} per required unit` : "Confirm in notice"}</em></div>
+            <div><span>Required stock</span><strong>${required}</strong><em>${escapeHtml(item.tender.item || "Category TBC")}</em></div>
+            <div><span>Deadline</span><strong>${item.tender.deadline || "TBC"}</strong><em>${Number.isFinite(item.result.deadlineDays) ? `${item.result.deadlineDays} day(s) left` : "Confirm deadline"}</em></div>
+            <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong><em>Only bid if landed stock protects this</em></div>
+          </div>
+
+          <div class="eligibility-grid">
+            ${item.result.checks.map((check) => `
+              <div class="${check.pass ? "pass" : "hold"}">
+                <strong>${check.pass ? "Pass" : "Check"}</strong>
+                <span>${check.label}</span>
+                <em>${check.detail}</em>
+              </div>
+            `).join("")}
+          </div>
+
+          <div class="stock-source-plan">
+            <strong>Stock availability review</strong>
+            <p>No stock is reserved from live tender results yet. Add this tender as demand, then attach John Pye, BPI, or BidSpotter lots. The dashboard will show whether fulfilment can come from one source or requires multiple sources.</p>
+            ${sourceSearchLinks(terms)}
+          </div>
+
+          <details class="tender-details tender-result-details">
+            <summary>Full live tender extract</summary>
+            <dl>
+              ${tenderDetailRows(item.tender).map(([key, value]) => `
+                <div><dt>${key}</dt><dd>${escapeHtml(value)}</dd></div>
+              `).join("")}
+            </dl>
+            <p>${escapeHtml(item.tender.notes || "No tender detail text pasted yet.")}</p>
+          </details>
+
+          <p class="candidate-note">${escapeHtml(item.result.recommendation)}</p>
+          <div class="dashboard-actions">
+            ${item.tender.url ? `<a class="button secondary" href="${item.tender.url}" target="_blank" rel="noopener">Open tender</a>` : ""}
+            ${item.tender.url ? `<button class="button secondary" type="button" data-tender-detail="${encodeURIComponent(item.tender.url)}">Load details</button>` : ""}
+            <button class="button primary" type="button" data-tender-add="${encodeURIComponent(JSON.stringify(item.tender))}">Start bid pack</button>
           </div>
         </div>
-
-        <div class="tender-fact-grid">
-          <div><span>Estimated value</span><strong>${value ? money(value) : "TBC"}</strong><em>${valuePerUnit ? `${money(valuePerUnit)} per required unit` : "Confirm in notice"}</em></div>
-          <div><span>Required stock</span><strong>${required}</strong><em>${escapeHtml(item.tender.item || "Category TBC")}</em></div>
-          <div><span>Deadline</span><strong>${item.tender.deadline || "TBC"}</strong><em>${Number.isFinite(item.result.deadlineDays) ? `${item.result.deadlineDays} day(s) left` : "Confirm deadline"}</em></div>
-          <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong><em>Only bid if landed stock protects this</em></div>
-        </div>
-
-        <div class="eligibility-grid">
-          ${item.result.checks.map((check) => `
-            <div class="${check.pass ? "pass" : "hold"}">
-              <strong>${check.pass ? "Pass" : "Check"}</strong>
-              <span>${check.label}</span>
-              <em>${check.detail}</em>
-            </div>
-          `).join("")}
-        </div>
-
-        <div class="stock-source-plan">
-          <strong>Stock availability review</strong>
-          <p>No stock is reserved from live tender results yet. Add this tender as demand, then attach John Pye, BPI, or BidSpotter lots. The dashboard will show whether fulfilment can come from one source or requires multiple sources.</p>
-          ${sourceSearchLinks(terms)}
-        </div>
-
-        <details class="tender-details tender-result-details">
-          <summary>Full live tender extract</summary>
-          <dl>
-            ${tenderDetailRows(item.tender).map(([key, value]) => `
-              <div><dt>${key}</dt><dd>${escapeHtml(value)}</dd></div>
-            `).join("")}
-          </dl>
-          <p>${escapeHtml(item.tender.notes || "No tender detail text pasted yet.")}</p>
-        </details>
-
-        <p class="candidate-note">${escapeHtml(item.result.recommendation)}</p>
-        <div class="dashboard-actions">
-          ${item.tender.url ? `<a class="button secondary" href="${item.tender.url}" target="_blank" rel="noopener">Open tender</a>` : ""}
-          ${item.tender.url ? `<button class="button secondary" type="button" data-tender-detail="${encodeURIComponent(item.tender.url)}">Load details</button>` : ""}
-          <button class="button primary" type="button" data-tender-add="${encodeURIComponent(JSON.stringify(item.tender))}">Add as demand</button>
-        </div>
-      </article>
+      </details>
     `;
   }).join("")}
+    </div>
   `;
 }
 
