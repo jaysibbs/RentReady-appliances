@@ -51,18 +51,22 @@ This keeps the recommendation focused on profit after real sourcing costs, not j
 ## Find a Tender Workflow
 
 1. Set the region focus and starter contract cap.
-2. Generate Find a Tender searches for white goods, appliances, kitchen equipment, and related material supply terms.
-3. Paste promising opportunities into the tender matcher, one opportunity per line.
-4. Rank opportunities by local fit, value cap, deadline risk, and material fit.
-5. Check stock availability across:
+2. Fetch live Find a Tender results from the dashboard or generate Find a Tender searches for white goods, appliances, kitchen equipment, and related material supply terms.
+3. Review the returned live results, including buyer, title, description, value, location, notice type, deadline, and source URL.
+4. Paste additional opportunities into the tender matcher when needed, one opportunity per line.
+5. Rank opportunities by local fit, value cap, deadline risk, and material fit.
+6. Open tender details and paste specification text into Tender detail notes if the detail page cannot be loaded server-side.
+7. Check stock availability across:
    - John Pye Auctions
    - BPI Auctions
    - BidSpotter
-6. Add only viable opportunities to the demand queue.
-7. Match supplier stock against the tender demand before any bid decision.
-8. Prepare the bid pack only when the tender details, stock coverage, ROI, and deadline checks are strong enough.
+8. Add only viable opportunities to the demand queue.
+9. Match supplier stock against the tender demand before any bid decision.
+10. Prepare the bid pack only when the tender details, stock coverage, ROI, and deadline checks are strong enough.
 
 The tender lane is designed to create demand signals. It does not submit public-sector bids, make supplier purchases, or claim compliance. Tender submission still needs manual review of eligibility, insurance, delivery capacity, terms, references, and any required supplier registration.
+
+The dashboard uses a Cloudflare Pages Function to fetch live Find a Tender search results because browser-side requests may be blocked by cross-origin rules. John Pye stock availability is shown through matched/imported lots and direct source links because the John Pye auction platform can challenge non-browser programmatic requests. Do not treat unavailable automated John Pye scraping as confirmed stock; only approved matched lots count towards stock coverage.
 
 ## Tender Application Readiness
 

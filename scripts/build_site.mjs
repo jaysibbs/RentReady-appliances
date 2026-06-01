@@ -65,4 +65,8 @@ for (const file of ["rentalready_logo.svg", "rentalready_logo_square.svg", "rent
   cpSync(join(root, "brand", file), join(dist, "brand", file));
 }
 
+if (existsSync(join(root, "functions"))) {
+  copyDirectory(join(root, "functions"), join(dist, "functions"));
+}
+
 console.log(`Built RentalReady static site into ${dist}`);

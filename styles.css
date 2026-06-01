@@ -2668,6 +2668,37 @@ section {
   gap: 12px;
 }
 
+.live-tender-status {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(91, 214, 155, .3);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--muted);
+  background: rgba(91, 214, 155, .07);
+}
+
+.live-tender-status:empty {
+  display: none;
+}
+
+.live-tender-status strong,
+.live-tender-source {
+  color: var(--green);
+  font-weight: 900;
+}
+
+.live-tender-status span {
+  color: var(--muted);
+}
+
+.live-tender-source {
+  border: 1px solid rgba(91, 214, 155, .28);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(91, 214, 155, .07);
+}
+
 .agent-search-links strong {
   color: var(--gold);
 }

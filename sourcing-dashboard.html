@@ -178,10 +178,12 @@ kitchen equipment</textarea>
           </label>
           <div class="dashboard-actions span-2">
             <button class="button secondary" type="button" id="generateTenderSearches">Generate tender searches</button>
+            <button class="button primary" type="button" id="fetchLiveTenders">Fetch live tenders</button>
             <button class="button primary" type="button" id="rankTenders">Rank tender opportunities</button>
             <button class="button secondary" type="button" id="prepareBidPack">Prepare bid pack</button>
           </div>
           <div class="agent-summary span-2" id="tenderSummary" aria-live="polite">Use narrow, local/regional searches first. Avoid big national frameworks until the business has stronger capacity and references.</div>
+          <div class="live-tender-status span-2" id="liveTenderStatus" aria-live="polite"></div>
           <div class="agent-search-links span-2" id="tenderSearchLinks"></div>
           <div class="agent-results span-2" id="tenderResults"></div>
           <div class="bid-pack span-2" id="bidPack" aria-live="polite"></div>
@@ -366,6 +368,6 @@ kitchen equipment</textarea>
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260601e"></script>
+    <script src="sourcing-dashboard.js?v=20260601f"></script>
   </body>
 </html>

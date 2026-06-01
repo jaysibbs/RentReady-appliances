@@ -63,6 +63,7 @@ const demandList = document.querySelector("#demandList");
 const tenderSummary = document.querySelector("#tenderSummary");
 const tenderSearchLinks = document.querySelector("#tenderSearchLinks");
 const tenderResults = document.querySelector("#tenderResults");
+const liveTenderStatus = document.querySelector("#liveTenderStatus");
 const bidPack = document.querySelector("#bidPack");
 const agentSummary = document.querySelector("#agentSummary");
 const agentSearchLinks = document.querySelector("#agentSearchLinks");
@@ -540,6 +541,40 @@ function generateTenderSearches() {
   `;
 }
 
+function tenderKeywordsQuery(settings) {
+  return settings.keywords.length ? settings.keywords.join(" OR ") : "white goods appliances kitchen equipment";
+}
+
+async function fetchLiveTenders() {
+  renderTenderSummary();
+  const settings = tenderSettings();
+  if (liveTenderStatus) {
+    liveTenderStatus.innerHTML = `<strong>Fetching live Find a Tender results...</strong><span>Searching ${escapeHtml(tenderKeywordsQuery(settings))} in ${escapeHtml(settings.region)}.</span>`;
+  }
+
+  try {
+    const response = await fetch(`/api/tenders?keywords=${encodeURIComponent(tenderKeywordsQuery(settings))}&region=${encodeURIComponent(settings.region)}`);
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) throw new Error(payload.error || "Live tender search failed.");
+
+    const tenders = payload.results.map((item) => tenderFromApiResult(item, settings));
+    if (!tenders.length) {
+      if (liveTenderStatus) liveTenderStatus.innerHTML = `<strong>No live results returned.</strong><span>Try broader keywords or open the Find a Tender search links.</span>`;
+      tenderResults.innerHTML = "";
+      return;
+    }
+
+    renderTenderMatches(tenders, settings, `Live results from Find a Tender. Source: ${payload.sourceUrl}`);
+    if (liveTenderStatus) {
+      liveTenderStatus.innerHTML = `<strong>${tenders.length} live tender results loaded.</strong><span>Review details, check stock coverage, then add viable opportunities to demand.</span>`;
+    }
+  } catch (error) {
+    if (liveTenderStatus) {
+      liveTenderStatus.innerHTML = `<strong>Live tender fetch unavailable.</strong><span>${escapeHtml(error.message)} Use the generated Find a Tender links, then paste relevant results into the matcher.</span>`;
+    }
+  }
+}
+
 function renderAgentSummary() {
   if (!agentSummary) return;
   const settings = currentAgentSettings();
@@ -579,6 +614,34 @@ function generateSearches() {
 function parseMoneyFromText(text) {
   const match = String(text).match(/£\s?([0-9]+(?:,[0-9]{3})*(?:\.\d{1,2})?)/);
   return match ? number(match[1]) : 0;
+}
+
+function parseMoneyLoose(value) {
+  const match = String(value || "").match(/£?\s?([0-9]+(?:,[0-9]{3})*(?:\.\d{1,2})?)/);
+  return match ? number(match[1]) : 0;
+}
+
+function isoFromTenderDate(value) {
+  const text = String(value || "");
+  const direct = parseDateFromText(text);
+  if (direct) return direct;
+  const monthMap = {
+    january: "01",
+    february: "02",
+    march: "03",
+    april: "04",
+    may: "05",
+    june: "06",
+    july: "07",
+    august: "08",
+    september: "09",
+    october: "10",
+    november: "11",
+    december: "12",
+  };
+  const match = text.match(/\b(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})\b/);
+  if (!match) return "";
+  return `${match[3]}-${monthMap[match[2].toLowerCase()] || "01"}-${String(match[1]).padStart(2, "0")}`;
 }
 
 function parseDateFromText(text) {
@@ -637,6 +700,32 @@ function parseTenderLine(line, settings) {
     region,
     deadline,
     notes: cleanLine,
+  };
+}
+
+function tenderFromApiResult(result, settings) {
+  const notes = [
+    result.title,
+    result.description,
+    result.noticeType ? `Notice type: ${result.noticeType}` : "",
+    result.value ? `Value: ${result.value}` : "",
+    result.location ? `Location: ${result.location}` : "",
+    result.deadline ? `Deadline: ${result.deadline}` : "",
+    result.published ? `Published: ${result.published}` : "",
+  ].filter(Boolean).join(" | ");
+
+  return {
+    authority: result.buyer || "Public sector buyer",
+    title: result.title || "Tender opportunity",
+    source: "Find a Tender live result",
+    url: result.url || "",
+    item: inferCategory(`${result.title || ""} ${result.description || ""}`, "Portfolio / batch request"),
+    quantity: parseQuantityFromText(`${result.title || ""} ${result.description || ""}`),
+    value: parseMoneyLoose(result.value),
+    region: inferRegion(`${result.location || ""} ${result.description || ""}`, settings.region),
+    deadline: isoFromTenderDate(result.deadline),
+    notes,
+    description: result.description || "",
   };
 }
 
@@ -900,15 +989,18 @@ function rankTenders() {
     return;
   }
 
-  const ranked = lines
-    .map((line) => {
-      const tender = parseTenderLine(line, settings);
-      const result = tenderScore(tender, settings);
-      return { tender, result };
-    })
+  const tenders = lines.map((line) => parseTenderLine(line, settings));
+  renderTenderMatches(tenders, settings, "Pasted tender opportunities ranked locally.");
+}
+
+function renderTenderMatches(tenders, settings, sourceNote = "") {
+  const ranked = tenders
+    .map((tender) => ({ tender, result: tenderScore(tender, settings) }))
     .sort((a, b) => b.result.score - a.result.score);
 
-  tenderResults.innerHTML = ranked.map((item, index) => {
+  tenderResults.innerHTML = `
+    ${sourceNote ? `<div class="live-tender-source">${escapeHtml(sourceNote)}</div>` : ""}
+    ${ranked.map((item, index) => {
     const terms = tenderSearchTerms(item.tender);
     return `
       <article class="agent-result ${item.result.viable ? "pass" : "hold"}">
@@ -934,11 +1026,13 @@ function rankTenders() {
         <p class="candidate-note">${item.tender.notes}</p>
         <div class="dashboard-actions">
           ${item.tender.url ? `<a class="button secondary" href="${item.tender.url}" target="_blank" rel="noopener">Open tender</a>` : ""}
+          ${item.tender.url ? `<button class="button secondary" type="button" data-tender-detail="${encodeURIComponent(item.tender.url)}">Load details</button>` : ""}
           <button class="button primary" type="button" data-tender-add="${encodeURIComponent(JSON.stringify(item.tender))}">Add as demand</button>
         </div>
       </article>
     `;
-  }).join("");
+  }).join("")}
+  `;
 }
 
 function addTenderDemand(encodedTender) {
@@ -970,6 +1064,36 @@ function addTenderDemand(encodedTender) {
   persist();
   render();
   scorePreview.textContent = `${demandLabel(demand)} added from Find a Tender. Now match supplier stock before bid review.`;
+}
+
+async function loadTenderDetails(encodedUrl) {
+  const url = decodeURIComponent(encodedUrl);
+  const notesBox = document.querySelector("#tenderDetailNotes");
+  if (liveTenderStatus) {
+    liveTenderStatus.innerHTML = `<strong>Loading tender details...</strong><span>${escapeHtml(url)}</span>`;
+  }
+
+  try {
+    const response = await fetch(`/api/tender-detail?url=${encodeURIComponent(url)}`);
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) throw new Error(payload.error || "Tender detail fetch failed.");
+
+    if (notesBox) {
+      notesBox.value = [
+        payload.detail.title,
+        payload.detail.url,
+        payload.detail.text,
+      ].filter(Boolean).join("\n\n");
+    }
+    if (liveTenderStatus) {
+      liveTenderStatus.innerHTML = `<strong>Tender details loaded.</strong><span>Review the detail notes, add the tender to demand, then match stock coverage.</span>`;
+    }
+    renderBidPack();
+  } catch (error) {
+    if (liveTenderStatus) {
+      liveTenderStatus.innerHTML = `<strong>Tender detail fetch unavailable.</strong><span>${escapeHtml(error.message)} Open the tender, copy the specification text, and paste it into Tender detail notes.</span>`;
+    }
+  }
 }
 
 function addAgentCandidate(encodedCandidate) {
@@ -1295,6 +1419,7 @@ document.querySelector("#scoreCandidate")?.addEventListener("click", scoreCurren
 document.querySelector("#generateSearches")?.addEventListener("click", generateSearches);
 document.querySelector("#rankLots")?.addEventListener("click", rankLots);
 document.querySelector("#generateTenderSearches")?.addEventListener("click", generateTenderSearches);
+document.querySelector("#fetchLiveTenders")?.addEventListener("click", fetchLiveTenders);
 document.querySelector("#rankTenders")?.addEventListener("click", rankTenders);
 document.querySelector("#prepareBidPack")?.addEventListener("click", renderBidPack);
 candidateForm?.addEventListener("submit", addCandidate);
@@ -1314,6 +1439,9 @@ agentResults?.addEventListener("click", (event) => {
   if (button) addAgentCandidate(button.dataset.agentAdd);
 });
 tenderResults?.addEventListener("click", (event) => {
+  const detailButton = event.target.closest("button[data-tender-detail]");
+  if (detailButton) loadTenderDetails(detailButton.dataset.tenderDetail);
+
   const button = event.target.closest("button[data-tender-add]");
   if (button) addTenderDemand(button.dataset.tenderAdd);
 });
