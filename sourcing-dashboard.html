@@ -19,6 +19,7 @@
       </a>
       <nav aria-label="Dashboard navigation">
         <a href="#brief">Brief</a>
+        <a href="#agent">Agent</a>
         <a href="#candidate">Candidate</a>
         <a href="#shortlist">Shortlist</a>
         <a href="#learning">Learning</a>
@@ -33,11 +34,11 @@
         <div>
           <p class="eyebrow">Internal sourcing assistant</p>
           <h1 id="dashboard-title">Match enquiries to supplier products before you buy.</h1>
-          <p>This dashboard turns email or WhatsApp enquiries into a sourcing brief, scores products you find on John Pye-style auction and clearance sites, and learns from the items you approve or reject.</p>
+          <p>This dashboard turns email or WhatsApp enquiries into a sourcing brief, ranks John Pye-style auction lots against budget and availability, protects a 45% ROI target, and learns from the items you approve or reject.</p>
         </div>
         <div class="dashboard-alert">
-          <strong>Review-first workflow</strong>
-          <span>The assistant does not auto-buy or scrape suppliers. Paste candidate links, review the score, then approve the best product manually.</span>
+          <strong>ROI-first workflow</strong>
+          <span>The assistant estimates landed cost before approval. It does not auto-buy; every lot still needs manual condition, fee, and collection checks.</span>
         </div>
       </section>
 
@@ -112,9 +113,61 @@
           <button class="button primary span-2" type="button" id="saveBrief">Save requirement</button>
         </form>
 
-        <form class="dashboard-panel sourcing-form" id="candidateForm">
+        <section class="dashboard-panel sourcing-form agent-panel" id="agent" aria-labelledby="agent-title">
           <div class="panel-heading">
             <p class="eyebrow">Step 2</p>
+            <h2 id="agent-title">John Pye sourcing agent</h2>
+            <p>Set the target sale price, fees, and sourcing buffer. The agent calculates the maximum safe bid needed to protect ROI, then ranks pasted auction lots.</p>
+          </div>
+
+          <label>
+            Target sale price
+            <input id="targetSalePrice" type="number" min="0" step="1" placeholder="Uses saved budget if blank">
+          </label>
+          <label>
+            Minimum ROI %
+            <input id="targetRoi" type="number" min="0" step="1" value="45">
+          </label>
+          <label>
+            Buyer premium %
+            <input id="buyerPremium" type="number" min="0" step="0.1" value="25">
+          </label>
+          <label>
+            VAT on fees %
+            <input id="feeVat" type="number" min="0" step="0.1" value="20">
+          </label>
+          <label>
+            Logistics / collection
+            <input id="logisticsBuffer" type="number" min="0" step="1" value="45">
+          </label>
+          <label>
+            Testing / refurb buffer
+            <input id="refurbBuffer" type="number" min="0" step="1" value="35">
+          </label>
+          <label>
+            Search postcode
+            <input id="agentPostcode" type="text" placeholder="Uses saved postcode if blank">
+          </label>
+          <label>
+            Max miles
+            <input id="maxMiles" type="number" min="0" step="1" value="75">
+          </label>
+          <label class="span-2">
+            Paste auction lots
+            <textarea id="lotImport" rows="8" placeholder="Paste John Pye lot text, one lot per line if possible. Example: Beko 8kg Washing Machine | Current bid £62 | Nottingham | Ends 2026-06-04 | https://..."></textarea>
+          </label>
+          <div class="dashboard-actions span-2">
+            <button class="button secondary" type="button" id="generateSearches">Generate John Pye searches</button>
+            <button class="button primary" type="button" id="rankLots">Rank pasted lots</button>
+          </div>
+          <div class="agent-summary span-2" id="agentSummary" aria-live="polite">Save a requirement, then generate searches or paste auction lots to rank.</div>
+          <div class="agent-search-links span-2" id="agentSearchLinks"></div>
+          <div class="agent-results span-2" id="agentResults"></div>
+        </section>
+
+        <form class="dashboard-panel sourcing-form" id="candidateForm">
+          <div class="panel-heading">
+            <p class="eyebrow">Step 3</p>
             <h2 id="candidate">Supplier candidate</h2>
             <p>Paste product details from John Pye or similar sources. The assistant scores fit and risk.</p>
           </div>
@@ -158,6 +211,14 @@
             <input name="fees" type="number" min="0" step="1" placeholder="Example: 40">
           </label>
           <label>
+            Target sale price
+            <input name="targetSale" type="number" min="0" step="1" placeholder="Uses brief budget if blank">
+          </label>
+          <label>
+            Minimum ROI %
+            <input name="targetRoi" type="number" min="0" step="1" value="45">
+          </label>
+          <label>
             Item location
             <input name="location" type="text" placeholder="Example: Birmingham / Nottingham">
           </label>
@@ -196,7 +257,7 @@
 
       <section class="dashboard-results" id="shortlist" aria-labelledby="shortlist-title">
         <div class="section-heading">
-          <p class="eyebrow">Step 3</p>
+          <p class="eyebrow">Step 4</p>
           <h2 id="shortlist-title">Sourcing shortlist</h2>
           <p class="section-copy">Approve the candidate you would actually buy. Rejections matter too: the assistant adjusts future scoring based on your selections.</p>
         </div>
@@ -227,6 +288,6 @@
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260521a"></script>
+    <script src="sourcing-dashboard.js?v=20260601a"></script>
   </body>
 </html>

@@ -1,10 +1,15 @@
 const DEFAULT_WEIGHTS = {
   category: 28,
-  budget: 24,
+  roi: 22,
+  budget: 18,
   quality: 18,
   urgency: 16,
   logistics: 14,
+  availability: 4,
 };
+
+const DEFAULT_ROI_TARGET = 45;
+const JOHN_PYE_SEARCH_BASE = "https://www.johnpye.co.uk/";
 
 const STRONG_BRANDS = [
   "bosch",
@@ -27,12 +32,17 @@ const state = {
   weights: load("rentalready_sourcing_weights", DEFAULT_WEIGHTS),
 };
 
+state.weights = { ...DEFAULT_WEIGHTS, ...state.weights };
+
 const briefForm = document.querySelector("#briefForm");
 const candidateForm = document.querySelector("#candidateForm");
 const scorePreview = document.querySelector("#scorePreview");
 const candidateList = document.querySelector("#candidateList");
 const weightsList = document.querySelector("#weightsList");
 const memoryStats = document.querySelector("#memoryStats");
+const agentSummary = document.querySelector("#agentSummary");
+const agentSearchLinks = document.querySelector("#agentSearchLinks");
+const agentResults = document.querySelector("#agentResults");
 
 function load(key, fallback) {
   try {
@@ -62,7 +72,7 @@ function normalise(value) {
 }
 
 function number(value) {
-  const parsed = Number(value);
+  const parsed = Number(String(value || "").replace(/[£,%]/g, ""));
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -81,6 +91,83 @@ function daysUntil(dateValue) {
   return Math.ceil((target - today) / 86400000);
 }
 
+function money(value) {
+  return `£${Math.round(number(value)).toLocaleString("en-GB")}`;
+}
+
+function percent(value) {
+  return `${Math.round(number(value))}%`;
+}
+
+function currentAgentSettings() {
+  const savedBudget = number(briefForm?.elements.budget?.value || state.brief.budget);
+  return {
+    targetSale: number(document.querySelector("#targetSalePrice")?.value) || savedBudget,
+    targetRoi: number(document.querySelector("#targetRoi")?.value) || DEFAULT_ROI_TARGET,
+    buyerPremium: number(document.querySelector("#buyerPremium")?.value),
+    feeVat: number(document.querySelector("#feeVat")?.value),
+    logistics: number(document.querySelector("#logisticsBuffer")?.value),
+    refurb: number(document.querySelector("#refurbBuffer")?.value),
+    postcode: document.querySelector("#agentPostcode")?.value || briefForm?.elements.postcode?.value || state.brief.postcode || "",
+    maxMiles: number(document.querySelector("#maxMiles")?.value) || 75,
+  };
+}
+
+function multiplierFromSettings(settings) {
+  const premium = settings.buyerPremium / 100;
+  const feeVat = settings.feeVat / 100;
+  return 1 + premium + (premium * feeVat);
+}
+
+function landedCostFromBid(bid, settings) {
+  return number(bid) * multiplierFromSettings(settings) + settings.logistics + settings.refurb;
+}
+
+function roiPercent(targetSale, landedCost) {
+  if (!targetSale || !landedCost) return 0;
+  return ((targetSale - landedCost) / landedCost) * 100;
+}
+
+function maxLandedCost(settings) {
+  if (!settings.targetSale) return 0;
+  return settings.targetSale / (1 + settings.targetRoi / 100);
+}
+
+function maxSafeBid(settings) {
+  const maxCost = maxLandedCost(settings) - settings.logistics - settings.refurb;
+  if (maxCost <= 0) return 0;
+  return maxCost / multiplierFromSettings(settings);
+}
+
+function candidateFinancials(brief, candidate) {
+  const baseSettings = currentAgentSettings();
+  const settings = {
+    ...baseSettings,
+    targetSale: number(candidate.targetSale) || number(brief.budget) || baseSettings.targetSale,
+    targetRoi: number(candidate.targetRoi) || baseSettings.targetRoi,
+  };
+  const bid = number(candidate.price);
+  const manualFees = number(candidate.fees);
+  const estimatedLanded = bid ? landedCostFromBid(bid, settings) : manualFees;
+  const landed = manualFees > estimatedLanded ? manualFees : estimatedLanded;
+  const sale = settings.targetSale;
+  const profit = sale && landed ? sale - landed : 0;
+  const roi = roiPercent(sale, landed);
+  const maxBid = maxSafeBid(settings);
+
+  return {
+    settings,
+    bid,
+    sale,
+    landed,
+    profit,
+    roi,
+    maxBid,
+    marginGap: bid && maxBid ? maxBid - bid : 0,
+    passes: Boolean(sale && landed && roi >= settings.targetRoi && profit > 0),
+  };
+}
+
 function categoryScore(brief, candidate) {
   return normalise(brief.item) === normalise(candidate.category) ? 100 : 38;
 }
@@ -93,6 +180,16 @@ function budgetScore(brief, candidate) {
   if (total <= budget) return 88;
   if (total <= budget * 1.18) return 58;
   return 24;
+}
+
+function roiScore(brief, candidate) {
+  const financials = candidateFinancials(brief, candidate);
+  if (!financials.sale || !financials.landed) return 46;
+  if (financials.roi >= financials.settings.targetRoi + 20) return 100;
+  if (financials.roi >= financials.settings.targetRoi) return 88;
+  if (financials.roi >= financials.settings.targetRoi - 10) return 58;
+  if (financials.profit > 0) return 34;
+  return 10;
 }
 
 function qualityScore(brief, candidate) {
@@ -125,6 +222,16 @@ function urgencyScore(brief, candidate) {
   return 76;
 }
 
+function availabilityScore(brief, candidate) {
+  const days = daysUntil(candidate.availableBy);
+  if (days <= 1) return 82;
+  if (days <= 4) return 100;
+  if (days <= 7) return 90;
+  if (days <= 14) return 72;
+  if (days <= 30) return 48;
+  return 28;
+}
+
 function logisticsScore(brief, candidate) {
   const area = postcodeArea(brief.postcode);
   const location = normalise(candidate.location);
@@ -140,26 +247,34 @@ function logisticsScore(brief, candidate) {
 function scoreCandidateData(brief, candidate) {
   const dimensions = {
     category: categoryScore(brief, candidate),
+    roi: roiScore(brief, candidate),
     budget: budgetScore(brief, candidate),
     quality: qualityScore(brief, candidate),
     urgency: urgencyScore(brief, candidate),
     logistics: logisticsScore(brief, candidate),
+    availability: availabilityScore(brief, candidate),
   };
-  const totalWeight = Object.values(state.weights).reduce((sum, value) => sum + value, 0);
+  const totalWeight = Object.keys(dimensions).reduce((sum, key) => sum + (state.weights[key] || DEFAULT_WEIGHTS[key] || 0), 0);
   const score = Object.entries(dimensions).reduce((sum, [key, value]) => {
-    return sum + value * (state.weights[key] / totalWeight);
+    return sum + value * ((state.weights[key] || DEFAULT_WEIGHTS[key] || 0) / totalWeight);
   }, 0);
+  const financials = candidateFinancials(brief, candidate);
 
   return {
     score: Math.round(score),
     dimensions,
-    recommendation: recommendationFor(score, dimensions),
+    financials,
+    recommendation: recommendationFor(score, dimensions, financials),
   };
 }
 
-function recommendationFor(score, dimensions) {
+function recommendationFor(score, dimensions, financials) {
+  if (financials.sale && financials.landed && !financials.passes) {
+    return `Hold - ROI is ${percent(financials.roi)}, below the ${percent(financials.settings.targetRoi)} target. Max safe bid is ${money(financials.maxBid)}.`;
+  }
   if (score >= 84) return "Strong match - review photos and fees, then consider approving.";
   if (score >= 68) return "Usable match - check condition, delivery, and final cost before buying.";
+  if (dimensions.roi < 45) return "Weak match - does not protect the target sourcing ROI.";
   if (dimensions.budget < 45) return "Weak match - likely too expensive for the stated brief.";
   if (dimensions.quality < 45) return "Weak match - condition or quality risk is too high.";
   return "Weak match - keep as backup only.";
@@ -170,6 +285,15 @@ function renderScore(result) {
     <div class="score-card">
       <strong>${result.score}% fit</strong>
       <span>${result.recommendation}</span>
+      ${result.financials?.sale ? `
+        <div class="roi-strip">
+          <div><span>Target sale</span><strong>${money(result.financials.sale)}</strong></div>
+          <div><span>Landed cost</span><strong>${money(result.financials.landed)}</strong></div>
+          <div><span>Profit</span><strong>${money(result.financials.profit)}</strong></div>
+          <div><span>ROI</span><strong>${percent(result.financials.roi)}</strong></div>
+          <div><span>Max bid</span><strong>${money(result.financials.maxBid)}</strong></div>
+        </div>
+      ` : ""}
       <div class="score-bars">
         ${Object.entries(result.dimensions).map(([key, value]) => `
           <div>
@@ -187,6 +311,181 @@ function label(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function searchTermsFor(item) {
+  const base = normalise(item);
+  const terms = {
+    "fridge freezer": ["fridge freezer", "american fridge freezer", "under counter fridge"],
+    "electric cooker": ["electric cooker", "single oven", "oven hob"],
+    "washing machine": ["washing machine", "washer dryer", "8kg washing machine"],
+    "dryer": ["tumble dryer", "heat pump dryer", "condenser dryer"],
+    "dishwasher": ["dishwasher", "slimline dishwasher", "freestanding dishwasher"],
+    "microwave": ["microwave", "combination microwave", "over hob microwave"],
+    "landlord turnover set": ["white goods", "washing machine fridge freezer cooker", "appliances"],
+    "serviced apartment pack": ["white goods", "small appliances", "microwave fridge"],
+    "portfolio / batch request": ["white goods", "appliances", "washing machines"],
+  };
+  return terms[base] || [base || "white goods"];
+}
+
+function johnPyeSearchUrl(term) {
+  return `${JOHN_PYE_SEARCH_BASE}?s=${encodeURIComponent(term)}`;
+}
+
+function renderAgentSummary() {
+  if (!agentSummary) return;
+  const settings = currentAgentSettings();
+  const maxBid = maxSafeBid(settings);
+  const maxCost = maxLandedCost(settings);
+  agentSummary.innerHTML = `
+    <div class="agent-kpis">
+      <div><span>Target sale</span><strong>${settings.targetSale ? money(settings.targetSale) : "Add budget"}</strong></div>
+      <div><span>ROI target</span><strong>${percent(settings.targetRoi)}</strong></div>
+      <div><span>Max landed cost</span><strong>${settings.targetSale ? money(maxCost) : "TBC"}</strong></div>
+      <div><span>Max safe bid</span><strong>${settings.targetSale ? money(maxBid) : "TBC"}</strong></div>
+    </div>
+    <p>Formula uses ROI = profit divided by landed cost. Landed cost includes bid, buyer premium, VAT on buyer premium, logistics, and testing/refurb buffer. Check each auction lot before bidding because fees and collection rules can vary by sale.</p>
+  `;
+}
+
+function generateSearches() {
+  saveBrief();
+  renderAgentSummary();
+  if (!agentSearchLinks) return;
+  const terms = searchTermsFor(briefForm.elements.item?.value || state.brief.item);
+  agentSearchLinks.innerHTML = `
+    <strong>Open searches, then paste promising lot lines back into the import box.</strong>
+    <div>
+      ${terms.map((term) => `<a class="button secondary" href="${johnPyeSearchUrl(term)}" target="_blank" rel="noopener">${term}</a>`).join("")}
+      <a class="button secondary" href="https://www.johnpye.co.uk/general-auctions/" target="_blank" rel="noopener">General auctions</a>
+      <a class="button secondary" href="https://www.johnpye.co.uk/live-auctions/" target="_blank" rel="noopener">Live auctions</a>
+    </div>
+  `;
+}
+
+function parseMoneyFromText(text) {
+  const match = String(text).match(/£\s?([0-9]+(?:,[0-9]{3})*(?:\.\d{1,2})?)/);
+  return match ? number(match[1]) : 0;
+}
+
+function parseDateFromText(text) {
+  const iso = String(text).match(/\b(20\d{2}-\d{2}-\d{2})\b/);
+  if (iso) return iso[1];
+  const uk = String(text).match(/\b(\d{1,2})[/-](\d{1,2})[/-](20\d{2})\b/);
+  if (uk) return `${uk[3]}-${String(uk[2]).padStart(2, "0")}-${String(uk[1]).padStart(2, "0")}`;
+  return "";
+}
+
+function inferCategory(text, fallback) {
+  const value = normalise(text);
+  if (value.includes("fridge")) return "Fridge freezer";
+  if (value.includes("washer") || value.includes("washing")) return "Washing machine";
+  if (value.includes("dryer")) return "Dryer";
+  if (value.includes("dishwasher")) return "Dishwasher";
+  if (value.includes("microwave")) return "Microwave";
+  if (value.includes("oven") || value.includes("cooker") || value.includes("hob")) return "Electric cooker";
+  return fallback || "Washing machine";
+}
+
+function inferBrand(text) {
+  const value = normalise(text);
+  return STRONG_BRANDS.find((brand) => value.includes(brand)) || "";
+}
+
+function inferLocation(text) {
+  const locations = ["Nottingham", "Birmingham", "Chesterfield", "Marchington", "Edinburgh", "Bo'ness", "Derby"];
+  return locations.find((location) => normalise(text).includes(normalise(location))) || "";
+}
+
+function inferCondition(text) {
+  const value = normalise(text);
+  if (value.includes("new boxed") || value.includes("brand new")) return "New boxed";
+  if (value.includes("graded") || value.includes("ex-display") || value.includes("display")) return "Graded";
+  if (value.includes("used") || value.includes("return") || value.includes("refurb")) return "Refurbished / used";
+  return "Unknown / needs checking";
+}
+
+function parseLotLine(line, brief) {
+  const parts = String(line).split(/\s+\|\s+|\t+/).map((item) => item.trim()).filter(Boolean);
+  const url = String(line).match(/https?:\/\/\S+/)?.[0] || "";
+  const cleanLine = String(line).replace(url, "").trim();
+  const price = parseMoneyFromText(cleanLine);
+  const title = parts.find((part) => !part.includes("http") && !/£|bid|ends|location|saleroom/i.test(part)) || cleanLine.slice(0, 90);
+  return {
+    supplier: cleanLine.toLowerCase().includes("john pye") ? "John Pye Auctions" : "John Pye / auction source",
+    url,
+    title,
+    category: inferCategory(cleanLine, brief.item),
+    brand: inferBrand(cleanLine),
+    price,
+    fees: "",
+    targetSale: brief.budget || "",
+    targetRoi: String(DEFAULT_ROI_TARGET),
+    location: inferLocation(cleanLine),
+    condition: inferCondition(cleanLine),
+    availableBy: parseDateFromText(cleanLine),
+    visual: cleanLine.toLowerCase().includes("damage") ? "Risky" : "Good",
+    notes: cleanLine,
+  };
+}
+
+function rankLots() {
+  saveBrief();
+  renderAgentSummary();
+  const importBox = document.querySelector("#lotImport");
+  const raw = importBox?.value || "";
+  const lines = raw.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) {
+    agentResults.innerHTML = `<p class="empty-state">Paste one or more auction lots first. Keep one lot per line for best results.</p>`;
+    return;
+  }
+
+  const brief = formData(briefForm);
+  const ranked = lines
+    .map((line) => {
+      const candidate = parseLotLine(line, brief);
+      const result = scoreCandidateData(brief, candidate);
+      return { candidate, result };
+    })
+    .sort((a, b) => {
+      if (a.result.financials.passes !== b.result.financials.passes) return a.result.financials.passes ? -1 : 1;
+      return b.result.score - a.result.score;
+    });
+
+  agentResults.innerHTML = ranked.map((item, index) => `
+    <article class="agent-result ${item.result.financials.passes ? "pass" : "hold"}">
+      <div class="candidate-topline">
+        <span>${item.result.financials.passes ? "ROI protected" : "Hold"}</span>
+        <strong>#${index + 1} · ${item.result.score}% fit</strong>
+      </div>
+      <h3>${item.candidate.title || "Auction lot"}</h3>
+      <p>${item.candidate.supplier} • ${item.candidate.category} • ${item.candidate.location || "location TBC"}</p>
+      ${renderScore(item.result)}
+      <p class="candidate-note">${item.candidate.notes}</p>
+      <div class="dashboard-actions">
+        ${item.candidate.url ? `<a class="button secondary" href="${item.candidate.url}" target="_blank" rel="noopener">Open lot</a>` : ""}
+        <button class="button primary" type="button" data-agent-add="${encodeURIComponent(JSON.stringify(item.candidate))}">Add to shortlist</button>
+      </div>
+    </article>
+  `).join("");
+}
+
+function addAgentCandidate(encodedCandidate) {
+  const brief = formData(briefForm);
+  const candidate = JSON.parse(decodeURIComponent(encodedCandidate));
+  fillForm(candidateForm, candidate);
+  const result = scoreCandidateData(brief, candidate);
+  state.candidates.unshift({
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    brief,
+    candidate,
+    result,
+    status: "Review",
+  });
+  persist();
+  render();
+}
+
 function scoreCurrentCandidate() {
   const brief = formData(briefForm);
   const candidate = formData(candidateForm);
@@ -199,6 +498,7 @@ function saveBrief() {
   state.brief = formData(briefForm);
   save("rentalready_sourcing_brief", state.brief);
   scorePreview.textContent = "Requirement saved. Add or score a supplier candidate next.";
+  renderAgentSummary();
 }
 
 function addCandidate(event) {
@@ -229,6 +529,7 @@ function updateStatus(id, status) {
     status,
     score: record.result.score,
     dimensions: record.result.dimensions,
+    financials: record.result.financials,
     item: record.brief.item,
     brand: record.candidate.brand,
     supplier: record.candidate.supplier,
@@ -267,6 +568,7 @@ function render() {
   fillForm(briefForm, state.brief);
   renderCandidates();
   renderLearning();
+  syncAgentDefaults();
 }
 
 function renderCandidates() {
@@ -284,7 +586,8 @@ function renderCandidates() {
       <h3>${record.candidate.title || "Untitled candidate"}</h3>
       <p>${record.candidate.supplier || "Supplier to confirm"} • ${record.candidate.category || "Category to confirm"} • ${record.candidate.brand || "Brand unknown"}</p>
       <dl>
-        <div><dt>Total est.</dt><dd>£${number(record.candidate.price) + number(record.candidate.fees)}</dd></div>
+        <div><dt>Landed est.</dt><dd>${money(record.result.financials?.landed || number(record.candidate.price) + number(record.candidate.fees))}</dd></div>
+        <div><dt>ROI</dt><dd>${record.result.financials?.sale ? percent(record.result.financials.roi) : "TBC"}</dd></div>
         <div><dt>Brief</dt><dd>${record.brief.quantity || 1} x ${record.brief.item || "item"} for ${record.brief.postcode || "postcode TBC"}</dd></div>
         <div><dt>Timing</dt><dd>${record.brief.urgency || "TBC"} / available ${record.candidate.availableBy || "TBC"}</dd></div>
         <div><dt>Quality</dt><dd>${record.brief.quality || "TBC"} / ${record.candidate.condition || "TBC"}</dd></div>
@@ -316,6 +619,14 @@ function renderLearning() {
     <span>review decisions recorded</span>
     <p>${approved} approved, ${rejected} rejected. This browser now favours the patterns behind your reviewed choices.</p>
   `;
+}
+
+function syncAgentDefaults() {
+  const targetField = document.querySelector("#targetSalePrice");
+  const postcodeField = document.querySelector("#agentPostcode");
+  if (targetField && !targetField.value && state.brief.budget) targetField.placeholder = `Saved budget ${money(state.brief.budget)}`;
+  if (postcodeField && !postcodeField.value && state.brief.postcode) postcodeField.placeholder = `Saved postcode ${state.brief.postcode}`;
+  renderAgentSummary();
 }
 
 function exportData() {
@@ -350,10 +661,16 @@ function clearData() {
 
 document.querySelector("#saveBrief")?.addEventListener("click", saveBrief);
 document.querySelector("#scoreCandidate")?.addEventListener("click", scoreCurrentCandidate);
+document.querySelector("#generateSearches")?.addEventListener("click", generateSearches);
+document.querySelector("#rankLots")?.addEventListener("click", rankLots);
 candidateForm?.addEventListener("submit", addCandidate);
 candidateList?.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-status]");
   if (button) updateStatus(button.dataset.id, button.dataset.status);
+});
+agentResults?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-agent-add]");
+  if (button) addAgentCandidate(button.dataset.agentAdd);
 });
 document.querySelector("#exportData")?.addEventListener("click", exportData);
 document.querySelector("#clearData")?.addEventListener("click", clearData);
