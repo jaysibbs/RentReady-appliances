@@ -1075,7 +1075,10 @@ async function loadTenderDetails(encodedUrl) {
 
   try {
     const response = await fetch(`/api/tender-detail?url=${encodeURIComponent(url)}`);
-    const payload = await response.json();
+    const contentType = response.headers.get("content-type") || "";
+    const payload = contentType.includes("application/json")
+      ? await response.json()
+      : { ok: false, error: await response.text() || "Tender detail fetch failed." };
     if (!response.ok || !payload.ok) throw new Error(payload.error || "Tender detail fetch failed.");
 
     if (notesBox) {

@@ -119,20 +119,29 @@ async function handleTenderDetail(request) {
     return Response.json({ ok: false, error: error.message }, { status: 400 });
   }
 
-  const response = await fetch(noticeUrl.toString(), {
-    headers: {
-      "accept": "text/html,application/xhtml+xml",
-      "referer": "https://www.find-tender.service.gov.uk/Search/Results",
-      "user-agent": "RentalReadyAppliancesTenderMatcher/1.0 (+https://rentalreadyappliances.com)",
-    },
-  });
+  let response;
+  try {
+    response = await fetch(noticeUrl.toString(), {
+      headers: {
+        "accept": "text/html,application/xhtml+xml",
+        "referer": "https://www.find-tender.service.gov.uk/Search/Results",
+        "user-agent": "RentalReadyAppliancesTenderMatcher/1.0 (+https://rentalreadyappliances.com)",
+      },
+    });
+  } catch (error) {
+    return Response.json({
+      ok: false,
+      error: `Find a Tender notice details could not be loaded server-side. Open the tender link and paste the notice detail text into Tender detail notes. (${error.message})`,
+      url: noticeUrl.toString(),
+    });
+  }
 
   if (!response.ok) {
     return Response.json({
       ok: false,
       error: `Find a Tender notice details returned HTTP ${response.status}. Open the tender link and paste the notice detail text into Tender detail notes.`,
       url: noticeUrl.toString(),
-    }, { status: 502 });
+    });
   }
 
   return Response.json({ ok: true, detail: parseNotice(await response.text(), noticeUrl) });
