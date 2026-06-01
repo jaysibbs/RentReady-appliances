@@ -2385,6 +2385,7 @@ section {
 
 .dashboard-alert,
 .dashboard-panel,
+.demand-card,
 .candidate-card,
 .score-preview {
   border: 1px solid var(--line);
@@ -2426,6 +2427,7 @@ section {
 }
 
 .panel-heading p:not(.eyebrow),
+.demand-card p,
 .candidate-card p,
 .candidate-note,
 .empty-state {
@@ -2471,6 +2473,44 @@ section {
   margin-top: 18px;
 }
 
+.demand-panel {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.active-demand {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(91, 214, 155, .34);
+  border-radius: 8px;
+  padding: 14px;
+  color: var(--muted);
+  background: rgba(91, 214, 155, .08);
+}
+
+.active-demand strong {
+  color: var(--green);
+  font-size: 18px;
+}
+
+.demand-list {
+  display: grid;
+  gap: 14px;
+  max-height: 640px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.demand-card {
+  padding: 16px;
+  background: rgba(13, 20, 29, .58);
+}
+
+.demand-card.active {
+  border-color: rgba(91, 214, 155, .52);
+}
+
 .candidate-card {
   padding: 20px;
 }
@@ -2512,6 +2552,17 @@ section {
   margin-bottom: 4px;
 }
 
+.demand-card h3 {
+  margin-bottom: 12px;
+}
+
+.demand-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
 .candidate-card dl {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2519,6 +2570,7 @@ section {
   margin: 18px 0;
 }
 
+.demand-card dl div,
 .candidate-card dl div {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -2526,6 +2578,7 @@ section {
   background: rgba(255, 255, 255, .035);
 }
 
+.demand-card dt,
 .candidate-card dt {
   color: var(--gold);
   font-size: 12px;
@@ -2533,10 +2586,16 @@ section {
   text-transform: uppercase;
 }
 
+.demand-card dd,
 .candidate-card dd {
   margin: 4px 0 0;
   color: var(--ink);
   font-weight: 800;
+}
+
+.demand-match {
+  color: var(--green) !important;
+  font-weight: 900;
 }
 
 .score-card {
@@ -2706,6 +2765,7 @@ meter::-webkit-meter-optimum-value {
   .dashboard-hero,
   .dashboard-grid,
   .learning-grid,
+  .demand-card dl,
   .candidate-card dl,
   .roi-strip,
   .agent-kpis {

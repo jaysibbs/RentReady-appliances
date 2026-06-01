@@ -1,4 +1,5 @@
 const DEFAULT_WEIGHTS = {
+  demand: 20,
   category: 28,
   roi: 22,
   budget: 18,
@@ -27,6 +28,8 @@ const STRONG_BRANDS = [
 
 const state = {
   brief: load("rentalready_sourcing_brief", {}),
+  demands: load("rentalready_sourcing_demands", []),
+  activeDemandId: load("rentalready_sourcing_active_demand", ""),
   candidates: load("rentalready_sourcing_candidates", []),
   feedback: load("rentalready_sourcing_feedback", []),
   weights: load("rentalready_sourcing_weights", DEFAULT_WEIGHTS),
@@ -40,6 +43,8 @@ const scorePreview = document.querySelector("#scorePreview");
 const candidateList = document.querySelector("#candidateList");
 const weightsList = document.querySelector("#weightsList");
 const memoryStats = document.querySelector("#memoryStats");
+const activeDemand = document.querySelector("#activeDemand");
+const demandList = document.querySelector("#demandList");
 const agentSummary = document.querySelector("#agentSummary");
 const agentSearchLinks = document.querySelector("#agentSearchLinks");
 const agentResults = document.querySelector("#agentResults");
@@ -58,6 +63,25 @@ function save(key, value) {
 
 function formData(form) {
   return Object.fromEntries(new FormData(form).entries());
+}
+
+function activeDemandRecord() {
+  return state.demands.find((item) => item.id === state.activeDemandId) || null;
+}
+
+function activeBrief() {
+  const demand = activeDemandRecord();
+  return demand?.brief || state.brief || formData(briefForm);
+}
+
+function demandLabel(demand) {
+  const brief = demand?.brief || {};
+  const quantity = number(brief.quantity) || 1;
+  return `${brief.customer || "Unnamed buyer"} - ${quantity} x ${brief.item || "appliance"}`;
+}
+
+function demandValue(brief) {
+  return (number(brief.quantity) || 1) * number(brief.budget);
 }
 
 function fillForm(form, values) {
@@ -100,7 +124,8 @@ function percent(value) {
 }
 
 function currentAgentSettings() {
-  const savedBudget = number(briefForm?.elements.budget?.value || state.brief.budget);
+  const brief = activeBrief();
+  const savedBudget = number(brief.budget || briefForm?.elements.budget?.value);
   return {
     targetSale: number(document.querySelector("#targetSalePrice")?.value) || savedBudget,
     targetRoi: number(document.querySelector("#targetRoi")?.value) || DEFAULT_ROI_TARGET,
@@ -108,7 +133,7 @@ function currentAgentSettings() {
     feeVat: number(document.querySelector("#feeVat")?.value),
     logistics: number(document.querySelector("#logisticsBuffer")?.value),
     refurb: number(document.querySelector("#refurbBuffer")?.value),
-    postcode: document.querySelector("#agentPostcode")?.value || briefForm?.elements.postcode?.value || state.brief.postcode || "",
+    postcode: document.querySelector("#agentPostcode")?.value || brief.postcode || briefForm?.elements.postcode?.value || "",
     maxMiles: number(document.querySelector("#maxMiles")?.value) || 75,
   };
 }
@@ -170,6 +195,17 @@ function candidateFinancials(brief, candidate) {
 
 function categoryScore(brief, candidate) {
   return normalise(brief.item) === normalise(candidate.category) ? 100 : 38;
+}
+
+function demandScore(brief) {
+  let score = activeDemandRecord() ? 68 : 34;
+  if (brief.customer) score += 12;
+  if (number(brief.budget)) score += 10;
+  if (brief.postcode) score += 6;
+  if (number(brief.quantity) > 0) score += 4;
+  if (normalise(brief.urgency).includes("today") || normalise(brief.urgency).includes("week")) score += 4;
+  if (normalise(brief.notes).length > 60) score += 4;
+  return clamp(score);
 }
 
 function budgetScore(brief, candidate) {
@@ -246,6 +282,7 @@ function logisticsScore(brief, candidate) {
 
 function scoreCandidateData(brief, candidate) {
   const dimensions = {
+    demand: demandScore(brief),
     category: categoryScore(brief, candidate),
     roi: roiScore(brief, candidate),
     budget: budgetScore(brief, candidate),
@@ -269,6 +306,9 @@ function scoreCandidateData(brief, candidate) {
 }
 
 function recommendationFor(score, dimensions, financials) {
+  if (dimensions.demand < 55) {
+    return "Hold - save or select a buyer request before purchase review.";
+  }
   if (financials.sale && financials.landed && !financials.passes) {
     return `Hold - ROI is ${percent(financials.roi)}, below the ${percent(financials.settings.targetRoi)} target. Max safe bid is ${money(financials.maxBid)}.`;
   }
@@ -334,15 +374,18 @@ function johnPyeSearchUrl(term) {
 function renderAgentSummary() {
   if (!agentSummary) return;
   const settings = currentAgentSettings();
+  const demand = activeDemandRecord();
   const maxBid = maxSafeBid(settings);
   const maxCost = maxLandedCost(settings);
   agentSummary.innerHTML = `
     <div class="agent-kpis">
+      <div><span>Buyer status</span><strong>${demand ? "Selected" : "Select demand"}</strong></div>
       <div><span>Target sale</span><strong>${settings.targetSale ? money(settings.targetSale) : "Add budget"}</strong></div>
       <div><span>ROI target</span><strong>${percent(settings.targetRoi)}</strong></div>
       <div><span>Max landed cost</span><strong>${settings.targetSale ? money(maxCost) : "TBC"}</strong></div>
       <div><span>Max safe bid</span><strong>${settings.targetSale ? money(maxBid) : "TBC"}</strong></div>
     </div>
+    ${demand ? `<p><strong>${demandLabel(demand)}</strong> is the active buyer request. Rank lots only if this request is still live and the customer budget/timing are realistic.</p>` : `<p><strong>No buyer selected.</strong> Add or select a demand request first so stock is matched to a waiting customer before purchase review.</p>`}
     <p>Formula uses ROI = profit divided by landed cost. Landed cost includes bid, buyer premium, VAT on buyer premium, logistics, and testing/refurb buffer. Check each auction lot before bidding because fees and collection rules can vary by sale.</p>
   `;
 }
@@ -351,9 +394,11 @@ function generateSearches() {
   saveBrief();
   renderAgentSummary();
   if (!agentSearchLinks) return;
-  const terms = searchTermsFor(briefForm.elements.item?.value || state.brief.item);
+  const demand = activeDemandRecord();
+  const brief = activeBrief();
+  const terms = searchTermsFor(brief.item);
   agentSearchLinks.innerHTML = `
-    <strong>Open searches, then paste promising lot lines back into the import box.</strong>
+    <strong>${demand ? `Searches for ${demandLabel(demand)}.` : "No buyer request selected yet. Add or select demand before approving stock."}</strong>
     <div>
       ${terms.map((term) => `<a class="button secondary" href="${johnPyeSearchUrl(term)}" target="_blank" rel="noopener">${term}</a>`).join("")}
       <a class="button secondary" href="https://www.johnpye.co.uk/general-auctions/" target="_blank" rel="noopener">General auctions</a>
@@ -431,6 +476,7 @@ function parseLotLine(line, brief) {
 function rankLots() {
   saveBrief();
   renderAgentSummary();
+  const demand = activeDemandRecord();
   const importBox = document.querySelector("#lotImport");
   const raw = importBox?.value || "";
   const lines = raw.split(/\n+/).map((line) => line.trim()).filter(Boolean);
@@ -439,7 +485,7 @@ function rankLots() {
     return;
   }
 
-  const brief = formData(briefForm);
+  const brief = activeBrief();
   const ranked = lines
     .map((line) => {
       const candidate = parseLotLine(line, brief);
@@ -454,10 +500,11 @@ function rankLots() {
   agentResults.innerHTML = ranked.map((item, index) => `
     <article class="agent-result ${item.result.financials.passes ? "pass" : "hold"}">
       <div class="candidate-topline">
-        <span>${item.result.financials.passes ? "ROI protected" : "Hold"}</span>
+        <span>${item.result.financials.passes && demand ? "Buyer-backed" : "Hold"}</span>
         <strong>#${index + 1} · ${item.result.score}% fit</strong>
       </div>
       <h3>${item.candidate.title || "Auction lot"}</h3>
+      <p class="demand-match">${demand ? `Matched to ${demandLabel(demand)}` : "No buyer request selected - do not buy yet."}</p>
       <p>${item.candidate.supplier} • ${item.candidate.category} • ${item.candidate.location || "location TBC"}</p>
       ${renderScore(item.result)}
       <p class="candidate-note">${item.candidate.notes}</p>
@@ -470,13 +517,16 @@ function rankLots() {
 }
 
 function addAgentCandidate(encodedCandidate) {
-  const brief = formData(briefForm);
+  const demand = activeDemandRecord();
+  const brief = activeBrief();
   const candidate = JSON.parse(decodeURIComponent(encodedCandidate));
   fillForm(candidateForm, candidate);
   const result = scoreCandidateData(brief, candidate);
   state.candidates.unshift({
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
+    demandId: demand?.id || "",
+    demandSnapshot: demand || null,
     brief,
     candidate,
     result,
@@ -487,7 +537,7 @@ function addAgentCandidate(encodedCandidate) {
 }
 
 function scoreCurrentCandidate() {
-  const brief = formData(briefForm);
+  const brief = activeBrief();
   const candidate = formData(candidateForm);
   const result = scoreCandidateData(brief, candidate);
   scorePreview.innerHTML = renderScore(result);
@@ -501,12 +551,38 @@ function saveBrief() {
   renderAgentSummary();
 }
 
+function saveDemand() {
+  saveBrief();
+  const brief = { ...state.brief };
+  if (!brief.customer && !brief.notes) {
+    scorePreview.textContent = "Add a customer, company, or enquiry note before adding demand.";
+    return;
+  }
+
+  const demand = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    status: "Live",
+    brief,
+  };
+
+  state.demands.unshift(demand);
+  state.activeDemandId = demand.id;
+  persist();
+  render();
+  scorePreview.textContent = `${demandLabel(demand)} added to the demand queue. Rank stock against this buyer before purchase review.`;
+}
+
 function addCandidate(event) {
   event.preventDefault();
   const { brief, candidate, result } = scoreCurrentCandidate();
+  const demand = activeDemandRecord();
   const record = {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
+    demandId: demand?.id || "",
+    demandSnapshot: demand || null,
     brief,
     candidate,
     result,
@@ -518,11 +594,42 @@ function addCandidate(event) {
   render();
 }
 
+function selectDemand(id) {
+  const demand = state.demands.find((item) => item.id === id);
+  if (!demand) return;
+  state.activeDemandId = id;
+  state.brief = demand.brief;
+  fillForm(briefForm, demand.brief);
+  save("rentalready_sourcing_active_demand", state.activeDemandId);
+  persist();
+  render();
+  scorePreview.textContent = `${demandLabel(demand)} selected. Search and rank lots against this buyer request.`;
+}
+
+function updateDemandStatus(id, status) {
+  const demand = state.demands.find((item) => item.id === id);
+  if (!demand) return;
+  demand.status = status;
+  demand.updatedAt = new Date().toISOString();
+  if (status === "Won" || status === "Closed") {
+    state.activeDemandId = state.activeDemandId === id ? "" : state.activeDemandId;
+  }
+  persist();
+  render();
+}
+
 function updateStatus(id, status) {
   const record = state.candidates.find((item) => item.id === id);
   if (!record) return;
   record.status = status;
   record.reviewedAt = new Date().toISOString();
+  if (record.demandId && status === "Approved") {
+    const demand = state.demands.find((item) => item.id === record.demandId);
+    if (demand) {
+      demand.status = "Matched";
+      demand.updatedAt = record.reviewedAt;
+    }
+  }
   state.feedback.unshift({
     id: crypto.randomUUID(),
     candidateId: id,
@@ -559,6 +666,8 @@ function adjustWeights(dimensions, status) {
 
 function persist() {
   save("rentalready_sourcing_brief", state.brief);
+  save("rentalready_sourcing_demands", state.demands);
+  save("rentalready_sourcing_active_demand", state.activeDemandId);
   save("rentalready_sourcing_candidates", state.candidates);
   save("rentalready_sourcing_feedback", state.feedback);
   save("rentalready_sourcing_weights", state.weights);
@@ -566,9 +675,53 @@ function persist() {
 
 function render() {
   fillForm(briefForm, state.brief);
+  renderDemandQueue();
   renderCandidates();
   renderLearning();
   syncAgentDefaults();
+}
+
+function renderDemandQueue() {
+  const demand = activeDemandRecord();
+  if (activeDemand) {
+    activeDemand.innerHTML = demand ? `
+      <strong>${demandLabel(demand)}</strong>
+      <span>${demand.brief.quality || "Quality TBC"} • ${demand.brief.urgency || "Timing TBC"} • ${demand.brief.postcode || "Postcode TBC"} • ${money(demandValue(demand.brief))} request value</span>
+    ` : "No buyer request selected yet.";
+  }
+
+  if (!demandList) return;
+  if (!state.demands.length) {
+    demandList.innerHTML = `<p class="empty-state">No saved buyer demand yet. Add the first live enquiry from the customer requirement form.</p>`;
+    return;
+  }
+
+  demandList.innerHTML = state.demands.map((item) => {
+    const brief = item.brief || {};
+    const isActive = item.id === state.activeDemandId;
+    return `
+      <article class="demand-card ${isActive ? "active" : ""}">
+        <div class="candidate-topline">
+          <span>${item.status}</span>
+          <strong>${number(brief.quantity) || 1} needed</strong>
+        </div>
+        <h3>${demandLabel(item)}</h3>
+        <dl>
+          <div><dt>Budget/item</dt><dd>${number(brief.budget) ? money(brief.budget) : "TBC"}</dd></div>
+          <div><dt>Total value</dt><dd>${number(brief.budget) ? money(demandValue(brief)) : "TBC"}</dd></div>
+          <div><dt>Location</dt><dd>${brief.postcode || "TBC"}</dd></div>
+          <div><dt>Urgency</dt><dd>${brief.urgency || "TBC"}</dd></div>
+        </dl>
+        <p>${brief.notes || "No enquiry notes saved."}</p>
+        <div class="dashboard-actions">
+          <button class="button primary" type="button" data-demand-select="${item.id}">${isActive ? "Selected" : "Use for matching"}</button>
+          <button class="button secondary" type="button" data-demand-status="Quoted" data-demand-id="${item.id}">Quoted</button>
+          <button class="button secondary" type="button" data-demand-status="Won" data-demand-id="${item.id}">Won</button>
+          <button class="button secondary danger" type="button" data-demand-status="Closed" data-demand-id="${item.id}">Close</button>
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderCandidates() {
@@ -584,6 +737,7 @@ function renderCandidates() {
         <strong>${record.result.score}% fit</strong>
       </div>
       <h3>${record.candidate.title || "Untitled candidate"}</h3>
+      <p class="demand-match">${record.demandSnapshot ? `Buyer-backed: ${demandLabel(record.demandSnapshot)}` : "No saved buyer request attached."}</p>
       <p>${record.candidate.supplier || "Supplier to confirm"} • ${record.candidate.category || "Category to confirm"} • ${record.candidate.brand || "Brand unknown"}</p>
       <dl>
         <div><dt>Landed est.</dt><dd>${money(record.result.financials?.landed || number(record.candidate.price) + number(record.candidate.fees))}</dd></div>
@@ -614,10 +768,11 @@ function renderLearning() {
 
   const approved = state.feedback.filter((item) => item.status === "Approved").length;
   const rejected = state.feedback.filter((item) => item.status === "Rejected").length;
+  const liveDemand = state.demands.filter((item) => item.status === "Live" || item.status === "Matched").length;
   memoryStats.innerHTML = `
     <strong>${state.feedback.length}</strong>
     <span>review decisions recorded</span>
-    <p>${approved} approved, ${rejected} rejected. This browser now favours the patterns behind your reviewed choices.</p>
+    <p>${approved} approved, ${rejected} rejected. ${liveDemand} live or matched buyer requests are available for demand-led sourcing.</p>
   `;
 }
 
@@ -634,6 +789,8 @@ function exportData() {
     exportedAt: new Date().toISOString(),
     brand: "RentalReady Appliances",
     brief: state.brief,
+    activeDemandId: state.activeDemandId,
+    demands: state.demands,
     candidates: state.candidates,
     feedback: state.feedback,
     weights: state.weights,
@@ -660,10 +817,18 @@ function clearData() {
 }
 
 document.querySelector("#saveBrief")?.addEventListener("click", saveBrief);
+document.querySelector("#saveDemand")?.addEventListener("click", saveDemand);
 document.querySelector("#scoreCandidate")?.addEventListener("click", scoreCurrentCandidate);
 document.querySelector("#generateSearches")?.addEventListener("click", generateSearches);
 document.querySelector("#rankLots")?.addEventListener("click", rankLots);
 candidateForm?.addEventListener("submit", addCandidate);
+demandList?.addEventListener("click", (event) => {
+  const selectButton = event.target.closest("button[data-demand-select]");
+  if (selectButton) selectDemand(selectButton.dataset.demandSelect);
+
+  const statusButton = event.target.closest("button[data-demand-status]");
+  if (statusButton) updateDemandStatus(statusButton.dataset.demandId, statusButton.dataset.demandStatus);
+});
 candidateList?.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-status]");
   if (button) updateStatus(button.dataset.id, button.dataset.status);
