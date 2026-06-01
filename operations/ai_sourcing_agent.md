@@ -60,8 +60,22 @@ This keeps the recommendation focused on profit after real sourcing costs, not j
    - BidSpotter
 6. Add only viable opportunities to the demand queue.
 7. Match supplier stock against the tender demand before any bid decision.
+8. Prepare the bid pack only when the tender details, stock coverage, ROI, and deadline checks are strong enough.
 
 The tender lane is designed to create demand signals. It does not submit public-sector bids, make supplier purchases, or claim compliance. Tender submission still needs manual review of eligibility, insurance, delivery capacity, terms, references, and any required supplier registration.
+
+## Tender Application Readiness
+
+Before applying for a tender, the bid desk checks:
+
+- tender details and specification have been pasted/reviewed
+- tender notice link is available
+- matched stock covers the full required quantity
+- approved stock covers the full required quantity
+- lowest matched ROI protects at least 45%
+- submission deadline is captured
+
+The dashboard can prepare a bid pack with opportunity details, stock evidence, projected ROI, assumptions, and missing actions. It should not submit the tender automatically. Final submission should be done manually after confirming the buyer portal requirements, declarations, insurances, references, pricing schedule, delivery commitments, and any exclusion grounds or compliance questions.
 
 ## Lot Paste Format
 

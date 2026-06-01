@@ -63,6 +63,7 @@ const demandList = document.querySelector("#demandList");
 const tenderSummary = document.querySelector("#tenderSummary");
 const tenderSearchLinks = document.querySelector("#tenderSearchLinks");
 const tenderResults = document.querySelector("#tenderResults");
+const bidPack = document.querySelector("#bidPack");
 const agentSummary = document.querySelector("#agentSummary");
 const agentSearchLinks = document.querySelector("#agentSearchLinks");
 const agentResults = document.querySelector("#agentResults");
@@ -100,6 +101,34 @@ function demandLabel(demand) {
 
 function demandValue(brief) {
   return (number(brief.quantity) || 1) * number(brief.budget);
+}
+
+function recordQuantity(record) {
+  return number(record?.candidate?.quantityAvailable) || 1;
+}
+
+function stockCoverageForDemand(demandId) {
+  const records = state.candidates.filter((record) => record.demandId === demandId && record.status !== "Rejected");
+  const approved = records.filter((record) => record.status === "Approved");
+  const viable = records.filter((record) => record.result?.financials?.passes);
+  const quantityAvailable = viable.reduce((sum, record) => sum + recordQuantity(record), 0);
+  const approvedQuantity = approved.reduce((sum, record) => sum + recordQuantity(record), 0);
+  const roiValues = viable.map((record) => number(record.result?.financials?.roi)).filter(Boolean);
+  const lowestRoi = roiValues.length ? Math.min(...roiValues) : 0;
+  const landedCost = viable.reduce((sum, record) => sum + number(record.result?.financials?.landed) * recordQuantity(record), 0);
+  const targetSale = viable.reduce((sum, record) => sum + number(record.result?.financials?.sale) * recordQuantity(record), 0);
+
+  return {
+    records,
+    viable,
+    approved,
+    quantityAvailable,
+    approvedQuantity,
+    lowestRoi,
+    landedCost,
+    targetSale,
+    projectedProfit: targetSale - landedCost,
+  };
 }
 
 function fillForm(form, values) {
@@ -369,6 +398,14 @@ function label(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function searchTermsFor(item) {
   const base = normalise(item);
   const terms = {
@@ -497,6 +534,14 @@ function parseDateFromText(text) {
   return "";
 }
 
+function parseQuantityFromText(text) {
+  const value = String(text);
+  const direct = value.match(/\b(?:qty|quantity|units?|appliances?|machines?|items?)\s*[:x-]?\s*(\d{1,4})\b/i);
+  if (direct) return number(direct[1]);
+  const leading = value.match(/\b(\d{1,4})\s*(?:x\s*)?(?:washing machines?|washers?|fridge freezers?|fridges?|cookers?|ovens?|dryers?|dishwashers?|microwaves?|units?|appliances?)\b/i);
+  return leading ? number(leading[1]) : 1;
+}
+
 function inferAuthority(text) {
   const parts = String(text).split(/\s+\|\s+|\t+/).map((item) => item.trim()).filter(Boolean);
   return parts.find((part) => /council|nhs|housing|authority|school|college|university|trust|borough|county/i.test(part)) || parts[0] || "Public sector buyer";
@@ -522,6 +567,7 @@ function parseTenderLine(line, settings) {
   const cleanLine = String(line).replace(url, "").trim();
   const value = parseMoneyFromText(cleanLine);
   const item = inferCategory(cleanLine, "Portfolio / batch request");
+  const quantity = parseQuantityFromText(cleanLine);
   const authority = inferAuthority(cleanLine);
   const region = inferRegion(cleanLine, settings.region);
   const deadline = parseDateFromText(cleanLine);
@@ -531,6 +577,7 @@ function parseTenderLine(line, settings) {
     source: "Find a Tender",
     url,
     item,
+    quantity,
     value,
     region,
     deadline,
@@ -566,6 +613,121 @@ function tenderScore(tender, settings) {
       ? "Add to demand queue - then validate stock availability and margin before bidding."
       : "Hold - either too broad, too large, too close to deadline, or not enough local/material fit.",
   };
+}
+
+function bidReadiness(demand) {
+  const tender = demand?.tender || {};
+  const brief = demand?.brief || {};
+  const requiredQuantity = number(brief.quantity) || number(tender.quantity) || 1;
+  const coverage = stockCoverageForDemand(demand?.id);
+  const details = document.querySelector("#tenderDetailNotes")?.value || tender.notes || brief.notes || "";
+  const hasTenderLink = Boolean(tender.url || String(brief.notes || "").includes("find-tender.service.gov.uk"));
+  const hasDetails = normalise(details).length > 120;
+  const hasApprovedStock = coverage.approvedQuantity >= requiredQuantity;
+  const hasViableStock = coverage.quantityAvailable >= requiredQuantity;
+  const hasMargin = coverage.lowestRoi >= DEFAULT_ROI_TARGET;
+  const hasDeadline = Boolean(tender.deadline);
+  const checks = [
+    { label: "Tender details reviewed", pass: hasDetails, advice: "Paste the specification, delivery requirements, award criteria, and buyer questions into Tender detail notes." },
+    { label: "Tender notice link available", pass: hasTenderLink, advice: "Open the tender notice and confirm the application route, deadline, and required documents." },
+    { label: "Stock covers full quantity", pass: hasViableStock, advice: `Need ${requiredQuantity} unit(s); currently matched ${coverage.quantityAvailable}.` },
+    { label: "Approved stock covers full quantity", pass: hasApprovedStock, advice: "Approve the stock candidates that will be reserved for this bid." },
+    { label: "45% ROI protected", pass: hasMargin, advice: "Only proceed if the lowest matched ROI is at least 45% after fees, logistics, and refurb buffer." },
+    { label: "Deadline captured", pass: hasDeadline, advice: "Confirm the submission deadline and leave time for clarification questions." },
+  ];
+  const passed = checks.filter((item) => item.pass).length;
+  const score = Math.round((passed / checks.length) * 100);
+  const decision = score >= 84 && hasApprovedStock && hasMargin ? "Proceed to manual application" : score >= 60 ? "Prepare, but do not submit yet" : "No-bid until gaps are closed";
+
+  return { checks, score, decision, coverage, requiredQuantity, details };
+}
+
+function bidPackText(demand, readiness) {
+  const tender = demand?.tender || {};
+  const brief = demand?.brief || {};
+  const coverage = readiness.coverage;
+  const stockLines = coverage.viable.map((record) => {
+    return `- ${recordQuantity(record)} x ${record.candidate.title || record.candidate.category || "matched stock"} | ${record.candidate.supplier || "supplier TBC"} | landed ${money(record.result?.financials?.landed)} | ROI ${percent(record.result?.financials?.roi)} | status ${record.status}`;
+  }).join("\n") || "- No viable stock attached yet.";
+
+  return [
+    `RentalReady Appliances - Tender application pack`,
+    ``,
+    `Opportunity`,
+    `Buyer: ${brief.customer || tender.authority || "TBC"}`,
+    `Title: ${tender.title || "TBC"}`,
+    `Source: ${brief.source || tender.source || "Find a Tender"}`,
+    `Tender link: ${tender.url || "TBC"}`,
+    `Deadline: ${tender.deadline || "TBC"}`,
+    `Estimated value: ${tender.value ? money(tender.value) : "TBC"}`,
+    `Required quantity: ${readiness.requiredQuantity}`,
+    ``,
+    `Bid decision`,
+    `Readiness: ${readiness.score}%`,
+    `Recommendation: ${readiness.decision}`,
+    `Matched stock quantity: ${coverage.quantityAvailable}`,
+    `Approved stock quantity: ${coverage.approvedQuantity}`,
+    `Lowest matched ROI: ${coverage.lowestRoi ? percent(coverage.lowestRoi) : "TBC"}`,
+    `Projected profit from matched stock: ${money(coverage.projectedProfit)}`,
+    ``,
+    `Matched stock evidence`,
+    stockLines,
+    ``,
+    `Suggested response points`,
+    `- RentalReady Appliances can source and supply the requested appliance/equipment requirement using reviewed stock matched to the specification.`,
+    `- Stock is only committed after final condition, collection, delivery, and compliance checks are complete.`,
+    `- Delivery planning should confirm postcode, access, timing, and any old-appliance removal or installation exclusions.`,
+    `- The bid should state any assumptions around refurbished/graded condition, warranties, replacement route, and lead times.`,
+    ``,
+    `Missing items to confirm before submission`,
+    ...readiness.checks.filter((item) => !item.pass).map((item) => `- ${item.label}: ${item.advice}`),
+    ``,
+    `Tender detail notes`,
+    readiness.details || "No tender detail notes pasted yet.",
+  ].join("\n");
+}
+
+function renderBidPack() {
+  if (!bidPack) return;
+  const demand = activeDemandRecord();
+  if (!demand?.tender) {
+    bidPack.innerHTML = `<p class="empty-state">Select or add a Find a Tender opportunity first. The bid desk only prepares application packs for tender-backed demand.</p>`;
+    return;
+  }
+
+  const readiness = bidReadiness(demand);
+  const text = bidPackText(demand, readiness);
+  bidPack.innerHTML = `
+    <div class="candidate-topline">
+      <span>${readiness.decision}</span>
+      <strong>${readiness.score}% ready</strong>
+    </div>
+    <h3>${demand.tender.title || "Tender opportunity"}</h3>
+    <div class="roi-strip">
+      <div><span>Required</span><strong>${readiness.requiredQuantity}</strong></div>
+      <div><span>Matched</span><strong>${readiness.coverage.quantityAvailable}</strong></div>
+      <div><span>Approved</span><strong>${readiness.coverage.approvedQuantity}</strong></div>
+      <div><span>Lowest ROI</span><strong>${readiness.coverage.lowestRoi ? percent(readiness.coverage.lowestRoi) : "TBC"}</strong></div>
+      <div><span>Profit</span><strong>${money(readiness.coverage.projectedProfit)}</strong></div>
+    </div>
+    <div class="bid-checklist">
+      ${readiness.checks.map((item) => `
+        <div class="${item.pass ? "pass" : "hold"}">
+          <strong>${item.pass ? "Ready" : "Gap"}</strong>
+          <span>${item.label}</span>
+          <em>${item.advice}</em>
+        </div>
+      `).join("")}
+    </div>
+    <label>
+      Application pack
+      <textarea rows="18" readonly>${escapeHtml(text)}</textarea>
+    </label>
+    <div class="dashboard-actions">
+      ${demand.tender.url ? `<a class="button secondary" href="${demand.tender.url}" target="_blank" rel="noopener">Open tender details</a>` : ""}
+      <button class="button secondary" type="button" id="exportBidPack">Export bid pack</button>
+    </div>
+  `;
 }
 
 function inferCategory(text, fallback) {
@@ -610,6 +772,7 @@ function parseLotLine(line, brief) {
     category: inferCategory(cleanLine, brief.item),
     brand: inferBrand(cleanLine),
     price,
+    quantityAvailable: parseQuantityFromText(cleanLine),
     fees: "",
     targetSale: brief.budget || "",
     targetRoi: String(DEFAULT_ROI_TARGET),
@@ -722,7 +885,7 @@ function addTenderDemand(encodedTender) {
     customer: tender.authority,
     source: "Find a Tender",
     item: tender.item,
-    quantity: "1",
+    quantity: String(number(tender.quantity) || 1),
     postcode: settings.postcode,
     budget: tender.value ? String(Math.round(number(tender.value))) : "",
     quality: "Standard",
@@ -909,6 +1072,7 @@ function render() {
   renderCandidates();
   renderLearning();
   renderTenderSummary();
+  renderBidPack();
   syncAgentDefaults();
 }
 
@@ -1035,6 +1199,20 @@ function exportData() {
   URL.revokeObjectURL(url);
 }
 
+function exportActiveBidPack() {
+  const demand = activeDemandRecord();
+  if (!demand?.tender) return;
+  const readiness = bidReadiness(demand);
+  const blob = new Blob([bidPackText(demand, readiness)], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const safeBuyer = normalise(demand.brief?.customer || "tender").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  link.href = url;
+  link.download = `rentalready-bid-pack-${safeBuyer || "tender"}-${new Date().toISOString().slice(0, 10)}.txt`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function clearData() {
   if (!confirm("Clear all saved sourcing dashboard data in this browser?")) return;
   Object.keys(localStorage)
@@ -1054,6 +1232,7 @@ document.querySelector("#generateSearches")?.addEventListener("click", generateS
 document.querySelector("#rankLots")?.addEventListener("click", rankLots);
 document.querySelector("#generateTenderSearches")?.addEventListener("click", generateTenderSearches);
 document.querySelector("#rankTenders")?.addEventListener("click", rankTenders);
+document.querySelector("#prepareBidPack")?.addEventListener("click", renderBidPack);
 candidateForm?.addEventListener("submit", addCandidate);
 demandList?.addEventListener("click", (event) => {
   const selectButton = event.target.closest("button[data-demand-select]");
@@ -1073,6 +1252,9 @@ agentResults?.addEventListener("click", (event) => {
 tenderResults?.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-tender-add]");
   if (button) addTenderDemand(button.dataset.tenderAdd);
+});
+bidPack?.addEventListener("click", (event) => {
+  if (event.target.closest("#exportBidPack")) exportActiveBidPack();
 });
 document.querySelector("#exportData")?.addEventListener("click", exportData);
 document.querySelector("#clearData")?.addEventListener("click", clearData);

@@ -172,13 +172,19 @@ kitchen equipment</textarea>
             Paste Find a Tender opportunities
             <textarea id="tenderImport" rows="8" placeholder="Paste one opportunity per line. Example: Leicester City Council | White goods supply for temporary accommodation | Value £18,000 | East Midlands | Deadline 2026-06-18 | https://www.find-tender.service.gov.uk/..."></textarea>
           </label>
+          <label class="span-2">
+            Tender detail notes
+            <textarea id="tenderDetailNotes" rows="8" placeholder="Paste tender details, specification, delivery requirements, award criteria, insurance/compliance notes, or buyer questions here. The bid desk uses this to prepare a response pack."></textarea>
+          </label>
           <div class="dashboard-actions span-2">
             <button class="button secondary" type="button" id="generateTenderSearches">Generate tender searches</button>
             <button class="button primary" type="button" id="rankTenders">Rank tender opportunities</button>
+            <button class="button secondary" type="button" id="prepareBidPack">Prepare bid pack</button>
           </div>
           <div class="agent-summary span-2" id="tenderSummary" aria-live="polite">Use narrow, local/regional searches first. Avoid big national frameworks until the business has stronger capacity and references.</div>
           <div class="agent-search-links span-2" id="tenderSearchLinks"></div>
           <div class="agent-results span-2" id="tenderResults"></div>
+          <div class="bid-pack span-2" id="bidPack" aria-live="polite"></div>
         </section>
 
         <section class="dashboard-panel sourcing-form agent-panel" id="agent" aria-labelledby="agent-title">
@@ -275,6 +281,10 @@ kitchen equipment</textarea>
             <input name="price" type="number" min="0" step="1" placeholder="Example: 80">
           </label>
           <label>
+            Quantity available
+            <input name="quantityAvailable" type="number" min="1" step="1" value="1">
+          </label>
+          <label>
             Fees / delivery estimate
             <input name="fees" type="number" min="0" step="1" placeholder="Example: 40">
           </label>
@@ -356,6 +366,6 @@ kitchen equipment</textarea>
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260601c"></script>
+    <script src="sourcing-dashboard.js?v=20260601d"></script>
   </body>
 </html>

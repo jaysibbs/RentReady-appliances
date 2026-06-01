@@ -2685,6 +2685,63 @@ section {
   background: rgba(13, 20, 29, .58);
 }
 
+.bid-pack {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(91, 214, 155, .34);
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(13, 20, 29, .58);
+}
+
+.bid-pack:empty {
+  display: none;
+}
+
+.bid-pack h3 {
+  margin: 0;
+}
+
+.bid-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.bid-checklist div {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.bid-checklist div.pass {
+  border-color: rgba(91, 214, 155, .42);
+}
+
+.bid-checklist div.hold {
+  border-color: rgba(255, 198, 102, .34);
+}
+
+.bid-checklist strong {
+  color: var(--gold);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.bid-checklist span {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.bid-checklist em {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: normal;
+}
+
 .agent-result.pass {
   border-color: rgba(91, 214, 155, .48);
 }
@@ -2766,6 +2823,7 @@ meter::-webkit-meter-optimum-value {
   .dashboard-grid,
   .learning-grid,
   .demand-card dl,
+  .bid-checklist,
   .candidate-card dl,
   .roi-strip,
   .agent-kpis {
