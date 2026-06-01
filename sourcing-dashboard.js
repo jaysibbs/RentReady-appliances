@@ -132,6 +132,95 @@ function stockCoverageForDemand(demandId) {
   };
 }
 
+function sourceNameFor(record) {
+  const supplier = normalise(record?.candidate?.supplier);
+  if (supplier.includes("john pye")) return "John Pye";
+  if (supplier.includes("bpi")) return "BPI Auctions";
+  if (supplier.includes("bidspotter")) return "BidSpotter";
+  if (supplier.includes("clearance")) return "Clearance / outlet";
+  if (supplier.includes("auction")) return "Auction source";
+  return record?.candidate?.supplier || "Supplier TBC";
+}
+
+function stockSourceSummary(coverage, requiredQuantity = 1) {
+  const sources = new Map();
+  coverage.viable.forEach((record) => {
+    const source = sourceNameFor(record);
+    const existing = sources.get(source) || {
+      source,
+      quantity: 0,
+      approvedQuantity: 0,
+      projectedProfit: 0,
+      lowestRoi: Infinity,
+      lines: [],
+    };
+    const quantity = recordQuantity(record);
+    existing.quantity += quantity;
+    if (record.status === "Approved") existing.approvedQuantity += quantity;
+    existing.projectedProfit += number(record.result?.financials?.profit) * quantity;
+    existing.lowestRoi = Math.min(existing.lowestRoi, number(record.result?.financials?.roi) || Infinity);
+    existing.lines.push(record);
+    sources.set(source, existing);
+  });
+
+  const sourceList = [...sources.values()].map((source) => ({
+    ...source,
+    lowestRoi: Number.isFinite(source.lowestRoi) ? source.lowestRoi : 0,
+  })).sort((a, b) => b.quantity - a.quantity || a.source.localeCompare(b.source));
+
+  const completeSources = sourceList.filter((source) => source.quantity >= requiredQuantity);
+  const approvedCompleteSources = sourceList.filter((source) => source.approvedQuantity >= requiredQuantity);
+  const gap = Math.max(0, requiredQuantity - coverage.quantityAvailable);
+  const approvedGap = Math.max(0, requiredQuantity - coverage.approvedQuantity);
+
+  let decision = "Stock gap";
+  let tone = "hold";
+  let message = `Need ${gap || requiredQuantity} more viable unit(s) before this can be priced confidently.`;
+
+  if (approvedCompleteSources.length) {
+    decision = "Single approved source";
+    tone = "pass";
+    message = `${approvedCompleteSources[0].source} can cover the full requirement with approved stock.`;
+  } else if (completeSources.length) {
+    decision = "Single source possible";
+    tone = "prepare";
+    message = `${completeSources[0].source} can cover the full requirement, but stock still needs approval.`;
+  } else if (coverage.quantityAvailable >= requiredQuantity && sourceList.length > 1) {
+    decision = "Multi-source fulfilment";
+    tone = coverage.approvedQuantity >= requiredQuantity ? "pass" : "prepare";
+    message = coverage.approvedQuantity >= requiredQuantity
+      ? "Approved stock covers the requirement across multiple sources."
+      : `Use multiple suppliers and approve ${approvedGap} more unit(s) before submission.`;
+  } else if (coverage.quantityAvailable > 0) {
+    decision = "Partial stock found";
+    tone = "hold";
+    message = `${coverage.quantityAvailable} of ${requiredQuantity} unit(s) matched. More stock is needed before bidding.`;
+  }
+
+  return { sourceList, completeSources, approvedCompleteSources, gap, approvedGap, decision, tone, message };
+}
+
+function renderStockSourceSummary(summary, requiredQuantity) {
+  const sourceCards = summary.sourceList.map((source) => `
+    <div class="source-coverage-card ${source.quantity >= requiredQuantity ? "complete" : "partial"}">
+      <strong>${escapeHtml(source.source)}</strong>
+      <span>${source.quantity}/${requiredQuantity} viable • ${source.approvedQuantity} approved</span>
+      <em>Lowest ROI ${source.lowestRoi ? percent(source.lowestRoi) : "TBC"} • Profit ${money(source.projectedProfit)}</em>
+    </div>
+  `).join("") || `<p class="empty-state">No source has matched stock yet. Search John Pye, BPI Auctions, and BidSpotter, then add viable lots to this demand.</p>`;
+
+  return `
+    <div class="source-coverage-summary ${summary.tone}">
+      <div>
+        <span>Stock source plan</span>
+        <strong>${summary.decision}</strong>
+        <p>${summary.message}</p>
+      </div>
+      <div class="source-coverage-grid">${sourceCards}</div>
+    </div>
+  `;
+}
+
 function tenderDetailRows(tender) {
   return [
     ["Buyer", tender.authority || "TBC"],
@@ -163,12 +252,13 @@ function renderStockCoverage(demand, readiness = null) {
   const tender = demand?.tender || {};
   const required = readiness?.requiredQuantity || number(demand?.brief?.quantity) || number(tender.quantity) || 1;
   const coverage = readiness?.coverage || stockCoverageForDemand(demand?.id);
+  const sourceSummary = stockSourceSummary(coverage, required);
   const matchedPercent = required ? clamp((coverage.quantityAvailable / required) * 100) : 0;
   const approvedPercent = required ? clamp((coverage.approvedQuantity / required) * 100) : 0;
   const lines = coverage.viable.map((record) => `
     <div class="stock-line">
       <strong>${recordQuantity(record)} x ${escapeHtml(record.candidate.title || record.candidate.category || "Matched stock")}</strong>
-      <span>${escapeHtml(record.candidate.supplier || "Supplier TBC")} • ${escapeHtml(record.candidate.location || "Location TBC")} • ${record.status}</span>
+      <span>${escapeHtml(sourceNameFor(record))} • ${escapeHtml(record.candidate.location || "Location TBC")} • ${record.status}</span>
       <em>Landed ${money(record.result?.financials?.landed)} • ROI ${percent(record.result?.financials?.roi)}</em>
     </div>
   `).join("") || `<p class="empty-state">No viable matched stock yet. Add auction lots to this tender demand before deciding to bid.</p>`;
@@ -182,6 +272,7 @@ function renderStockCoverage(demand, readiness = null) {
         <div><span>Lowest ROI</span><strong>${coverage.lowestRoi ? percent(coverage.lowestRoi) : "TBC"}</strong></div>
         <div><span>Profit</span><strong>${money(coverage.projectedProfit)}</strong></div>
       </div>
+      ${renderStockSourceSummary(sourceSummary, required)}
       <div class="stock-lines">${lines}</div>
     </div>
   `;
@@ -735,10 +826,14 @@ function tenderScore(tender, settings) {
   const regionMatch = normalise(tender.region).includes(normalise(settings.region)) || normalise(settings.region).includes(normalise(tender.region));
   const localMatch = regionMatch || ["leicester", "nottingham", "derby", "birmingham", "midlands"].some((place) => normalise(tender.notes).includes(place));
   const keywordHit = tenderSearchTerms(tender).some((term) => normalise(tender.notes).includes(normalise(term)));
+  const valueOk = !value || value <= settings.valueCap;
+  const valueWatch = value && value > settings.valueCap && value <= settings.valueCap * 1.5;
+  const deadlineOk = deadlineDays >= 5 && deadlineDays <= 60;
+  const deadlineRisk = deadlineDays < 5;
   let score = 42;
 
-  if (value && value <= settings.valueCap) score += 24;
-  if (value && value > settings.valueCap && value <= settings.valueCap * 1.5) score += 8;
+  if (value && valueOk) score += 24;
+  if (valueWatch) score += 8;
   if (localMatch) score += 18;
   if (keywordHit) score += 14;
   if (deadlineDays >= 5 && deadlineDays <= 28) score += 12;
@@ -746,10 +841,22 @@ function tenderScore(tender, settings) {
   if (deadlineDays < 3) score -= 18;
   if (!value) score -= 6;
 
-  const viable = score >= 72 && (!value || value <= settings.valueCap * 1.5);
+  const viable = score >= 72 && (!value || value <= settings.valueCap * 1.5) && !deadlineRisk;
+  const decision = viable ? "Worth checking stock" : score >= 58 ? "Needs review" : "Poor fit";
+  const tone = viable ? "pass" : score >= 58 ? "prepare" : "hold";
+  const checks = [
+    { label: "Local/regional fit", pass: localMatch, detail: localMatch ? "Matches your region focus." : "Buyer/location needs manual checking." },
+    { label: "Material fit", pass: keywordHit, detail: keywordHit ? "Appliance/material keywords found." : "Specification may not match target stock." },
+    { label: "Value within starter cap", pass: valueOk || valueWatch, detail: value ? `${money(value)} against ${money(settings.valueCap)} cap.` : "Value not published." },
+    { label: "Deadline workable", pass: deadlineOk, detail: tender.deadline ? `${deadlineDays} day(s) left.` : "Deadline not captured." },
+  ];
+
   return {
     score: clamp(score),
     viable,
+    decision,
+    tone,
+    checks,
     localMatch,
     keywordHit,
     deadlineDays,
@@ -1002,28 +1109,57 @@ function renderTenderMatches(tenders, settings, sourceNote = "") {
     ${sourceNote ? `<div class="live-tender-source">${escapeHtml(sourceNote)}</div>` : ""}
     ${ranked.map((item, index) => {
     const terms = tenderSearchTerms(item.tender);
+    const required = number(item.tender.quantity) || 1;
+    const value = number(item.tender.value);
+    const valuePerUnit = value && required ? value / required : 0;
     return `
-      <article class="agent-result ${item.result.viable ? "pass" : "hold"}">
-        <div class="candidate-topline">
-          <span>${item.result.viable ? "Tender demand" : "Hold"}</span>
-          <strong>#${index + 1} · ${Math.round(item.result.score)}% fit</strong>
+      <article class="tender-result-card ${item.result.tone}">
+        <div class="tender-result-header">
+          <div>
+            <span class="result-rank">#${index + 1}</span>
+            <h3>${escapeHtml(item.tender.title)}</h3>
+            <p>${escapeHtml(item.tender.authority)} • ${escapeHtml(item.tender.region || "region TBC")}</p>
+          </div>
+          <div class="decision-badge ${item.result.tone}">
+            <strong>${item.result.decision}</strong>
+            <span>${Math.round(item.result.score)}% fit</span>
+          </div>
         </div>
-        <h3>${item.tender.title}</h3>
-        <p class="demand-match">${item.tender.authority} • ${item.tender.region || "region TBC"} • ${item.tender.value ? money(item.tender.value) : "value TBC"}</p>
-        <p>${item.result.recommendation}</p>
-        ${renderTenderDetails(item.tender)}
-        <div class="roi-strip">
-          <div><span>Required stock</span><strong>${number(item.tender.quantity) || 1}</strong></div>
-          <div><span>Deadline</span><strong>${item.tender.deadline || "TBC"}</strong></div>
-          <div><span>Days left</span><strong>${Number.isFinite(item.result.deadlineDays) ? item.result.deadlineDays : "TBC"}</strong></div>
-          <div><span>Local fit</span><strong>${item.result.localMatch ? "Yes" : "Check"}</strong></div>
-          <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong></div>
+
+        <div class="tender-fact-grid">
+          <div><span>Estimated value</span><strong>${value ? money(value) : "TBC"}</strong><em>${valuePerUnit ? `${money(valuePerUnit)} per required unit` : "Confirm in notice"}</em></div>
+          <div><span>Required stock</span><strong>${required}</strong><em>${escapeHtml(item.tender.item || "Category TBC")}</em></div>
+          <div><span>Deadline</span><strong>${item.tender.deadline || "TBC"}</strong><em>${Number.isFinite(item.result.deadlineDays) ? `${item.result.deadlineDays} day(s) left` : "Confirm deadline"}</em></div>
+          <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong><em>Only bid if landed stock protects this</em></div>
         </div>
-        <div class="agent-search-links">
-          <strong>Check stock sources before bidding</strong>
+
+        <div class="eligibility-grid">
+          ${item.result.checks.map((check) => `
+            <div class="${check.pass ? "pass" : "hold"}">
+              <strong>${check.pass ? "Pass" : "Check"}</strong>
+              <span>${check.label}</span>
+              <em>${check.detail}</em>
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="stock-source-plan">
+          <strong>Stock availability review</strong>
+          <p>No stock is reserved from live tender results yet. Add this tender as demand, then attach John Pye, BPI, or BidSpotter lots. The dashboard will show whether fulfilment can come from one source or requires multiple sources.</p>
           ${sourceSearchLinks(terms)}
         </div>
-        <p class="candidate-note">${item.tender.notes}</p>
+
+        <details class="tender-details tender-result-details">
+          <summary>Full live tender extract</summary>
+          <dl>
+            ${tenderDetailRows(item.tender).map(([key, value]) => `
+              <div><dt>${key}</dt><dd>${escapeHtml(value)}</dd></div>
+            `).join("")}
+          </dl>
+          <p>${escapeHtml(item.tender.notes || "No tender detail text pasted yet.")}</p>
+        </details>
+
+        <p class="candidate-note">${escapeHtml(item.result.recommendation)}</p>
         <div class="dashboard-actions">
           ${item.tender.url ? `<a class="button secondary" href="${item.tender.url}" target="_blank" rel="noopener">Open tender</a>` : ""}
           ${item.tender.url ? `<button class="button secondary" type="button" data-tender-detail="${encodeURIComponent(item.tender.url)}">Load details</button>` : ""}
@@ -1284,6 +1420,9 @@ function renderDemandQueue() {
   demandList.innerHTML = state.demands.map((item) => {
     const brief = item.brief || {};
     const isActive = item.id === state.activeDemandId;
+    const required = number(brief.quantity) || number(item.tender?.quantity) || 1;
+    const coverage = item.tender ? stockCoverageForDemand(item.id) : null;
+    const sourceSummary = coverage ? stockSourceSummary(coverage, required) : null;
     return `
       <article class="demand-card ${isActive ? "active" : ""}">
         <div class="candidate-topline">
@@ -1297,6 +1436,12 @@ function renderDemandQueue() {
           <div><dt>Location</dt><dd>${brief.postcode || "TBC"}</dd></div>
           <div><dt>Urgency</dt><dd>${brief.urgency || "TBC"}</dd></div>
         </dl>
+        ${sourceSummary ? `
+          <div class="demand-source-status ${sourceSummary.tone}">
+            <strong>${sourceSummary.decision}</strong>
+            <span>${coverage.quantityAvailable}/${required} viable stock matched • ${coverage.approvedQuantity} approved</span>
+          </div>
+        ` : ""}
         <p>${brief.notes || "No enquiry notes saved."}</p>
         <div class="dashboard-actions">
           <button class="button primary" type="button" data-demand-select="${item.id}">${isActive ? "Selected" : "Use for matching"}</button>

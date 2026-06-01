@@ -2179,9 +2179,28 @@ td {
 
 .dashboard-body {
   min-height: 100vh;
+  --dash-success: #64d49c;
+  --dash-warning: #ffd166;
+  --dash-danger: #ff8b8b;
+  --dash-card: rgba(18, 27, 37, .94);
+  --dash-card-soft: rgba(255, 255, 255, .055);
+  --dash-text: #f7fafc;
+  --dash-muted: #d2dbe4;
+  --dash-border: rgba(226, 232, 238, .22);
   background:
     radial-gradient(circle at top right, rgba(201, 138, 84, .16), transparent 34rem),
     var(--paper);
+}
+
+html[data-theme="night"] .dashboard-body {
+  --dash-success: #176a45;
+  --dash-warning: #8a5a10;
+  --dash-danger: #9d2e2e;
+  --dash-card: rgba(255, 255, 255, .96);
+  --dash-card-soft: rgba(17, 25, 34, .045);
+  --dash-text: #111922;
+  --dash-muted: #425466;
+  --dash-border: rgba(17, 25, 34, .18);
 }
 
 /* Corporate trust pass */
@@ -2388,9 +2407,10 @@ section {
 .demand-card,
 .candidate-card,
 .score-preview {
-  border: 1px solid var(--line);
+  border: 1px solid var(--dash-border);
   border-radius: 8px;
-  background: rgba(20, 29, 39, .88);
+  color: var(--dash-text);
+  background: var(--dash-card);
   box-shadow: var(--shadow);
 }
 
@@ -2407,7 +2427,7 @@ section {
 }
 
 .dashboard-alert span {
-  color: var(--muted);
+  color: var(--dash-muted);
 }
 
 .dashboard-grid {
@@ -2431,7 +2451,7 @@ section {
 .candidate-card p,
 .candidate-note,
 .empty-state {
-  color: var(--muted);
+  color: var(--dash-muted);
 }
 
 .sourcing-form {
@@ -2464,7 +2484,7 @@ section {
 .score-preview {
   min-height: 72px;
   padding: 18px;
-  color: var(--muted);
+  color: var(--dash-muted);
 }
 
 .candidate-list {
@@ -2485,12 +2505,12 @@ section {
   border: 1px solid rgba(91, 214, 155, .34);
   border-radius: 8px;
   padding: 14px;
-  color: var(--muted);
+  color: var(--dash-muted);
   background: rgba(91, 214, 155, .08);
 }
 
 .active-demand strong {
-  color: var(--green);
+  color: var(--dash-success);
   font-size: 18px;
 }
 
@@ -2504,7 +2524,7 @@ section {
 
 .demand-card {
   padding: 16px;
-  background: rgba(13, 20, 29, .58);
+  background: var(--dash-card);
 }
 
 .demand-card.active {
@@ -2534,17 +2554,17 @@ section {
 
 .candidate-topline span {
   display: inline-flex;
-  border: 1px solid var(--line);
+  border: 1px solid var(--dash-border);
   border-radius: 999px;
   padding: 5px 10px;
-  color: var(--gold);
+  color: var(--dash-warning);
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .candidate-topline strong {
-  color: var(--green);
+  color: var(--dash-success);
   font-size: 24px;
 }
 
@@ -2572,15 +2592,15 @@ section {
 
 .demand-card dl div,
 .candidate-card dl div {
-  border: 1px solid var(--line);
+  border: 1px solid var(--dash-border);
   border-radius: 8px;
   padding: 12px;
-  background: rgba(255, 255, 255, .035);
+  background: var(--dash-card-soft);
 }
 
 .demand-card dt,
 .candidate-card dt {
-  color: var(--gold);
+  color: var(--dash-warning);
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
@@ -2589,31 +2609,31 @@ section {
 .demand-card dd,
 .candidate-card dd {
   margin: 4px 0 0;
-  color: var(--ink);
+  color: var(--dash-text);
   font-weight: 800;
 }
 
 .demand-match {
-  color: var(--green) !important;
+  color: var(--dash-success) !important;
   font-weight: 900;
 }
 
 .score-card {
   display: grid;
   gap: 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--dash-border);
   border-radius: 8px;
   padding: 16px;
-  background: rgba(13, 20, 29, .62);
+  background: var(--dash-card-soft);
 }
 
 .score-card > strong {
-  color: var(--green);
+  color: var(--dash-success);
   font-size: 30px;
 }
 
 .score-card > span {
-  color: var(--muted);
+  color: var(--dash-muted);
 }
 
 .roi-strip,
@@ -2625,16 +2645,16 @@ section {
 
 .roi-strip div,
 .agent-kpis div {
-  border: 1px solid var(--line);
+  border: 1px solid var(--dash-border);
   border-radius: 8px;
   padding: 10px;
-  background: rgba(255, 255, 255, .035);
+  background: var(--dash-card-soft);
 }
 
 .roi-strip span,
 .agent-kpis span {
   display: block;
-  color: var(--gold);
+  color: var(--dash-warning);
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
@@ -2642,7 +2662,7 @@ section {
 
 .roi-strip strong,
 .agent-kpis strong {
-  color: var(--ink);
+  color: var(--dash-text);
   font-size: 17px;
 }
 
@@ -2652,13 +2672,13 @@ section {
   border: 1px solid rgba(185, 130, 88, .28);
   border-radius: 8px;
   padding: 14px;
-  color: var(--muted);
+  color: var(--dash-muted);
   background: rgba(185, 130, 88, .08);
 }
 
 .agent-summary p {
   margin: 0;
-  color: var(--muted);
+  color: var(--dash-muted);
   font-size: 13px;
 }
 
@@ -2674,7 +2694,7 @@ section {
   border: 1px solid rgba(91, 214, 155, .3);
   border-radius: 8px;
   padding: 12px;
-  color: var(--muted);
+  color: var(--dash-muted);
   background: rgba(91, 214, 155, .07);
 }
 
@@ -2684,12 +2704,12 @@ section {
 
 .live-tender-status strong,
 .live-tender-source {
-  color: var(--green);
+  color: var(--dash-success);
   font-weight: 900;
 }
 
 .live-tender-status span {
-  color: var(--muted);
+  color: var(--dash-muted);
 }
 
 .live-tender-source {
@@ -2700,7 +2720,7 @@ section {
 }
 
 .agent-search-links strong {
-  color: var(--gold);
+  color: var(--dash-warning);
 }
 
 .agent-search-links div {
@@ -2710,19 +2730,19 @@ section {
 }
 
 .agent-result {
-  border: 1px solid var(--line);
+  border: 1px solid var(--dash-border);
   border-radius: 8px;
   padding: 16px;
-  background: rgba(13, 20, 29, .58);
+  background: var(--dash-card);
 }
 
 .decision-panel,
 .tender-details,
 .stock-coverage {
-  border: 1px solid var(--line);
+  border: 1px solid var(--dash-border);
   border-radius: 8px;
   padding: 14px;
-  background: rgba(255, 255, 255, .035);
+  background: var(--dash-card-soft);
 }
 
 .decision-panel {
@@ -2746,24 +2766,24 @@ section {
 }
 
 .decision-panel strong {
-  color: var(--green);
+  color: var(--dash-success);
   font-size: 24px;
 }
 
 .decision-panel span {
-  color: var(--gold);
+  color: var(--dash-warning);
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .decision-panel p {
   margin: 0;
-  color: var(--muted);
+  color: var(--dash-muted);
 }
 
 .tender-details summary {
   cursor: pointer;
-  color: var(--gold);
+  color: var(--dash-warning);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -2778,15 +2798,15 @@ section {
 
 .tender-details dl div,
 .coverage-kpis div {
-  border: 1px solid var(--line);
+  border: 1px solid var(--dash-border);
   border-radius: 8px;
   padding: 10px;
-  background: rgba(13, 20, 29, .42);
+  background: var(--dash-card-soft);
 }
 
 .tender-details dt,
 .coverage-kpis span {
-  color: var(--gold);
+  color: var(--dash-warning);
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
@@ -2795,13 +2815,13 @@ section {
 .tender-details dd,
 .coverage-kpis strong {
   margin: 4px 0 0;
-  color: var(--ink);
+  color: var(--dash-text);
   font-weight: 900;
 }
 
 .tender-details p {
   margin: 10px 0 0;
-  color: var(--muted);
+  color: var(--dash-muted);
   white-space: pre-wrap;
 }
 
@@ -2813,19 +2833,19 @@ section {
 .stock-line {
   display: grid;
   gap: 3px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--dash-border);
   border-radius: 8px;
   padding: 10px;
-  background: rgba(13, 20, 29, .38);
+  background: var(--dash-card-soft);
 }
 
 .stock-line strong {
-  color: var(--ink);
+  color: var(--dash-text);
 }
 
 .stock-line span,
 .stock-line em {
-  color: var(--muted);
+  color: var(--dash-muted);
   font-size: 13px;
   font-style: normal;
 }
@@ -2836,7 +2856,7 @@ section {
   border: 1px solid rgba(91, 214, 155, .34);
   border-radius: 8px;
   padding: 16px;
-  background: rgba(13, 20, 29, .58);
+  background: var(--dash-card);
 }
 
 .bid-pack:empty {
@@ -2856,10 +2876,10 @@ section {
 .bid-checklist div {
   display: grid;
   gap: 4px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--dash-border);
   border-radius: 8px;
   padding: 12px;
-  background: rgba(255, 255, 255, .035);
+  background: var(--dash-card-soft);
 }
 
 .bid-checklist div.pass {
@@ -2871,18 +2891,18 @@ section {
 }
 
 .bid-checklist strong {
-  color: var(--gold);
+  color: var(--dash-warning);
   font-size: 12px;
   text-transform: uppercase;
 }
 
 .bid-checklist span {
-  color: var(--ink);
+  color: var(--dash-text);
   font-weight: 900;
 }
 
 .bid-checklist em {
-  color: var(--muted);
+  color: var(--dash-muted);
   font-size: 13px;
   font-style: normal;
 }
@@ -2893,6 +2913,263 @@ section {
 
 .agent-result.hold {
   border-color: rgba(255, 198, 102, .34);
+}
+
+.tender-result-card {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--dash-card);
+}
+
+.tender-result-card.pass {
+  border-color: rgba(100, 212, 156, .48);
+}
+
+.tender-result-card.prepare {
+  border-color: rgba(255, 209, 102, .46);
+}
+
+.tender-result-card.hold {
+  border-color: rgba(255, 139, 139, .38);
+}
+
+.tender-result-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 220px);
+  gap: 16px;
+  align-items: start;
+}
+
+.tender-result-header h3 {
+  margin: 4px 0 6px;
+  color: var(--dash-text);
+  font-size: clamp(20px, 2.4vw, 28px);
+  line-height: 1.16;
+}
+
+.tender-result-header p {
+  margin: 0;
+  color: var(--dash-muted);
+  font-weight: 800;
+}
+
+.result-rank,
+.decision-badge,
+.demand-source-status {
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  background: var(--dash-card-soft);
+}
+
+.result-rank {
+  display: inline-flex;
+  padding: 4px 8px;
+  color: var(--dash-warning);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.decision-badge {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  text-align: right;
+}
+
+.decision-badge strong,
+.demand-source-status strong {
+  color: var(--dash-text);
+  font-size: 16px;
+}
+
+.decision-badge span,
+.demand-source-status span {
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.decision-badge.pass,
+.demand-source-status.pass {
+  border-color: rgba(100, 212, 156, .5);
+  background: rgba(100, 212, 156, .1);
+}
+
+.decision-badge.prepare,
+.demand-source-status.prepare {
+  border-color: rgba(255, 209, 102, .5);
+  background: rgba(255, 209, 102, .1);
+}
+
+.decision-badge.hold,
+.demand-source-status.hold {
+  border-color: rgba(255, 139, 139, .45);
+  background: rgba(255, 139, 139, .08);
+}
+
+.tender-fact-grid,
+.eligibility-grid,
+.source-coverage-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.tender-fact-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.eligibility-grid,
+.source-coverage-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tender-fact-grid div,
+.eligibility-grid div,
+.source-coverage-card {
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--dash-card-soft);
+}
+
+.tender-fact-grid span,
+.source-coverage-summary > div > span {
+  display: block;
+  color: var(--dash-warning);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tender-fact-grid strong,
+.source-coverage-summary > div > strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--dash-text);
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.tender-fact-grid em,
+.eligibility-grid em,
+.source-coverage-card em {
+  display: block;
+  margin-top: 4px;
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.eligibility-grid strong {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: var(--dash-text);
+  background: rgba(255, 255, 255, .08);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.eligibility-grid .pass {
+  border-color: rgba(100, 212, 156, .42);
+}
+
+.eligibility-grid .hold {
+  border-color: rgba(255, 209, 102, .42);
+}
+
+.eligibility-grid span {
+  display: block;
+  margin-top: 6px;
+  color: var(--dash-text);
+  font-weight: 900;
+}
+
+.stock-source-plan,
+.source-coverage-summary {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--dash-card-soft);
+}
+
+.stock-source-plan > strong {
+  color: var(--dash-warning);
+  text-transform: uppercase;
+}
+
+.stock-source-plan p,
+.source-coverage-summary p {
+  margin: 0;
+  color: var(--dash-muted);
+}
+
+.stock-source-plan > div {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--dash-border);
+  padding-top: 10px;
+}
+
+.stock-source-plan > div strong {
+  color: var(--dash-text);
+}
+
+.stock-source-plan > div div,
+.stock-source-plan > div {
+  min-width: 0;
+}
+
+.stock-source-plan a {
+  width: fit-content;
+}
+
+.source-coverage-summary.pass {
+  border-color: rgba(100, 212, 156, .45);
+}
+
+.source-coverage-summary.prepare {
+  border-color: rgba(255, 209, 102, .45);
+}
+
+.source-coverage-summary.hold {
+  border-color: rgba(255, 139, 139, .4);
+}
+
+.source-coverage-card strong {
+  color: var(--dash-text);
+}
+
+.source-coverage-card span {
+  display: block;
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.source-coverage-card.complete {
+  border-color: rgba(100, 212, 156, .42);
+}
+
+.source-coverage-card.partial {
+  border-color: rgba(255, 209, 102, .34);
+}
+
+.demand-source-status {
+  display: grid;
+  gap: 3px;
+  margin: 10px 0;
+  padding: 10px;
+}
+
+.tender-result-details .tender-details {
+  margin-top: 10px;
 }
 
 .score-bars,
@@ -2971,6 +3248,10 @@ meter::-webkit-meter-optimum-value {
   .bid-checklist,
   .tender-details dl,
   .coverage-kpis,
+  .tender-result-header,
+  .tender-fact-grid,
+  .eligibility-grid,
+  .source-coverage-grid,
   .candidate-card dl,
   .roi-strip,
   .agent-kpis {
