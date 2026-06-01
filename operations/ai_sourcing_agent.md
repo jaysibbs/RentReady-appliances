@@ -8,6 +8,8 @@ The preferred operating model is request-led sourcing: capture the buyer demand 
 
 The agent is built for review, not auto-buying. Every auction lot still needs manual checks for condition, photos, collection rules, buyer premium, VAT, warranty/returns position, and final availability.
 
+The public-sector lane should start with narrow Find a Tender searches for below-cap local/regional material, appliance, and equipment supply opportunities. The aim is not to chase large national frameworks at the beginning; it is to identify smaller demand that can be fulfilled with stock from profitable sources.
+
 ## ROI Rule
 
 The dashboard uses ROI as:
@@ -46,6 +48,21 @@ This keeps the recommendation focused on profit after real sourcing costs, not j
 9. Add suitable lots to the shortlist.
 10. Approve or reject candidates so the dashboard learns future scoring preferences.
 
+## Find a Tender Workflow
+
+1. Set the region focus and starter contract cap.
+2. Generate Find a Tender searches for white goods, appliances, kitchen equipment, and related material supply terms.
+3. Paste promising opportunities into the tender matcher, one opportunity per line.
+4. Rank opportunities by local fit, value cap, deadline risk, and material fit.
+5. Check stock availability across:
+   - John Pye Auctions
+   - BPI Auctions
+   - BidSpotter
+6. Add only viable opportunities to the demand queue.
+7. Match supplier stock against the tender demand before any bid decision.
+
+The tender lane is designed to create demand signals. It does not submit public-sector bids, make supplier purchases, or claim compliance. Tender submission still needs manual review of eligibility, insurance, delivery capacity, terms, references, and any required supplier registration.
+
 ## Lot Paste Format
 
 The parser works best with one lot per line:
@@ -79,6 +96,7 @@ A product should only move from shortlist to purchase consideration when:
 ## Demand Queue Statuses
 
 - `Live`: customer need has been captured and can be matched.
+- `Tender`: public-sector opportunity has been added from Find a Tender and needs stock/margin validation.
 - `Matched`: at least one supplier candidate has been approved against the request.
 - `Quoted`: a customer-facing quote has been sent or is being prepared.
 - `Won`: the customer has accepted and the request is no longer open for sourcing.

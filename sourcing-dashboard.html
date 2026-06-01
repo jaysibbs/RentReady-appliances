@@ -20,6 +20,7 @@
       <nav aria-label="Dashboard navigation">
         <a href="#brief">Brief</a>
         <a href="#demand">Demand</a>
+        <a href="#tenders">Tenders</a>
         <a href="#agent">Agent</a>
         <a href="#candidate">Candidate</a>
         <a href="#shortlist">Shortlist</a>
@@ -35,7 +36,7 @@
         <div>
           <p class="eyebrow">Internal sourcing assistant</p>
           <h1 id="dashboard-title">Buy against live demand, not guesswork.</h1>
-          <p>This dashboard turns email or WhatsApp enquiries into buyer requests, matches those requests to John Pye-style auction lots, protects a 45% ROI target, and learns from the items you approve or reject.</p>
+          <p>This dashboard turns email, WhatsApp, and Find a Tender opportunities into buyer requests, matches those requests to John Pye-style auction lots, protects a 45% ROI target, and learns from the items you approve or reject.</p>
         </div>
         <div class="dashboard-alert">
           <strong>Demand-first workflow</strong>
@@ -127,9 +128,62 @@
           <div class="demand-list" id="demandList"></div>
         </section>
 
-        <section class="dashboard-panel sourcing-form agent-panel" id="agent" aria-labelledby="agent-title">
+        <section class="dashboard-panel sourcing-form tender-panel" id="tenders" aria-labelledby="tender-title">
           <div class="panel-heading">
             <p class="eyebrow">Step 3</p>
+            <h2 id="tender-title">Find a Tender contract matcher</h2>
+            <p>Use narrow public-sector searches for local/regional materials, appliances, and equipment supply requests. Add only viable opportunities to demand when stock can be sourced with margin.</p>
+          </div>
+
+          <label>
+            Region focus
+            <select id="tenderRegion">
+              <option>East Midlands</option>
+              <option>West Midlands</option>
+              <option>Leicester</option>
+              <option>Nottingham</option>
+              <option>Derby</option>
+              <option>Birmingham</option>
+              <option>National small lots</option>
+            </select>
+          </label>
+          <label>
+            Starter contract cap
+            <input id="tenderValueCap" type="number" min="0" step="1000" value="30000">
+          </label>
+          <label>
+            Minimum tender ROI %
+            <input id="tenderRoi" type="number" min="0" step="1" value="45">
+          </label>
+          <label>
+            Fulfilment postcode
+            <input id="tenderPostcode" type="text" placeholder="Example: LE1 4AN">
+          </label>
+          <label class="span-2">
+            Tender search keywords
+            <textarea id="tenderKeywords" rows="5">white goods
+appliances
+washing machines
+fridges freezers
+cookers ovens
+kitchen equipment</textarea>
+          </label>
+          <label class="span-2">
+            Paste Find a Tender opportunities
+            <textarea id="tenderImport" rows="8" placeholder="Paste one opportunity per line. Example: Leicester City Council | White goods supply for temporary accommodation | Value £18,000 | East Midlands | Deadline 2026-06-18 | https://www.find-tender.service.gov.uk/..."></textarea>
+          </label>
+          <div class="dashboard-actions span-2">
+            <button class="button secondary" type="button" id="generateTenderSearches">Generate tender searches</button>
+            <button class="button primary" type="button" id="rankTenders">Rank tender opportunities</button>
+          </div>
+          <div class="agent-summary span-2" id="tenderSummary" aria-live="polite">Use narrow, local/regional searches first. Avoid big national frameworks until the business has stronger capacity and references.</div>
+          <div class="agent-search-links span-2" id="tenderSearchLinks"></div>
+          <div class="agent-results span-2" id="tenderResults"></div>
+        </section>
+
+        <section class="dashboard-panel sourcing-form agent-panel" id="agent" aria-labelledby="agent-title">
+          <div class="panel-heading">
+            <p class="eyebrow">Step 4</p>
             <h2 id="agent-title">John Pye sourcing agent</h2>
             <p>Match John Pye-style lots to the selected buyer request. The agent calculates the maximum safe bid needed to protect ROI before anything moves to purchase review.</p>
           </div>
@@ -181,7 +235,7 @@
 
         <form class="dashboard-panel sourcing-form" id="candidateForm">
           <div class="panel-heading">
-            <p class="eyebrow">Step 4</p>
+            <p class="eyebrow">Step 5</p>
             <h2 id="candidate">Supplier candidate</h2>
             <p>Paste product details from John Pye or similar sources. The assistant scores fit and risk.</p>
           </div>
@@ -271,7 +325,7 @@
 
       <section class="dashboard-results" id="shortlist" aria-labelledby="shortlist-title">
         <div class="section-heading">
-          <p class="eyebrow">Step 5</p>
+          <p class="eyebrow">Step 6</p>
           <h2 id="shortlist-title">Sourcing shortlist</h2>
           <p class="section-copy">Approve the candidate you would actually buy. Rejections matter too: the assistant adjusts future scoring based on your selections.</p>
         </div>
@@ -302,6 +356,6 @@
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260601b"></script>
+    <script src="sourcing-dashboard.js?v=20260601c"></script>
   </body>
 </html>

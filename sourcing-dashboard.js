@@ -11,6 +11,21 @@ const DEFAULT_WEIGHTS = {
 
 const DEFAULT_ROI_TARGET = 45;
 const JOHN_PYE_SEARCH_BASE = "https://www.johnpye.co.uk/";
+const FIND_TENDER_SEARCH_BASE = "https://www.find-tender.service.gov.uk/Search/Results";
+const STOCK_SOURCES = [
+  {
+    name: "John Pye",
+    urlFor: (term) => `https://www.johnpye.co.uk/?s=${encodeURIComponent(term)}`,
+  },
+  {
+    name: "BPI Auctions",
+    urlFor: (term) => `https://www.bpiauctions.com/?s=${encodeURIComponent(term)}`,
+  },
+  {
+    name: "BidSpotter",
+    urlFor: (term) => `https://www.bidspotter.co.uk/en-gb/search-results?searchTerm=${encodeURIComponent(term)}`,
+  },
+];
 
 const STRONG_BRANDS = [
   "bosch",
@@ -45,6 +60,9 @@ const weightsList = document.querySelector("#weightsList");
 const memoryStats = document.querySelector("#memoryStats");
 const activeDemand = document.querySelector("#activeDemand");
 const demandList = document.querySelector("#demandList");
+const tenderSummary = document.querySelector("#tenderSummary");
+const tenderSearchLinks = document.querySelector("#tenderSearchLinks");
+const tenderResults = document.querySelector("#tenderResults");
 const agentSummary = document.querySelector("#agentSummary");
 const agentSearchLinks = document.querySelector("#agentSearchLinks");
 const agentResults = document.querySelector("#agentResults");
@@ -371,6 +389,65 @@ function johnPyeSearchUrl(term) {
   return `${JOHN_PYE_SEARCH_BASE}?s=${encodeURIComponent(term)}`;
 }
 
+function tenderSettings() {
+  return {
+    region: document.querySelector("#tenderRegion")?.value || "East Midlands",
+    valueCap: number(document.querySelector("#tenderValueCap")?.value) || 30000,
+    roi: number(document.querySelector("#tenderRoi")?.value) || DEFAULT_ROI_TARGET,
+    postcode: document.querySelector("#tenderPostcode")?.value || state.brief.postcode || "",
+    keywords: (document.querySelector("#tenderKeywords")?.value || "")
+      .split(/\n|,/)
+      .map((item) => item.trim())
+      .filter(Boolean),
+  };
+}
+
+function findTenderSearchUrl(term, settings) {
+  const query = [term, settings.region].filter(Boolean).join(" ");
+  return `${FIND_TENDER_SEARCH_BASE}?keywords=${encodeURIComponent(query)}`;
+}
+
+function sourceSearchLinks(terms) {
+  const uniqueTerms = [...new Set(terms.filter(Boolean))].slice(0, 4);
+  return STOCK_SOURCES.map((source) => `
+    <div>
+      <strong>${source.name}</strong>
+      ${uniqueTerms.map((term) => `<a class="button secondary" href="${source.urlFor(term)}" target="_blank" rel="noopener">${term}</a>`).join("")}
+    </div>
+  `).join("");
+}
+
+function renderTenderSummary() {
+  if (!tenderSummary) return;
+  const settings = tenderSettings();
+  tenderSummary.innerHTML = `
+    <div class="agent-kpis">
+      <div><span>Region</span><strong>${settings.region}</strong></div>
+      <div><span>Starter cap</span><strong>${money(settings.valueCap)}</strong></div>
+      <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong></div>
+      <div><span>Sources</span><strong>${STOCK_SOURCES.length}</strong></div>
+      <div><span>Mode</span><strong>Demand first</strong></div>
+    </div>
+    <p>Start with below-cap local/regional supply opportunities. Add only tenders where stock availability, delivery capacity, and margin can be checked before bidding.</p>
+  `;
+}
+
+function generateTenderSearches() {
+  renderTenderSummary();
+  if (!tenderSearchLinks) return;
+  const settings = tenderSettings();
+  const terms = settings.keywords.length ? settings.keywords : ["white goods", "appliances", "kitchen equipment"];
+  tenderSearchLinks.innerHTML = `
+    <strong>Find a Tender searches</strong>
+    <div>
+      ${terms.map((term) => `<a class="button secondary" href="${findTenderSearchUrl(term, settings)}" target="_blank" rel="noopener">${term}</a>`).join("")}
+      <a class="button secondary" href="https://www.find-tender.service.gov.uk/Search" target="_blank" rel="noopener">Advanced search</a>
+    </div>
+    <strong>Stock source searches</strong>
+    ${sourceSearchLinks(terms)}
+  `;
+}
+
 function renderAgentSummary() {
   if (!agentSummary) return;
   const settings = currentAgentSettings();
@@ -418,6 +495,77 @@ function parseDateFromText(text) {
   const uk = String(text).match(/\b(\d{1,2})[/-](\d{1,2})[/-](20\d{2})\b/);
   if (uk) return `${uk[3]}-${String(uk[2]).padStart(2, "0")}-${String(uk[1]).padStart(2, "0")}`;
   return "";
+}
+
+function inferAuthority(text) {
+  const parts = String(text).split(/\s+\|\s+|\t+/).map((item) => item.trim()).filter(Boolean);
+  return parts.find((part) => /council|nhs|housing|authority|school|college|university|trust|borough|county/i.test(part)) || parts[0] || "Public sector buyer";
+}
+
+function inferRegion(text, fallback) {
+  const value = normalise(text);
+  const regions = ["East Midlands", "West Midlands", "Leicester", "Nottingham", "Derby", "Birmingham", "Coventry", "Warwickshire", "Leicestershire"];
+  return regions.find((region) => value.includes(normalise(region))) || fallback || "";
+}
+
+function tenderSearchTerms(tender) {
+  return [...new Set([
+    ...searchTermsFor(tender.item),
+    tender.item,
+    "white goods",
+    "appliances",
+  ].filter(Boolean))];
+}
+
+function parseTenderLine(line, settings) {
+  const url = String(line).match(/https?:\/\/\S+/)?.[0] || "";
+  const cleanLine = String(line).replace(url, "").trim();
+  const value = parseMoneyFromText(cleanLine);
+  const item = inferCategory(cleanLine, "Portfolio / batch request");
+  const authority = inferAuthority(cleanLine);
+  const region = inferRegion(cleanLine, settings.region);
+  const deadline = parseDateFromText(cleanLine);
+  return {
+    authority,
+    title: cleanLine.split(/\s+\|\s+|\t+/).find((part) => !/£|value|deadline|region/i.test(part) && part !== authority)?.trim() || `${item} supply opportunity`,
+    source: "Find a Tender",
+    url,
+    item,
+    value,
+    region,
+    deadline,
+    notes: cleanLine,
+  };
+}
+
+function tenderScore(tender, settings) {
+  const value = number(tender.value);
+  const deadlineDays = daysUntil(tender.deadline);
+  const regionMatch = normalise(tender.region).includes(normalise(settings.region)) || normalise(settings.region).includes(normalise(tender.region));
+  const localMatch = regionMatch || ["leicester", "nottingham", "derby", "birmingham", "midlands"].some((place) => normalise(tender.notes).includes(place));
+  const keywordHit = tenderSearchTerms(tender).some((term) => normalise(tender.notes).includes(normalise(term)));
+  let score = 42;
+
+  if (value && value <= settings.valueCap) score += 24;
+  if (value && value > settings.valueCap && value <= settings.valueCap * 1.5) score += 8;
+  if (localMatch) score += 18;
+  if (keywordHit) score += 14;
+  if (deadlineDays >= 5 && deadlineDays <= 28) score += 12;
+  if (deadlineDays > 28 && deadlineDays <= 60) score += 6;
+  if (deadlineDays < 3) score -= 18;
+  if (!value) score -= 6;
+
+  const viable = score >= 72 && (!value || value <= settings.valueCap * 1.5);
+  return {
+    score: clamp(score),
+    viable,
+    localMatch,
+    keywordHit,
+    deadlineDays,
+    recommendation: viable
+      ? "Add to demand queue - then validate stock availability and margin before bidding."
+      : "Hold - either too broad, too large, too close to deadline, or not enough local/material fit.",
+  };
 }
 
 function inferCategory(text, fallback) {
@@ -514,6 +662,88 @@ function rankLots() {
       </div>
     </article>
   `).join("");
+}
+
+function rankTenders() {
+  renderTenderSummary();
+  if (!tenderResults) return;
+  const settings = tenderSettings();
+  const raw = document.querySelector("#tenderImport")?.value || "";
+  const lines = raw.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) {
+    tenderResults.innerHTML = `<p class="empty-state">Paste one or more Find a Tender opportunities first. Keep one opportunity per line for best results.</p>`;
+    return;
+  }
+
+  const ranked = lines
+    .map((line) => {
+      const tender = parseTenderLine(line, settings);
+      const result = tenderScore(tender, settings);
+      return { tender, result };
+    })
+    .sort((a, b) => b.result.score - a.result.score);
+
+  tenderResults.innerHTML = ranked.map((item, index) => {
+    const terms = tenderSearchTerms(item.tender);
+    return `
+      <article class="agent-result ${item.result.viable ? "pass" : "hold"}">
+        <div class="candidate-topline">
+          <span>${item.result.viable ? "Tender demand" : "Hold"}</span>
+          <strong>#${index + 1} · ${Math.round(item.result.score)}% fit</strong>
+        </div>
+        <h3>${item.tender.title}</h3>
+        <p class="demand-match">${item.tender.authority} • ${item.tender.region || "region TBC"} • ${item.tender.value ? money(item.tender.value) : "value TBC"}</p>
+        <p>${item.result.recommendation}</p>
+        <div class="roi-strip">
+          <div><span>Deadline</span><strong>${item.tender.deadline || "TBC"}</strong></div>
+          <div><span>Days left</span><strong>${Number.isFinite(item.result.deadlineDays) ? item.result.deadlineDays : "TBC"}</strong></div>
+          <div><span>Local fit</span><strong>${item.result.localMatch ? "Yes" : "Check"}</strong></div>
+          <div><span>Material fit</span><strong>${item.result.keywordHit ? "Yes" : "Check"}</strong></div>
+          <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong></div>
+        </div>
+        <div class="agent-search-links">
+          <strong>Check stock sources before bidding</strong>
+          ${sourceSearchLinks(terms)}
+        </div>
+        <p class="candidate-note">${item.tender.notes}</p>
+        <div class="dashboard-actions">
+          ${item.tender.url ? `<a class="button secondary" href="${item.tender.url}" target="_blank" rel="noopener">Open tender</a>` : ""}
+          <button class="button primary" type="button" data-tender-add="${encodeURIComponent(JSON.stringify(item.tender))}">Add as demand</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function addTenderDemand(encodedTender) {
+  const tender = JSON.parse(decodeURIComponent(encodedTender));
+  const settings = tenderSettings();
+  const brief = {
+    customer: tender.authority,
+    source: "Find a Tender",
+    item: tender.item,
+    quantity: "1",
+    postcode: settings.postcode,
+    budget: tender.value ? String(Math.round(number(tender.value))) : "",
+    quality: "Standard",
+    urgency: tender.deadline && daysUntil(tender.deadline) <= 7 ? "This week" : "This month",
+    notes: `${tender.title}\n${tender.notes}${tender.url ? `\n${tender.url}` : ""}`,
+  };
+  const demand = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    status: "Tender",
+    tender,
+    brief,
+  };
+  state.demands.unshift(demand);
+  state.activeDemandId = demand.id;
+  state.brief = brief;
+  fillForm(briefForm, brief);
+  persist();
+  render();
+  scorePreview.textContent = `${demandLabel(demand)} added from Find a Tender. Now match supplier stock before bid review.`;
 }
 
 function addAgentCandidate(encodedCandidate) {
@@ -678,6 +908,7 @@ function render() {
   renderDemandQueue();
   renderCandidates();
   renderLearning();
+  renderTenderSummary();
   syncAgentDefaults();
 }
 
@@ -768,7 +999,7 @@ function renderLearning() {
 
   const approved = state.feedback.filter((item) => item.status === "Approved").length;
   const rejected = state.feedback.filter((item) => item.status === "Rejected").length;
-  const liveDemand = state.demands.filter((item) => item.status === "Live" || item.status === "Matched").length;
+  const liveDemand = state.demands.filter((item) => ["Live", "Tender", "Matched"].includes(item.status)).length;
   memoryStats.innerHTML = `
     <strong>${state.feedback.length}</strong>
     <span>review decisions recorded</span>
@@ -821,6 +1052,8 @@ document.querySelector("#saveDemand")?.addEventListener("click", saveDemand);
 document.querySelector("#scoreCandidate")?.addEventListener("click", scoreCurrentCandidate);
 document.querySelector("#generateSearches")?.addEventListener("click", generateSearches);
 document.querySelector("#rankLots")?.addEventListener("click", rankLots);
+document.querySelector("#generateTenderSearches")?.addEventListener("click", generateTenderSearches);
+document.querySelector("#rankTenders")?.addEventListener("click", rankTenders);
 candidateForm?.addEventListener("submit", addCandidate);
 demandList?.addEventListener("click", (event) => {
   const selectButton = event.target.closest("button[data-demand-select]");
@@ -836,6 +1069,10 @@ candidateList?.addEventListener("click", (event) => {
 agentResults?.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-agent-add]");
   if (button) addAgentCandidate(button.dataset.agentAdd);
+});
+tenderResults?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-tender-add]");
+  if (button) addTenderDemand(button.dataset.tenderAdd);
 });
 document.querySelector("#exportData")?.addEventListener("click", exportData);
 document.querySelector("#clearData")?.addEventListener("click", clearData);
