@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0d141d">
     <link rel="icon" href="brand/rentalready_mark.svg" type="image/svg+xml">
     <script src="theme-init.js?v=20260526b"></script>
-    <link rel="stylesheet" href="styles.css?v=20260602a">
+    <link rel="stylesheet" href="styles.css?v=20260602b">
   </head>
   <body class="dashboard-body">
     <header class="site-header dashboard-header">
@@ -168,14 +168,6 @@ fridges freezers
 cookers ovens
 kitchen equipment</textarea>
           </label>
-          <label class="span-2">
-            Paste Find a Tender opportunities
-            <textarea id="tenderImport" rows="8" placeholder="Paste one opportunity per line. Example: Leicester City Council | White goods supply for temporary accommodation | Value £18,000 | East Midlands | Deadline 2026-06-18 | https://www.find-tender.service.gov.uk/..."></textarea>
-          </label>
-          <label class="span-2">
-            Tender detail notes
-            <textarea id="tenderDetailNotes" rows="8" placeholder="Paste tender details, specification, delivery requirements, award criteria, insurance/compliance notes, or buyer questions here. The bid desk uses this to prepare a response pack."></textarea>
-          </label>
           <div class="dashboard-actions span-2">
             <button class="button secondary" type="button" id="generateTenderSearches">Generate tender searches</button>
             <button class="button primary" type="button" id="fetchLiveTenders">Fetch live tenders</button>
@@ -183,9 +175,30 @@ kitchen equipment</textarea>
             <button class="button secondary" type="button" id="prepareBidPack">Prepare bid pack</button>
           </div>
           <div class="agent-summary span-2" id="tenderSummary" aria-live="polite">Use narrow, local/regional searches first. Avoid big national frameworks until the business has stronger capacity and references.</div>
-          <div class="live-tender-status span-2" id="liveTenderStatus" aria-live="polite"></div>
-          <div class="agent-search-links span-2" id="tenderSearchLinks"></div>
-          <div class="agent-results span-2" id="tenderResults"></div>
+          <section class="tender-opportunity-panel span-2" aria-labelledby="tender-opportunities-title">
+            <div class="panel-heading compact-heading">
+              <p class="eyebrow">Tender opportunities</p>
+              <h3 id="tender-opportunities-title">Live and pasted tender results</h3>
+              <p>Select a tender here. The full contract figures and bid-readiness information appear in the section below.</p>
+            </div>
+            <details class="manual-import">
+              <summary>Paste tender opportunities manually</summary>
+              <label>
+                Paste Find a Tender opportunities
+                <textarea id="tenderImport" rows="6" placeholder="Paste one opportunity per line. Example: Leicester City Council | White goods supply for temporary accommodation | Value £18,000 | East Midlands | Deadline 2026-06-18 | https://www.find-tender.service.gov.uk/..."></textarea>
+              </label>
+            </details>
+            <div class="live-tender-status" id="liveTenderStatus" aria-live="polite"></div>
+            <div class="agent-search-links" id="tenderSearchLinks"></div>
+            <div class="agent-results" id="tenderResults"></div>
+          </section>
+          <section class="tender-workspace span-2" id="tenderWorkspace" aria-live="polite">
+            <p class="empty-state">Fetch or rank tender opportunities, then select one to review the full contract figures, match percentage, eligibility, stock source plan, and bid-pack action.</p>
+          </section>
+          <label class="span-2">
+            Tender detail notes
+            <textarea id="tenderDetailNotes" rows="8" placeholder="Paste tender details, specification, delivery requirements, award criteria, insurance/compliance notes, or buyer questions here. The bid desk uses this to prepare a response pack."></textarea>
+          </label>
           <div class="bid-pack span-2" id="bidPack" aria-live="polite"></div>
         </section>
 
@@ -368,6 +381,6 @@ kitchen equipment</textarea>
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260602a"></script>
+    <script src="sourcing-dashboard.js?v=20260602b"></script>
   </body>
 </html>

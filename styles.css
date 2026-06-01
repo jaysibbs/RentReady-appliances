@@ -2688,6 +2688,47 @@ section {
   gap: 12px;
 }
 
+.tender-opportunity-panel,
+.tender-workspace {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 16px;
+  color: var(--dash-text);
+  background: var(--dash-card);
+  box-shadow: var(--shadow);
+}
+
+.compact-heading h3,
+.tender-workspace h3 {
+  margin: 0;
+  color: var(--dash-text);
+}
+
+.compact-heading p:not(.eyebrow),
+.tender-workspace p {
+  color: var(--dash-muted);
+}
+
+.manual-import {
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--dash-card-soft);
+}
+
+.manual-import summary {
+  cursor: pointer;
+  color: var(--dash-warning);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.manual-import label {
+  margin-top: 12px;
+}
+
 .live-tender-status {
   display: grid;
   gap: 4px;
@@ -2945,9 +2986,15 @@ section {
   grid-template-columns: auto minmax(220px, 1fr) minmax(420px, 1.35fr) minmax(160px, 220px);
   gap: 12px;
   align-items: center;
+  width: 100%;
+  border: 0;
   padding: 12px 14px;
+  color: inherit;
   cursor: pointer;
+  font: inherit;
   list-style: none;
+  text-align: left;
+  background: transparent;
 }
 
 .tender-result-summary::-webkit-details-marker {
@@ -2965,8 +3012,14 @@ section {
   text-transform: uppercase;
 }
 
-.tender-result-card[open] .tender-result-summary::after {
-  content: "Close";
+.tender-result-card.selected {
+  border-color: rgba(100, 212, 156, .68);
+  box-shadow: 0 0 0 1px rgba(100, 212, 156, .18);
+}
+
+.tender-result-card.selected .tender-result-summary::after {
+  content: "Selected";
+  color: var(--dash-success);
 }
 
 .tender-summary-main {
@@ -3025,11 +3078,31 @@ section {
   white-space: nowrap;
 }
 
-.tender-result-body {
+.tender-result-body,
+.tender-workspace-header {
   display: grid;
   gap: 14px;
+}
+
+.tender-result-body {
   border-top: 1px solid var(--dash-border);
   padding: 16px;
+}
+
+.tender-workspace-header {
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 220px);
+  align-items: start;
+}
+
+.tender-workspace-header h3 {
+  margin: 8px 0 6px;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.12;
+}
+
+.tender-workspace-header p {
+  margin: 0;
+  font-weight: 800;
 }
 
 .tender-result-header {
