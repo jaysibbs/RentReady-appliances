@@ -77,6 +77,13 @@ Before applying for a tender, the bid desk checks:
 
 The dashboard can prepare a bid pack with opportunity details, stock evidence, projected ROI, assumptions, and missing actions. It should not submit the tender automatically. Final submission should be done manually after confirming the buyer portal requirements, declarations, insurances, references, pricing schedule, delivery commitments, and any exclusion grounds or compliance questions.
 
+The bid desk should make the go/no-go decision obvious:
+
+- tender details must remain visible, including buyer, title, category, required quantity, value, region, deadline, and source link
+- stock coverage must show required quantity, matched quantity, approved quantity, lowest ROI, and projected profit
+- stock lines must show supplier, location, quantity, landed cost, ROI, and approval status
+- the decision should clearly say whether the tender is worth applying for, potentially worth preparing, or not worth applying for yet
+
 ## Lot Paste Format
 
 The parser works best with one lot per line:

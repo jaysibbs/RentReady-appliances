@@ -2685,6 +2685,120 @@ section {
   background: rgba(13, 20, 29, .58);
 }
 
+.decision-panel,
+.tender-details,
+.stock-coverage {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.decision-panel {
+  display: grid;
+  gap: 6px;
+}
+
+.decision-panel.pass {
+  border-color: rgba(91, 214, 155, .48);
+  background: rgba(91, 214, 155, .08);
+}
+
+.decision-panel.prepare {
+  border-color: rgba(255, 198, 102, .38);
+  background: rgba(255, 198, 102, .07);
+}
+
+.decision-panel.hold {
+  border-color: rgba(255, 110, 110, .32);
+  background: rgba(255, 110, 110, .06);
+}
+
+.decision-panel strong {
+  color: var(--green);
+  font-size: 24px;
+}
+
+.decision-panel span {
+  color: var(--gold);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.decision-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.tender-details summary {
+  cursor: pointer;
+  color: var(--gold);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tender-details dl,
+.coverage-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.tender-details dl div,
+.coverage-kpis div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(13, 20, 29, .42);
+}
+
+.tender-details dt,
+.coverage-kpis span {
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tender-details dd,
+.coverage-kpis strong {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.tender-details p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+
+.stock-lines {
+  display: grid;
+  gap: 8px;
+}
+
+.stock-line {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(13, 20, 29, .38);
+}
+
+.stock-line strong {
+  color: var(--ink);
+}
+
+.stock-line span,
+.stock-line em {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: normal;
+}
+
 .bid-pack {
   display: grid;
   gap: 14px;
@@ -2824,6 +2938,8 @@ meter::-webkit-meter-optimum-value {
   .learning-grid,
   .demand-card dl,
   .bid-checklist,
+  .tender-details dl,
+  .coverage-kpis,
   .candidate-card dl,
   .roi-strip,
   .agent-kpis {

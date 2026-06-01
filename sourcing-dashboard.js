@@ -131,6 +131,61 @@ function stockCoverageForDemand(demandId) {
   };
 }
 
+function tenderDetailRows(tender) {
+  return [
+    ["Buyer", tender.authority || "TBC"],
+    ["Title", tender.title || "TBC"],
+    ["Category", tender.item || "TBC"],
+    ["Required stock", `${number(tender.quantity) || 1} unit(s)`],
+    ["Estimated value", tender.value ? money(tender.value) : "TBC"],
+    ["Region", tender.region || "TBC"],
+    ["Deadline", tender.deadline || "TBC"],
+    ["Source", tender.source || "Find a Tender"],
+  ];
+}
+
+function renderTenderDetails(tender) {
+  return `
+    <details class="tender-details" open>
+      <summary>Tender details</summary>
+      <dl>
+        ${tenderDetailRows(tender).map(([key, value]) => `
+          <div><dt>${key}</dt><dd>${escapeHtml(value)}</dd></div>
+        `).join("")}
+      </dl>
+      <p>${escapeHtml(tender.notes || "No tender detail text pasted yet.")}</p>
+    </details>
+  `;
+}
+
+function renderStockCoverage(demand, readiness = null) {
+  const tender = demand?.tender || {};
+  const required = readiness?.requiredQuantity || number(demand?.brief?.quantity) || number(tender.quantity) || 1;
+  const coverage = readiness?.coverage || stockCoverageForDemand(demand?.id);
+  const matchedPercent = required ? clamp((coverage.quantityAvailable / required) * 100) : 0;
+  const approvedPercent = required ? clamp((coverage.approvedQuantity / required) * 100) : 0;
+  const lines = coverage.viable.map((record) => `
+    <div class="stock-line">
+      <strong>${recordQuantity(record)} x ${escapeHtml(record.candidate.title || record.candidate.category || "Matched stock")}</strong>
+      <span>${escapeHtml(record.candidate.supplier || "Supplier TBC")} • ${escapeHtml(record.candidate.location || "Location TBC")} • ${record.status}</span>
+      <em>Landed ${money(record.result?.financials?.landed)} • ROI ${percent(record.result?.financials?.roi)}</em>
+    </div>
+  `).join("") || `<p class="empty-state">No viable matched stock yet. Add auction lots to this tender demand before deciding to bid.</p>`;
+
+  return `
+    <div class="stock-coverage">
+      <div class="coverage-kpis">
+        <div><span>Required</span><strong>${required}</strong></div>
+        <div><span>Matched</span><strong>${coverage.quantityAvailable}</strong><meter min="0" max="100" value="${matchedPercent}"></meter></div>
+        <div><span>Approved</span><strong>${coverage.approvedQuantity}</strong><meter min="0" max="100" value="${approvedPercent}"></meter></div>
+        <div><span>Lowest ROI</span><strong>${coverage.lowestRoi ? percent(coverage.lowestRoi) : "TBC"}</strong></div>
+        <div><span>Profit</span><strong>${money(coverage.projectedProfit)}</strong></div>
+      </div>
+      <div class="stock-lines">${lines}</div>
+    </div>
+  `;
+}
+
 function fillForm(form, values) {
   Object.entries(values || {}).forEach(([key, value]) => {
     const field = form.elements[key];
@@ -703,6 +758,13 @@ function renderBidPack() {
       <strong>${readiness.score}% ready</strong>
     </div>
     <h3>${demand.tender.title || "Tender opportunity"}</h3>
+    <div class="decision-panel ${readiness.decision.includes("Proceed") ? "pass" : readiness.decision.includes("Prepare") ? "prepare" : "hold"}">
+      <strong>${readiness.decision.includes("Proceed") ? "Worth applying for" : readiness.decision.includes("Prepare") ? "Potentially worth it" : "Not worth applying yet"}</strong>
+      <span>${readiness.decision}</span>
+      <p>${readiness.coverage.approvedQuantity >= readiness.requiredQuantity ? "Approved stock covers the full requirement." : `Stock gap: approve or source ${Math.max(0, readiness.requiredQuantity - readiness.coverage.approvedQuantity)} more unit(s) before submission.`}</p>
+    </div>
+    ${renderTenderDetails(demand.tender)}
+    ${renderStockCoverage(demand, readiness)}
     <div class="roi-strip">
       <div><span>Required</span><strong>${readiness.requiredQuantity}</strong></div>
       <div><span>Matched</span><strong>${readiness.coverage.quantityAvailable}</strong></div>
@@ -816,7 +878,7 @@ function rankLots() {
       </div>
       <h3>${item.candidate.title || "Auction lot"}</h3>
       <p class="demand-match">${demand ? `Matched to ${demandLabel(demand)}` : "No buyer request selected - do not buy yet."}</p>
-      <p>${item.candidate.supplier} • ${item.candidate.category} • ${item.candidate.location || "location TBC"}</p>
+      <p>${item.candidate.supplier} • ${recordQuantity({ candidate: item.candidate })} available • ${item.candidate.category} • ${item.candidate.location || "location TBC"}</p>
       ${renderScore(item.result)}
       <p class="candidate-note">${item.candidate.notes}</p>
       <div class="dashboard-actions">
@@ -857,11 +919,12 @@ function rankTenders() {
         <h3>${item.tender.title}</h3>
         <p class="demand-match">${item.tender.authority} • ${item.tender.region || "region TBC"} • ${item.tender.value ? money(item.tender.value) : "value TBC"}</p>
         <p>${item.result.recommendation}</p>
+        ${renderTenderDetails(item.tender)}
         <div class="roi-strip">
+          <div><span>Required stock</span><strong>${number(item.tender.quantity) || 1}</strong></div>
           <div><span>Deadline</span><strong>${item.tender.deadline || "TBC"}</strong></div>
           <div><span>Days left</span><strong>${Number.isFinite(item.result.deadlineDays) ? item.result.deadlineDays : "TBC"}</strong></div>
           <div><span>Local fit</span><strong>${item.result.localMatch ? "Yes" : "Check"}</strong></div>
-          <div><span>Material fit</span><strong>${item.result.keywordHit ? "Yes" : "Check"}</strong></div>
           <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong></div>
         </div>
         <div class="agent-search-links">
@@ -1137,6 +1200,7 @@ function renderCandidates() {
       <dl>
         <div><dt>Landed est.</dt><dd>${money(record.result.financials?.landed || number(record.candidate.price) + number(record.candidate.fees))}</dd></div>
         <div><dt>ROI</dt><dd>${record.result.financials?.sale ? percent(record.result.financials.roi) : "TBC"}</dd></div>
+        <div><dt>Quantity</dt><dd>${recordQuantity(record)} available</dd></div>
         <div><dt>Brief</dt><dd>${record.brief.quantity || 1} x ${record.brief.item || "item"} for ${record.brief.postcode || "postcode TBC"}</dd></div>
         <div><dt>Timing</dt><dd>${record.brief.urgency || "TBC"} / available ${record.candidate.availableBy || "TBC"}</dd></div>
         <div><dt>Quality</dt><dd>${record.brief.quality || "TBC"} / ${record.candidate.condition || "TBC"}</dd></div>
