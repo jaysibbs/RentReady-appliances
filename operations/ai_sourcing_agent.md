@@ -66,7 +66,9 @@ This keeps the recommendation focused on profit after real sourcing costs, not j
 
 The tender lane is designed to create demand signals. It does not submit public-sector bids, make supplier purchases, or claim compliance. Tender submission still needs manual review of eligibility, insurance, delivery capacity, terms, references, and any required supplier registration.
 
-The dashboard uses a Cloudflare Pages Function to fetch live Find a Tender search results because browser-side requests may be blocked by cross-origin rules. John Pye stock availability is shown through matched/imported lots and direct source links because the John Pye auction platform can challenge non-browser programmatic requests. Do not treat unavailable automated John Pye scraping as confirmed stock; only approved matched lots count towards stock coverage.
+The dashboard uses Cloudflare server-side routing to fetch live Find a Tender search results because browser-side requests may be blocked by cross-origin rules. For Git-based Cloudflare builds, the same routes are available in `functions/api/`. For manual Cloudflare zip uploads, `_worker.js` must be included in the deploy zip so `/api/tenders` and `/api/tender-detail` return JSON instead of the static homepage.
+
+John Pye stock availability is shown through matched/imported lots and direct source links because the John Pye auction platform can challenge non-browser programmatic requests. Do not treat unavailable automated John Pye scraping as confirmed stock; only approved matched lots count towards stock coverage.
 
 ## Tender Application Readiness
 

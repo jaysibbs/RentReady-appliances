@@ -6,6 +6,7 @@ const dist = join(root, "dist");
 
 const files = [
   "_headers",
+  "_worker.js",
   "_redirects",
   "cookers-ovens.html",
   "delivery-haul-away.html",
