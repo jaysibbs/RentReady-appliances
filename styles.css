@@ -2437,6 +2437,66 @@ section {
   padding: 22px 0 52px;
 }
 
+.workflow-tabs {
+  position: sticky;
+  top: 72px;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 8px;
+  background: color-mix(in srgb, var(--header-bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow);
+}
+
+.workflow-tabs button {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  min-height: 58px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: var(--dash-muted);
+  cursor: pointer;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+}
+
+.workflow-tabs button:hover,
+.workflow-tabs button.is-active {
+  color: var(--dash-text);
+  border-color: rgba(100, 212, 156, .42);
+  background: rgba(100, 212, 156, .1);
+}
+
+.workflow-tabs span {
+  color: var(--dash-warning);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.workflow-tabs strong {
+  overflow: hidden;
+  color: inherit;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.step-panel {
+  grid-column: 1 / -1;
+}
+
+.step-panel[hidden] {
+  display: none !important;
+}
+
 .dashboard-panel {
   padding: 22px;
 }
@@ -3459,6 +3519,7 @@ meter::-webkit-meter-optimum-value {
 
   .dashboard-hero,
   .dashboard-grid,
+  .workflow-tabs,
   .learning-grid,
   .tender-panel,
   .agent-panel,
@@ -3490,6 +3551,11 @@ meter::-webkit-meter-optimum-value {
   .dashboard-hero {
     padding-top: 52px;
   }
+
+  .workflow-tabs {
+    position: static;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -3499,6 +3565,10 @@ meter::-webkit-meter-optimum-value {
 
   .sourcing-form {
     grid-template-columns: 1fr;
+  }
+
+  .workflow-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .span-2 {

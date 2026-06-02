@@ -70,6 +70,18 @@ const agentSummary = document.querySelector("#agentSummary");
 const agentSearchLinks = document.querySelector("#agentSearchLinks");
 const agentResults = document.querySelector("#agentResults");
 let activeTenderReview = null;
+const workflowTabs = [...document.querySelectorAll("[data-step-tab]")];
+const workflowPanels = [...document.querySelectorAll("[data-step-panel]")];
+const STEP_HASH_MAP = {
+  brief: "brief",
+  briefForm: "brief",
+  demand: "demand",
+  tenders: "tenders",
+  agent: "agent",
+  candidate: "candidate",
+  candidateForm: "candidate",
+  shortlist: "shortlist",
+};
 
 function load(key, fallback) {
   try {
@@ -81,6 +93,30 @@ function load(key, fallback) {
 
 function save(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function stepFromHash(hash = window.location.hash) {
+  return STEP_HASH_MAP[String(hash || "").replace(/^#/, "")] || "";
+}
+
+function activeWorkflowStep() {
+  return stepFromHash() || load("rentalready_sourcing_active_step", "brief");
+}
+
+function showWorkflowStep(step, updateHash = true) {
+  const nextStep = STEP_HASH_MAP[step] || "brief";
+  workflowPanels.forEach((panel) => {
+    panel.hidden = panel.dataset.stepPanel !== nextStep;
+  });
+  workflowTabs.forEach((tab) => {
+    const active = tab.dataset.stepTab === nextStep;
+    tab.classList.toggle("is-active", active);
+    tab.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  save("rentalready_sourcing_active_step", nextStep);
+  if (updateHash && window.location.hash !== `#${nextStep}`) {
+    history.replaceState(null, "", `#${nextStep}`);
+  }
 }
 
 function formData(form) {
@@ -1616,6 +1652,21 @@ document.querySelector("#generateTenderSearches")?.addEventListener("click", gen
 document.querySelector("#fetchLiveTenders")?.addEventListener("click", fetchLiveTenders);
 document.querySelector("#rankTenders")?.addEventListener("click", rankTenders);
 document.querySelector("#prepareBidPack")?.addEventListener("click", renderBidPack);
+workflowTabs.forEach((tab) => {
+  tab.addEventListener("click", () => showWorkflowStep(tab.dataset.stepTab));
+});
+document.addEventListener("click", (event) => {
+  const link = event.target.closest('a[href^="#"]');
+  if (!link) return;
+  const step = stepFromHash(link.getAttribute("href"));
+  if (!step) return;
+  event.preventDefault();
+  showWorkflowStep(step);
+});
+window.addEventListener("hashchange", () => {
+  const step = stepFromHash();
+  if (step) showWorkflowStep(step, false);
+});
 candidateForm?.addEventListener("submit", addCandidate);
 demandList?.addEventListener("click", (event) => {
   const selectButton = event.target.closest("button[data-demand-select]");
@@ -1661,3 +1712,4 @@ document.querySelector("#exportData")?.addEventListener("click", exportData);
 document.querySelector("#clearData")?.addEventListener("click", clearData);
 
 render();
+showWorkflowStep(activeWorkflowStep(), false);
