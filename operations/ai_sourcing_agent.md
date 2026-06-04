@@ -54,6 +54,19 @@ When a public opportunity has a total value and quantity, the dashboard converts
 
 Manual opportunities can still be added in Step 1, but they should represent a real contract/tender/portal opportunity rather than a speculative customer wish list.
 
+## Opportunity Board
+
+The highlighted contract section is the live opportunity board. It should not be treated as a paste area. The board should show the most viable contract/tender opportunities using:
+
+- opportunity viability score
+- matched stock quantity versus required quantity
+- lowest landed stock cost versus contract value per unit
+- stock available before the submission deadline
+- whether fulfilment can come from one source or requires multiple sources
+- total contract value and days left before deadline
+
+Manual paste remains available only as a fallback when the live feed misses a known opportunity. It should not be the primary workflow.
+
 ## Public Contract Workflow
 
 1. Set the region focus and starter contract cap.

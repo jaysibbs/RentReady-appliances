@@ -1006,6 +1006,121 @@ function tenderFromApiResult(result, settings) {
   };
 }
 
+function tenderBrief(tender, settings = tenderSettings()) {
+  const unitValue = opportunityUnitValue(tender);
+  return {
+    customer: tender.authority,
+    source: tender.source || "Public contract",
+    item: tender.item,
+    quantity: String(number(tender.quantity) || 1),
+    postcode: settings.postcode || "",
+    budget: unitValue ? String(unitValue) : "",
+    quality: "Standard",
+    urgency: tender.deadline && daysUntil(tender.deadline) <= 7 ? "This week" : "This month",
+    deadline: tender.deadline || "",
+    notes: `${tender.title || ""}\n${tender.notes || ""}${tender.url ? `\n${tender.url}` : ""}`,
+  };
+}
+
+function candidateMatchesTender(candidate, tender) {
+  const category = normalise(candidate?.category);
+  const item = normalise(tender?.item);
+  const text = normalise([candidate?.title, candidate?.category, candidate?.notes, candidate?.brand].filter(Boolean).join(" "));
+  const terms = tenderSearchTerms(tender).map(normalise);
+  return Boolean(
+    (category && item && (category === item || category.includes(item) || item.includes(category))) ||
+    terms.some((term) => term && text.includes(term))
+  );
+}
+
+function projectedRecordForTender(record, tender, settings) {
+  const unitValue = opportunityUnitValue(tender);
+  const landed = number(record?.result?.financials?.landed) || number(record?.candidate?.fees) || (number(record?.candidate?.price) + number(record?.candidate?.fees));
+  const roi = roiPercent(unitValue, landed);
+  const profit = unitValue && landed ? unitValue - landed : 0;
+  const passes = Boolean(unitValue && landed && roi >= settings.roi && profit > 0 && recordMeetsDeadline(record, tender.deadline));
+  return {
+    ...record,
+    result: {
+      ...(record.result || {}),
+      financials: {
+        ...(record.result?.financials || {}),
+        sale: unitValue,
+        landed,
+        profit,
+        roi,
+        passes,
+      },
+    },
+  };
+}
+
+function stockProjectionForTender(tender, settings) {
+  const required = number(tender.quantity) || 1;
+  const unitValue = opportunityUnitValue(tender);
+  const matchingRecords = state.candidates
+    .filter((record) => record.status !== "Rejected" && candidateMatchesTender(record.candidate, tender))
+    .map((record) => projectedRecordForTender(record, tender, settings));
+  const viable = matchingRecords.filter((record) => record.result?.financials?.passes);
+  const approved = viable.filter((record) => record.status === "Approved");
+  const quantityAvailable = viable.reduce((sum, record) => sum + recordQuantity(record), 0);
+  const approvedQuantity = approved.reduce((sum, record) => sum + recordQuantity(record), 0);
+  const timedQuantity = viable.filter((record) => recordMeetsDeadline(record, tender.deadline)).reduce((sum, record) => sum + recordQuantity(record), 0);
+  const timedApprovedQuantity = approved.filter((record) => recordMeetsDeadline(record, tender.deadline)).reduce((sum, record) => sum + recordQuantity(record), 0);
+  const roiValues = viable.map((record) => number(record.result?.financials?.roi)).filter(Boolean);
+  const landedValues = viable.map((record) => number(record.result?.financials?.landed)).filter(Boolean);
+  const lowestRoi = roiValues.length ? Math.min(...roiValues) : 0;
+  const lowestLanded = landedValues.length ? Math.min(...landedValues) : 0;
+  const landedCost = viable.reduce((sum, record) => sum + number(record.result?.financials?.landed) * recordQuantity(record), 0);
+  const targetSale = viable.reduce((sum, record) => sum + unitValue * recordQuantity(record), 0);
+  const coverage = {
+    records: matchingRecords,
+    viable,
+    approved,
+    quantityAvailable,
+    approvedQuantity,
+    lowestRoi,
+    landedCost,
+    targetSale,
+    projectedProfit: targetSale - landedCost,
+  };
+  const sourceSummary = stockSourceSummary(coverage, required);
+  const coveragePercent = required ? clamp((quantityAvailable / required) * 100) : 0;
+  const approvedPercent = required ? clamp((approvedQuantity / required) * 100) : 0;
+  const scheduleDays = daysUntil(tender.deadline);
+  const scheduleScore = !tender.deadline ? 42 : scheduleDays < 3 ? 12 : scheduleDays <= 14 ? 78 : 92;
+  const maxLanded = unitValue ? unitValue / (1 + settings.roi / 100) : 0;
+  const economicsScore = unitValue && lowestLanded
+    ? clamp(((maxLanded - lowestLanded) / maxLanded) * 100 + 70)
+    : 34;
+
+  return {
+    required,
+    unitValue,
+    maxLanded,
+    coverage,
+    sourceSummary,
+    coveragePercent,
+    approvedPercent,
+    timedQuantity,
+    timedApprovedQuantity,
+    lowestLanded,
+    lowestRoi,
+    scheduleDays,
+    scheduleScore,
+    economicsScore,
+  };
+}
+
+function opportunityBoardScore(tenderResult, projection) {
+  return Math.round(
+    tenderResult.score * 0.46 +
+    projection.coveragePercent * 0.24 +
+    projection.economicsScore * 0.18 +
+    projection.scheduleScore * 0.12
+  );
+}
+
 function tenderScore(tender, settings) {
   const value = number(tender.value);
   const deadlineDays = daysUntil(tender.deadline);
@@ -1306,20 +1421,24 @@ function rankTenders() {
   const raw = document.querySelector("#tenderImport")?.value || "";
   const lines = raw.split(/\n+/).map((line) => line.trim()).filter(Boolean);
   if (!lines.length) {
-    tenderResults.innerHTML = `<p class="empty-state">Paste one or more Contracts Finder or Find a Tender opportunities first. Keep one opportunity per line for best results.</p>`;
+    tenderResults.innerHTML = `<p class="empty-state">Use Fetch live contracts for the main workflow. The manual fallback is only for opportunities the live feed misses.</p>`;
     activeTenderReview = null;
     renderTenderWorkspace(null);
     return;
   }
 
   const tenders = lines.map((line) => parseTenderLine(line, settings));
-  renderTenderMatches(tenders, settings, "Pasted contract opportunities ranked locally.");
+  renderTenderMatches(tenders, settings, "Manual fallback opportunities ranked locally.");
 }
 
 function renderTenderMatches(tenders, settings, sourceNote = "") {
   const ranked = tenders
-    .map((tender) => ({ tender, result: tenderScore(tender, settings) }))
-    .sort((a, b) => b.result.score - a.result.score);
+    .map((tender) => {
+      const result = tenderScore(tender, settings);
+      const projection = stockProjectionForTender(tender, settings);
+      return { tender, result, projection, boardScore: opportunityBoardScore(result, projection) };
+    })
+    .sort((a, b) => b.boardScore - a.boardScore || b.result.score - a.result.score);
 
   activeTenderReview = ranked[0] ? { ...ranked[0], index: 0, settings } : null;
   tenderResults.innerHTML = `
@@ -1330,10 +1449,18 @@ function renderTenderMatches(tenders, settings, sourceNote = "") {
     const value = number(item.tender.value);
     const deadlineLabel = item.tender.deadline || "TBC";
     const daysLabel = Number.isFinite(item.result.deadlineDays) ? `${item.result.deadlineDays} day(s)` : "Confirm";
+    const unitValue = item.projection.unitValue;
+    const costLabel = item.projection.lowestLanded
+      ? `${money(item.projection.lowestLanded)} / ${unitValue ? money(unitValue) : "TBC"}`
+      : `Need stock / ${unitValue ? money(unitValue) : "TBC"}`;
+    const scheduleLabel = item.tender.deadline
+      ? `${item.projection.timedQuantity}/${required} before deadline`
+      : "Deadline TBC";
+    const stockTone = item.projection.coveragePercent >= 100 ? "pass" : item.projection.coveragePercent > 0 ? "prepare" : "hold";
     const isSelected = activeTenderReview?.tender?.title === item.tender.title && activeTenderReview?.tender?.authority === item.tender.authority;
     const encoded = encodeURIComponent(JSON.stringify({ tender: item.tender, result: item.result, index, settings }));
     return `
-      <article class="tender-result-card ${item.result.tone} ${isSelected ? "selected" : ""}">
+      <article class="tender-result-card ${stockTone} ${isSelected ? "selected" : ""}">
         <button class="tender-result-summary" type="button" data-tender-review="${encoded}">
           <span class="result-rank">#${index + 1}</span>
           <div class="tender-summary-main">
@@ -1341,14 +1468,14 @@ function renderTenderMatches(tenders, settings, sourceNote = "") {
             <p>${escapeHtml(item.tender.authority)} • ${escapeHtml(item.tender.region || "region TBC")}</p>
           </div>
           <div class="summary-metrics">
-            <div><span>Match</span><strong>${Math.round(item.result.score)}%</strong></div>
-            <div><span>Goods</span><strong>${Math.round(item.result.goodsScore || item.result.score)}%</strong></div>
-            <div><span>Value</span><strong>${value ? money(value) : "TBC"}</strong></div>
-            <div><span>Stock</span><strong>${required}</strong></div>
+            <div><span>Viability</span><strong>${item.boardScore}%</strong></div>
+            <div><span>Stock cover</span><strong>${item.projection.coverage.quantityAvailable}/${required}</strong></div>
+            <div><span>Cost/value</span><strong>${costLabel}</strong></div>
+            <div><span>Schedule</span><strong>${scheduleLabel}</strong></div>
           </div>
-          <div class="decision-badge ${item.result.tone}">
-            <strong>${item.result.decision}</strong>
-            <span>${daysLabel} left</span>
+          <div class="decision-badge ${stockTone}">
+            <strong>${item.projection.sourceSummary.decision}</strong>
+            <span>${value ? money(value) : "Value TBC"} • ${daysLabel} left</span>
           </div>
         </button>
       </article>
@@ -1371,6 +1498,8 @@ function renderTenderWorkspace(review) {
   const required = number(tender.quantity) || 1;
   const value = number(tender.value);
   const valuePerUnit = value && required ? value / required : 0;
+  const projection = stockProjectionForTender(tender, settings);
+  const boardScore = opportunityBoardScore(result, projection);
 
   tenderWorkspace.innerHTML = `
     <div class="tender-workspace-header">
@@ -1379,15 +1508,18 @@ function renderTenderWorkspace(review) {
         <h3>${escapeHtml(tender.title)}</h3>
         <p>${escapeHtml(tender.authority)} • ${escapeHtml(tender.region || "region TBC")} • ${escapeHtml(tender.source || "Find a Tender")}</p>
       </div>
-      <div class="decision-badge ${result.tone}">
-        <strong>${Math.round(result.score)}% match</strong>
-        <span>${result.decision}</span>
+      <div class="decision-badge ${projection.coveragePercent >= 100 ? "pass" : projection.coveragePercent > 0 ? "prepare" : result.tone}">
+        <strong>${boardScore}% viable</strong>
+        <span>${projection.sourceSummary.decision}</span>
       </div>
     </div>
 
     <div class="tender-fact-grid">
       <div><span>Estimated value</span><strong>${value ? money(value) : "TBC"}</strong><em>${valuePerUnit ? `${money(valuePerUnit)} per required unit` : "Confirm in notice"}</em></div>
       <div><span>Required stock</span><strong>${required}</strong><em>${escapeHtml(tender.item || "Category TBC")}</em></div>
+      <div><span>Matched stock</span><strong>${projection.coverage.quantityAvailable}/${required}</strong><em>${Math.round(projection.coveragePercent)}% coverage</em></div>
+      <div><span>Cost vs value</span><strong>${projection.lowestLanded ? `${money(projection.lowestLanded)} / ${valuePerUnit ? money(valuePerUnit) : "TBC"}` : "Stock needed"}</strong><em>Max landed ${projection.maxLanded ? money(projection.maxLanded) : "TBC"} at ${percent(settings.roi)} ROI</em></div>
+      <div><span>Delivery schedule</span><strong>${projection.timedQuantity}/${required}</strong><em>${tender.deadline ? `available before ${tender.deadline}` : "deadline TBC"}</em></div>
       <div><span>Goods fit</span><strong>${Math.round(result.goodsScore || result.score)}%</strong><em>${result.serviceHeavy ? "Service-heavy risk found" : "Supply-led check"}</em></div>
       <div><span>Deadline</span><strong>${tender.deadline || "TBC"}</strong><em>${Number.isFinite(result.deadlineDays) ? `${result.deadlineDays} day(s) left` : "Confirm deadline"}</em></div>
       <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong><em>Only bid if landed stock protects this</em></div>
@@ -1404,8 +1536,11 @@ function renderTenderWorkspace(review) {
     </div>
 
     <div class="stock-source-plan">
-      <strong>Stock availability review</strong>
-      <p>No stock is reserved from this opportunity yet. Save the opportunity, then attach John Pye, BPI, or BidSpotter lots. The saved opportunity will show whether fulfilment can come from one source or requires multiple sources by price, quantity, and timing.</p>
+      <strong>Stock availability and delivery review</strong>
+      <p>${projection.coverage.quantityAvailable
+        ? `${projection.sourceSummary.message} Lowest landed cost is ${projection.lowestLanded ? money(projection.lowestLanded) : "TBC"} against ${valuePerUnit ? money(valuePerUnit) : "the contract value"} per unit. ${projection.timedQuantity >= required ? "Matched stock fits the submission schedule." : `Only ${projection.timedQuantity}/${required} unit(s) are currently available before the deadline.`}`
+        : "No matching stock is attached yet. Save this opportunity, run the stock agent, and add John Pye, BPI, or BidSpotter lots before starting a bid pack."}</p>
+      ${renderStockSourceSummary(projection.sourceSummary, required)}
       ${sourceSearchLinks(terms)}
     </div>
 
@@ -1431,19 +1566,7 @@ function renderTenderWorkspace(review) {
 function addTenderDemand(encodedTender) {
   const tender = JSON.parse(decodeURIComponent(encodedTender));
   const settings = tenderSettings();
-  const unitValue = opportunityUnitValue(tender);
-  const brief = {
-    customer: tender.authority,
-    source: tender.source || "Public contract",
-    item: tender.item,
-    quantity: String(number(tender.quantity) || 1),
-    postcode: settings.postcode,
-    budget: unitValue ? String(unitValue) : "",
-    quality: "Standard",
-    urgency: tender.deadline && daysUntil(tender.deadline) <= 7 ? "This week" : "This month",
-    deadline: tender.deadline || "",
-    notes: `${tender.title}\n${tender.notes}${tender.url ? `\n${tender.url}` : ""}`,
-  };
+  const brief = tenderBrief(tender, settings);
   const demand = {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
