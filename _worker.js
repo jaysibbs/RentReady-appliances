@@ -281,6 +281,7 @@ async function handleTenderDetail(request) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const agentHost = url.hostname === "agent.rentalreadyappliances.com";
 
     if (url.pathname === "/api/tenders") {
       return handleTenderSearch(request);
@@ -288,6 +289,16 @@ export default {
 
     if (url.pathname === "/api/tender-detail") {
       return handleTenderDetail(request);
+    }
+
+    if (agentHost && (url.pathname === "/" || url.pathname === "/index.html")) {
+      const dashboardUrl = new URL(request.url);
+      dashboardUrl.pathname = "/sourcing-dashboard.html";
+      const response = await env.ASSETS.fetch(new Request(dashboardUrl, request));
+      const headers = new Headers(response.headers);
+      headers.set("X-Robots-Tag", "noindex, nofollow");
+      headers.set("Cache-Control", "private, no-store");
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
     }
 
     return env.ASSETS.fetch(request);

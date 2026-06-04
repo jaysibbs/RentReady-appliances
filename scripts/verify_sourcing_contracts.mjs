@@ -5,8 +5,8 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260604b/, "dashboard must load the opportunity-board stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260604b/, "dashboard must load the opportunity-board script version");
+assert.match(html, /styles\.css\?v=20260604c/, "dashboard must load the agent-domain stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260604c/, "dashboard must load the agent-domain script version");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
 assert.match(html, /Goods contract matcher/, "dashboard must use contract-first wording");
@@ -32,5 +32,7 @@ assert.match(worker, /CONTRACTS_FINDER_RESULTS_URL/, "manual-deploy worker must 
 assert.match(worker, /CONTRACTS_FINDER_API_URL/, "manual-deploy worker must use the official Contracts Finder JSON API");
 assert.match(worker, /parseContractsFinderResults/, "manual-deploy worker must parse Contracts Finder results");
 assert.match(worker, /www\.contractsfinder\.service\.gov\.uk/, "detail loader must allow Contracts Finder notice URLs");
+assert.match(worker, /agent\.rentalreadyappliances\.com/, "worker must route the agent subdomain to the sourcing dashboard");
+assert.match(worker, /sourcing-dashboard\.html/, "agent subdomain root must serve the sourcing dashboard");
 
 console.log("Sourcing contract dashboard verification passed.");

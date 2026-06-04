@@ -67,6 +67,17 @@ The highlighted contract section is the live opportunity board. It should not be
 
 Manual paste remains available only as a fallback when the live feed misses a known opportunity. It should not be the primary workflow.
 
+## Agent Domain
+
+Use `agent.rentalreadyappliances.com` for the internal sourcing agent once the subdomain is added to Cloudflare Pages custom domains.
+
+The Cloudflare worker routes the agent subdomain root to `sourcing-dashboard.html`, so:
+
+- `https://agent.rentalreadyappliances.com/` opens the sourcing dashboard
+- the public website remains on `https://rentalreadyappliances.com/`
+- the agent page remains `noindex, nofollow`
+- the same `/api/tenders` and `/api/tender-detail` routes continue to work
+
 ## Public Contract Workflow
 
 1. Set the region focus and starter contract cap.
