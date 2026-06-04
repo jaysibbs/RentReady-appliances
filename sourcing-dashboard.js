@@ -10,6 +10,9 @@ const DEFAULT_WEIGHTS = {
 };
 
 const DEFAULT_ROI_TARGET = 45;
+const STARTUP_ANCHOR_MIN = 15000;
+const STARTUP_ANCHOR_SWEET_MAX = 90000;
+const STARTUP_ANCHOR_MAX = 140000;
 const JOHN_PYE_SEARCH_BASE = "https://www.johnpye.co.uk/";
 const FIND_TENDER_SEARCH_BASE = "https://www.find-tender.service.gov.uk/Search/Results";
 const CONTRACTS_FINDER_SEARCH_BASE = "https://www.contractsfinder.service.gov.uk/Search/Results";
@@ -43,6 +46,10 @@ const STRONG_BRANDS = [
 ];
 
 const GOODS_SIGNAL_TERMS = [
+  "39700000",
+  "39710000",
+  "39711110",
+  "39713100",
   "supply",
   "goods",
   "equipment",
@@ -64,6 +71,39 @@ const GOODS_SIGNAL_TERMS = [
   "furniture",
   "materials",
   "stock",
+];
+
+const STARTUP_ROUTE_TERMS = [
+  "temporary accommodation",
+  "homelessness",
+  "private sector leasing",
+  "psl",
+  "void property",
+  "voids",
+  "housing association",
+  "registered provider",
+  "social housing",
+  "local authority",
+  "supported living",
+  "care home",
+  "student accommodation",
+  "letting agency",
+  "landlord",
+  "facilities management",
+  "fm",
+  "property maintenance",
+  "repairs",
+  "estates",
+];
+
+const PIPELINE_ROUTE_TERMS = [
+  "pipeline",
+  "future opportunity",
+  "early engagement",
+  "market engagement",
+  "prior information",
+  "pre-procurement",
+  "pre procurement",
 ];
 
 const SERVICE_RISK_TERMS = [
@@ -703,7 +743,7 @@ function tenderSettings() {
   return {
     source: document.querySelector("#opportunitySource")?.value || "all",
     region: document.querySelector("#tenderRegion")?.value || "East Midlands",
-    valueCap: number(document.querySelector("#tenderValueCap")?.value) || 30000,
+    valueCap: number(document.querySelector("#tenderValueCap")?.value) || 120000,
     roi: number(document.querySelector("#tenderRoi")?.value) || DEFAULT_ROI_TARGET,
     postcode: document.querySelector("#tenderPostcode")?.value || state.brief.postcode || "",
     keywords: (document.querySelector("#tenderKeywords")?.value || "")
@@ -746,12 +786,12 @@ function renderTenderSummary() {
   tenderSummary.innerHTML = `
     <div class="agent-kpis">
       <div><span>Region</span><strong>${settings.region}</strong></div>
-      <div><span>Starter cap</span><strong>${money(settings.valueCap)}</strong></div>
+      <div><span>Anchor cap</span><strong>${money(settings.valueCap)}</strong></div>
       <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong></div>
       <div><span>Feed</span><strong>${settings.source === "contracts" ? "Contracts" : settings.source === "tenders" ? "Tenders" : "Both"}</strong></div>
-      <div><span>Mode</span><strong>Goods first</strong></div>
+      <div><span>Mode</span><strong>Anchor fit</strong></div>
     </div>
-    <p>Start with below-cap local/regional goods supply contracts. Service-heavy opportunities are deliberately downgraded unless the requirement can be fulfilled with available stock and a protected margin.</p>
+    <p>Start with medium local/regional anchor contracts: temporary accommodation, void-property, housing association, student accommodation, and FM subcontract supply. Service-heavy opportunities are downgraded unless they clearly include appliance/material supply that stock can fulfil.</p>
   `;
 }
 
@@ -767,6 +807,8 @@ function generateTenderSearches() {
       ${settings.source !== "contracts" ? terms.map((term) => `<a class="button secondary" href="${findTenderSearchUrl(term, settings)}" target="_blank" rel="noopener">Find a Tender: ${term}</a>`).join("") : ""}
       <a class="button secondary" href="https://www.contractsfinder.service.gov.uk/Search" target="_blank" rel="noopener">Contracts Finder advanced</a>
       <a class="button secondary" href="https://www.find-tender.service.gov.uk/Search" target="_blank" rel="noopener">Find a Tender advanced</a>
+      <a class="button secondary" href="https://www.contractsfinder.service.gov.uk/Search/Results?planning=1&speculative=1&tender=1&awarded=0" target="_blank" rel="noopener">Pipeline and early engagement</a>
+      <a class="button secondary" href="https://www.crowncommercial.gov.uk/start-supplying" target="_blank" rel="noopener">CCS supplier routes</a>
     </div>
     <strong>Stock source searches</strong>
     ${sourceSearchLinks(terms)}
@@ -774,7 +816,9 @@ function generateTenderSearches() {
 }
 
 function tenderKeywordsQuery(settings) {
-  return settings.keywords.length ? settings.keywords.join(" OR ") : "white goods appliances kitchen equipment";
+  return settings.keywords.length
+    ? settings.keywords.join(" OR ")
+    : "white goods supply OR domestic appliances 39700000 OR electrical domestic appliances 39710000 OR temporary accommodation appliances OR void property appliances OR housing association white goods";
 }
 
 async function fetchLiveTenders() {
@@ -916,6 +960,9 @@ function tenderSearchTerms(tender) {
     "white goods",
     "appliances",
     "equipment supply",
+    "domestic appliances",
+    "39700000",
+    "39710000",
   ].filter(Boolean))];
 }
 
@@ -927,6 +974,7 @@ function opportunityText(tender) {
     tender.source,
     tender.noticeType,
     tender.opportunityType,
+    tender.cpv,
     tender.description,
     tender.notes,
   ].filter(Boolean).join(" "));
@@ -949,6 +997,38 @@ function opportunityProfile(tender) {
     supplyLed,
     serviceHeavy,
     goodsScore: clamp(40 + goodsHits.length * 14 - serviceHits.length * 10 + (supplyLed ? 18 : 0) - (serviceHeavy ? 24 : 0)),
+  };
+}
+
+function startupRouteProfile(tender, settings) {
+  const text = opportunityText(tender);
+  const value = number(tender.value);
+  const routeHits = termHits(text, STARTUP_ROUTE_TERMS);
+  const pipelineHits = termHits(text, PIPELINE_ROUTE_TERMS);
+  const cpvHits = termHits(text, ["39700000", "39710000", "39711110", "39713100", "domestic appliances", "electrical domestic appliances"]);
+  const anchorValue = Boolean(value && value >= STARTUP_ANCHOR_MIN && value <= Math.min(settings.valueCap || STARTUP_ANCHOR_MAX, STARTUP_ANCHOR_MAX));
+  const sweetValue = Boolean(value && value >= STARTUP_ANCHOR_MIN && value <= STARTUP_ANCHOR_SWEET_MAX);
+  const oversize = Boolean(value && value > STARTUP_ANCHOR_MAX);
+  const belowProof = Boolean(value && value > 0 && value < STARTUP_ANCHOR_MIN);
+  let score = 34;
+
+  if (routeHits.length) score += Math.min(30, routeHits.length * 8);
+  if (cpvHits.length) score += 18;
+  if (anchorValue) score += 22;
+  if (sweetValue) score += 10;
+  if (pipelineHits.length) score += 8;
+  if (belowProof) score -= 4;
+  if (oversize) score -= 24;
+
+  return {
+    routeHits,
+    pipelineHits,
+    cpvHits,
+    anchorValue,
+    sweetValue,
+    oversize,
+    belowProof,
+    score: clamp(score),
   };
 }
 
@@ -1003,6 +1083,7 @@ function tenderFromApiResult(result, settings) {
     noticeType: result.noticeType || "",
     opportunityType: result.opportunityType || result.platform || "Contract opportunity",
     platform: result.platform || "",
+    cpv: result.cpv || "",
   };
 }
 
@@ -1114,10 +1195,11 @@ function stockProjectionForTender(tender, settings) {
 
 function opportunityBoardScore(tenderResult, projection) {
   return Math.round(
-    tenderResult.score * 0.46 +
-    projection.coveragePercent * 0.24 +
-    projection.economicsScore * 0.18 +
-    projection.scheduleScore * 0.12
+    tenderResult.score * 0.34 +
+    number(tenderResult.startupScore) * 0.22 +
+    projection.coveragePercent * 0.22 +
+    projection.economicsScore * 0.14 +
+    projection.scheduleScore * 0.08
   );
 }
 
@@ -1126,6 +1208,7 @@ function tenderScore(tender, settings) {
   const deadlineDays = daysUntil(tender.deadline);
   const regionMatch = normalise(tender.region).includes(normalise(settings.region)) || normalise(settings.region).includes(normalise(tender.region));
   const profile = opportunityProfile(tender);
+  const startupProfile = startupRouteProfile(tender, settings);
   const localMatch = regionMatch || ["leicester", "nottingham", "derby", "birmingham", "midlands"].some((place) => opportunityText(tender).includes(place));
   const keywordHit = tenderSearchTerms(tender).some((term) => opportunityText(tender).includes(normalise(term)));
   const valueOk = !value || value <= settings.valueCap;
@@ -1142,18 +1225,28 @@ function tenderScore(tender, settings) {
   if (keywordHit) score += 14;
   if (profile.supplyLed) score += 18;
   if (profile.serviceHeavy) score -= 28;
+  if (startupProfile.routeHits.length) score += Math.min(18, startupProfile.routeHits.length * 5);
+  if (startupProfile.cpvHits.length) score += 8;
+  if (startupProfile.anchorValue) score += 12;
+  if (startupProfile.sweetValue) score += 6;
+  if (startupProfile.pipelineHits.length) score += 5;
+  if (startupProfile.oversize) score -= 20;
   score += Math.round((profile.goodsScore - 50) * 0.25);
+  score += Math.round((startupProfile.score - 50) * 0.2);
   if (deadlineDays >= 5 && deadlineDays <= 28) score += 12;
   if (deadlineDays > 28 && deadlineDays <= 60) score += 6;
   if (deadlineDays < 3) score -= 18;
   if (!value) score -= 6;
 
-  const viable = score >= 72 && profile.goodsScore >= 58 && (!profile.serviceHeavy || profile.supplyLed) && (!value || value <= settings.valueCap * 1.5) && !deadlineRisk;
-  const decision = viable ? "Worth checking stock" : score >= 58 ? "Needs goods review" : "Poor fit";
+  const viable = score >= 72 && profile.goodsScore >= 58 && (!profile.serviceHeavy || profile.supplyLed) && (!value || value <= settings.valueCap * 1.5) && !deadlineRisk && !startupProfile.oversize;
+  const decision = viable && startupProfile.anchorValue ? "Anchor contract target" : viable ? "Worth checking stock" : score >= 58 ? "Needs goods review" : "Poor fit";
   const tone = viable ? "pass" : score >= 58 ? "prepare" : "hold";
   const checks = [
     { label: "Local/regional fit", pass: localMatch, detail: localMatch ? "Matches your region focus." : "Buyer/location needs manual checking." },
+    { label: "Startup acquisition route", pass: startupProfile.score >= 58, detail: startupProfile.routeHits.length ? `Route signals: ${startupProfile.routeHits.slice(0, 4).join(", ")}.` : "No housing, temporary accommodation, FM, or void-property route signal found." },
+    { label: "Anchor contract size", pass: !value || startupProfile.anchorValue || startupProfile.sweetValue, detail: value ? `${money(value)} target range: ${money(STARTUP_ANCHOR_MIN)}-${money(Math.min(settings.valueCap || STARTUP_ANCHOR_MAX, STARTUP_ANCHOR_MAX))}.` : "Value not published." },
     { label: "Goods supply fit", pass: profile.goodsScore >= 58, detail: profile.goodsHits.length ? `Goods signals: ${profile.goodsHits.slice(0, 4).join(", ")}.` : "No clear goods/appliance/material signals found." },
+    { label: "CPV/category fit", pass: Boolean(startupProfile.cpvHits.length || keywordHit), detail: startupProfile.cpvHits.length ? `CPV/category signals: ${startupProfile.cpvHits.slice(0, 4).join(", ")}.` : "No domestic-appliance CPV signal found; check the specification." },
     { label: "Service risk", pass: !profile.serviceHeavy, detail: profile.serviceHits.length ? `Service signals: ${profile.serviceHits.slice(0, 4).join(", ")}.` : "No major service-heavy signals found." },
     { label: "Material fit", pass: keywordHit, detail: keywordHit ? "Appliance/material keywords found." : "Specification may not match target stock." },
     { label: "Value within starter cap", pass: valueOk || valueWatch, detail: value ? `${money(value)} against ${money(settings.valueCap)} cap.` : "Value not published." },
@@ -1173,10 +1266,16 @@ function tenderScore(tender, settings) {
     serviceHits: profile.serviceHits,
     serviceHeavy: profile.serviceHeavy,
     supplyLed: profile.supplyLed,
+    startupScore: startupProfile.score,
+    routeHits: startupProfile.routeHits,
+    cpvHits: startupProfile.cpvHits,
+    anchorValue: startupProfile.anchorValue,
+    pipelineHits: startupProfile.pipelineHits,
+    oversize: startupProfile.oversize,
     deadlineDays,
     recommendation: viable
-      ? "Save opportunity - then validate full stock availability, delivery capacity, deadline timing, and margin before bidding."
-      : "Hold - either service-heavy, too broad, too large, too close to deadline, or not enough local/material fit.",
+      ? "Save opportunity - validate stock coverage, delivery capacity, deadline timing, and 45% ROI before bidding. Use this as an anchor-contract route if the requirement can be fulfilled."
+      : "Hold - either service-heavy, too broad, too large for current proof level, too close to deadline, or not enough local/material fit.",
   };
 }
 
@@ -1469,6 +1568,7 @@ function renderTenderMatches(tenders, settings, sourceNote = "") {
           </div>
           <div class="summary-metrics">
             <div><span>Viability</span><strong>${item.boardScore}%</strong></div>
+            <div><span>Acquisition</span><strong>${Math.round(item.result.startupScore || 0)}%</strong></div>
             <div><span>Stock cover</span><strong>${item.projection.coverage.quantityAvailable}/${required}</strong></div>
             <div><span>Cost/value</span><strong>${costLabel}</strong></div>
             <div><span>Schedule</span><strong>${scheduleLabel}</strong></div>
@@ -1520,6 +1620,8 @@ function renderTenderWorkspace(review) {
       <div><span>Matched stock</span><strong>${projection.coverage.quantityAvailable}/${required}</strong><em>${Math.round(projection.coveragePercent)}% coverage</em></div>
       <div><span>Cost vs value</span><strong>${projection.lowestLanded ? `${money(projection.lowestLanded)} / ${valuePerUnit ? money(valuePerUnit) : "TBC"}` : "Stock needed"}</strong><em>Max landed ${projection.maxLanded ? money(projection.maxLanded) : "TBC"} at ${percent(settings.roi)} ROI</em></div>
       <div><span>Delivery schedule</span><strong>${projection.timedQuantity}/${required}</strong><em>${tender.deadline ? `available before ${tender.deadline}` : "deadline TBC"}</em></div>
+      <div><span>Acquisition fit</span><strong>${Math.round(result.startupScore || 0)}%</strong><em>${result.routeHits?.length ? result.routeHits.slice(0, 3).join(", ") : "route signal TBC"}</em></div>
+      <div><span>Anchor size</span><strong>${result.anchorValue ? "Target" : result.oversize ? "Too large" : "Check"}</strong><em>${value ? `${money(value)} total` : "value not published"}</em></div>
       <div><span>Goods fit</span><strong>${Math.round(result.goodsScore || result.score)}%</strong><em>${result.serviceHeavy ? "Service-heavy risk found" : "Supply-led check"}</em></div>
       <div><span>Deadline</span><strong>${tender.deadline || "TBC"}</strong><em>${Number.isFinite(result.deadlineDays) ? `${result.deadlineDays} day(s) left` : "Confirm deadline"}</em></div>
       <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong><em>Only bid if landed stock protects this</em></div>

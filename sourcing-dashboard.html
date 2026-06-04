@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0d141d">
     <link rel="icon" href="brand/rentalready_mark.svg" type="image/svg+xml">
     <script src="theme-init.js?v=20260526b"></script>
-    <link rel="stylesheet" href="styles.css?v=20260604c">
+    <link rel="stylesheet" href="styles.css?v=20260604d">
   </head>
   <body class="dashboard-body">
     <header class="site-header dashboard-header">
@@ -159,7 +159,7 @@
           <div class="panel-heading">
             <p class="eyebrow">Step 3</p>
             <h2 id="tender-title">Goods contract matcher</h2>
-            <p>Search Contracts Finder and Find a Tender for local/regional goods, materials, appliances, and equipment supply opportunities. Service-heavy work is downgraded so stock-backed contracts are easier to find first.</p>
+            <p>Search Contracts Finder and Find a Tender for anchor contracts RentalReady can realistically win as a startup: housing, temporary accommodation, void-property, FM subcontract, and appliance supply opportunities.</p>
           </div>
 
           <label>
@@ -183,8 +183,8 @@
             </select>
           </label>
           <label>
-            Starter opportunity cap
-            <input id="tenderValueCap" type="number" min="0" step="1000" value="30000">
+            Anchor opportunity cap
+            <input id="tenderValueCap" type="number" min="0" step="1000" value="120000">
           </label>
           <label>
             Minimum contract ROI %
@@ -196,12 +196,14 @@
           </label>
           <label class="span-2">
             Goods contract search keywords
-            <textarea id="tenderKeywords" rows="5">white goods
-appliances
-washing machines
-fridges freezers
-cookers ovens
-kitchen equipment</textarea>
+            <textarea id="tenderKeywords" rows="8">white goods supply
+domestic appliances 39700000
+electrical domestic appliances 39710000
+temporary accommodation appliances
+void property appliances
+housing association white goods
+student accommodation appliances
+kitchen equipment supply</textarea>
           </label>
           <div class="dashboard-actions span-2">
             <button class="button secondary" type="button" id="generateTenderSearches">Generate contract searches</button>
@@ -209,12 +211,12 @@ kitchen equipment</textarea>
             <button class="button secondary" type="button" id="rankTenders">Rank manual fallback</button>
             <button class="button secondary" type="button" id="prepareBidPack">Prepare bid pack</button>
           </div>
-          <div class="agent-summary span-2" id="tenderSummary" aria-live="polite">Use Contracts Finder for smaller goods opportunities first. Keep Find a Tender for larger notices only when the requirement is clearly supply-led and stock can be validated.</div>
+          <div class="agent-summary span-2" id="tenderSummary" aria-live="polite">Use Contracts Finder for startup-fit anchor contracts first. Prioritise supply-led opportunities where stock can be validated before the bid.</div>
           <section class="tender-opportunity-panel span-2" aria-labelledby="tender-opportunities-title">
             <div class="panel-heading compact-heading">
               <p class="eyebrow">Contract opportunities</p>
               <h3 id="tender-opportunities-title">Most viable live opportunities</h3>
-              <p>This board is for contracts and tenders the agent can action. It ranks opportunities by goods fit, stock coverage, cost against contract value, and delivery schedule.</p>
+              <p>This board is for contracts and tenders the agent can action. It ranks opportunities by startup-fit route, goods fit, stock coverage, cost against contract value, and delivery schedule.</p>
             </div>
             <div class="live-tender-status" id="liveTenderStatus" aria-live="polite"></div>
             <div class="agent-search-links" id="tenderSearchLinks"></div>
@@ -416,6 +418,6 @@ kitchen equipment</textarea>
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260604c"></script>
+    <script src="sourcing-dashboard.js?v=20260604d"></script>
   </body>
 </html>

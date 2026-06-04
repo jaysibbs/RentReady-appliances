@@ -59,6 +59,7 @@ Manual opportunities can still be added in Step 1, but they should represent a r
 The highlighted contract section is the live opportunity board. It should not be treated as a paste area. The board should show the most viable contract/tender opportunities using:
 
 - opportunity viability score
+- startup acquisition-route score
 - matched stock quantity versus required quantity
 - lowest landed stock cost versus contract value per unit
 - stock available before the submission deadline
@@ -66,6 +67,22 @@ The highlighted contract section is the live opportunity board. It should not be
 - total contract value and days left before deadline
 
 Manual paste remains available only as a fallback when the live feed misses a known opportunity. It should not be the primary workflow.
+
+## Startup Acquisition Targeting
+
+The agent should prioritise a first serious anchor contract before chasing large national tenders. The strongest routes are:
+
+- local authority temporary accommodation appliance supply
+- void-property appliance replacement
+- housing association or registered-provider supply work
+- student accommodation appliance refresh
+- supported living or care-home appliance replacement
+- FM/property-maintenance subcontract supply
+- pipeline or early-engagement notices where RentalReady can prepare before the bid opens
+
+The preferred first-contract value band is roughly 15,000-120,000 GBP, with 15,000-90,000 GBP treated as the most realistic early sweet spot. Bigger opportunities can still be reviewed, but the agent should mark them as higher risk until RentalReady has delivery evidence, insurance, references, and case studies.
+
+Default search terms include CPV and route signals such as `39700000`, `39710000`, `temporary accommodation appliances`, `void property appliances`, and `housing association white goods`.
 
 ## Agent Domain
 

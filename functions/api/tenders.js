@@ -1,6 +1,7 @@
 const FIND_TENDER_RESULTS_URL = "https://www.find-tender.service.gov.uk/Search/Results";
 const CONTRACTS_FINDER_RESULTS_URL = "https://www.contractsfinder.service.gov.uk/Search/Results";
 const CONTRACTS_FINDER_API_URL = "https://www.contractsfinder.service.gov.uk/api/rest/2/search_notices/json";
+const DEFAULT_ACQUISITION_KEYWORDS = "white goods supply OR domestic appliances 39700000 OR electrical domestic appliances 39710000 OR temporary accommodation appliances OR void property appliances OR housing association white goods";
 
 function decodeEntities(value = "") {
   return String(value)
@@ -162,7 +163,7 @@ function uniqueResults(results) {
 
 export async function onRequestGet({ request }) {
   const url = new URL(request.url);
-  const keywords = url.searchParams.get("keywords") || "white goods appliances";
+  const keywords = url.searchParams.get("keywords") || DEFAULT_ACQUISITION_KEYWORDS;
   const region = url.searchParams.get("region") || "";
   const postcode = url.searchParams.get("postcode") || "";
   const source = url.searchParams.get("source") || "all";

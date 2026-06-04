@@ -3075,7 +3075,7 @@ section {
 
 .tender-result-summary {
   display: grid;
-  grid-template-columns: auto minmax(220px, 1fr) minmax(420px, 1.35fr) minmax(160px, 220px);
+  grid-template-columns: auto minmax(220px, 1fr) minmax(520px, 1.55fr) minmax(160px, 220px);
   gap: 12px;
   align-items: center;
   width: 100%;
@@ -3140,7 +3140,7 @@ section {
 
 .summary-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
 }
 
