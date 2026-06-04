@@ -6,7 +6,7 @@ const DEFAULT_WEIGHTS = {
   quality: 18,
   urgency: 16,
   logistics: 14,
-  availability: 4,
+  availability: 14,
 };
 
 const DEFAULT_ROI_TARGET = 45;
@@ -96,6 +96,7 @@ const state = {
 };
 
 state.weights = { ...DEFAULT_WEIGHTS, ...state.weights };
+if ((state.weights.availability || 0) < 10) state.weights.availability = DEFAULT_WEIGHTS.availability;
 
 const briefForm = document.querySelector("#briefForm");
 const candidateForm = document.querySelector("#candidateForm");
@@ -179,12 +180,33 @@ function activeBrief() {
 
 function demandLabel(demand) {
   const brief = demand?.brief || {};
+  const tender = demand?.tender || {};
   const quantity = number(brief.quantity) || 1;
-  return `${brief.customer || "Unnamed buyer"} - ${quantity} x ${brief.item || "appliance"}`;
+  const authority = brief.customer || tender.authority || "Contract authority TBC";
+  const item = brief.item || tender.item || "goods";
+  return `${authority} - ${quantity} x ${item}`;
 }
 
 function demandValue(brief) {
   return (number(brief.quantity) || 1) * number(brief.budget);
+}
+
+function opportunityUnitValue(tender) {
+  const value = number(tender?.value);
+  const quantity = number(tender?.quantity) || 1;
+  return value && quantity ? Math.round(value / quantity) : 0;
+}
+
+function opportunityDeadline(brief = activeBrief()) {
+  const demand = activeDemandRecord();
+  return demand?.tender?.deadline || demand?.brief?.deadline || brief?.deadline || parseDateFromText(brief?.notes || "") || "";
+}
+
+function recordMeetsDeadline(record, deadline) {
+  if (!deadline) return true;
+  const availableBy = record?.candidate?.availableBy;
+  if (!availableBy) return false;
+  return new Date(`${availableBy}T12:00:00`) <= new Date(`${deadline}T12:00:00`);
 }
 
 function recordQuantity(record) {
@@ -290,7 +312,7 @@ function renderStockSourceSummary(summary, requiredQuantity) {
       <span>${source.quantity}/${requiredQuantity} viable • ${source.approvedQuantity} approved</span>
       <em>Lowest ROI ${source.lowestRoi ? percent(source.lowestRoi) : "TBC"} • Profit ${money(source.projectedProfit)}</em>
     </div>
-  `).join("") || `<p class="empty-state">No source has matched stock yet. Search John Pye, BPI Auctions, and BidSpotter, then add viable lots to this demand.</p>`;
+  `).join("") || `<p class="empty-state">No source has matched stock yet. Search John Pye, BPI Auctions, and BidSpotter, then add viable lots to this opportunity.</p>`;
 
   return `
     <div class="source-coverage-summary ${summary.tone}">
@@ -306,7 +328,7 @@ function renderStockSourceSummary(summary, requiredQuantity) {
 
 function tenderDetailRows(tender) {
   return [
-    ["Buyer", tender.authority || "TBC"],
+    ["Contracting authority", tender.authority || "TBC"],
     ["Title", tender.title || "TBC"],
     ["Opportunity type", tender.opportunityType || tender.noticeType || "Contract / tender"],
     ["Category", tender.item || "TBC"],
@@ -339,13 +361,14 @@ function renderStockCoverage(demand, readiness = null) {
   const sourceSummary = stockSourceSummary(coverage, required);
   const matchedPercent = required ? clamp((coverage.quantityAvailable / required) * 100) : 0;
   const approvedPercent = required ? clamp((coverage.approvedQuantity / required) * 100) : 0;
+  const deadline = tender.deadline || demand?.brief?.deadline || "";
   const lines = coverage.viable.map((record) => `
     <div class="stock-line">
       <strong>${recordQuantity(record)} x ${escapeHtml(record.candidate.title || record.candidate.category || "Matched stock")}</strong>
       <span>${escapeHtml(sourceNameFor(record))} • ${escapeHtml(record.candidate.location || "Location TBC")} • ${record.status}</span>
-      <em>Landed ${money(record.result?.financials?.landed)} • ROI ${percent(record.result?.financials?.roi)}</em>
+      <em>Landed ${money(record.result?.financials?.landed)} • ROI ${percent(record.result?.financials?.roi)} • Available ${escapeHtml(record.candidate.availableBy || "TBC")}${deadline ? ` • ${recordMeetsDeadline(record, deadline) ? "before submission" : "after/unknown submission timing"}` : ""}</em>
     </div>
-  `).join("") || `<p class="empty-state">No viable matched stock yet. Add auction lots to this tender demand before deciding to bid.</p>`;
+  `).join("") || `<p class="empty-state">No viable matched stock yet. Add auction lots to this contract/tender opportunity before deciding to bid.</p>`;
 
   return `
     <div class="stock-coverage">
@@ -355,6 +378,7 @@ function renderStockCoverage(demand, readiness = null) {
         <div><span>Approved</span><strong>${coverage.approvedQuantity}</strong><meter min="0" max="100" value="${approvedPercent}"></meter></div>
         <div><span>Lowest ROI</span><strong>${coverage.lowestRoi ? percent(coverage.lowestRoi) : "TBC"}</strong></div>
         <div><span>Profit</span><strong>${money(coverage.projectedProfit)}</strong></div>
+        <div><span>Deadline</span><strong>${deadline || "TBC"}</strong></div>
       </div>
       ${renderStockSourceSummary(sourceSummary, required)}
       <div class="stock-lines">${lines}</div>
@@ -476,13 +500,15 @@ function categoryScore(brief, candidate) {
 }
 
 function demandScore(brief) {
-  let score = activeDemandRecord() ? 68 : 34;
-  if (brief.customer) score += 12;
-  if (number(brief.budget)) score += 10;
-  if (brief.postcode) score += 6;
+  const demand = activeDemandRecord();
+  let score = demand ? 70 : 24;
+  if (demand?.tender) score += 10;
+  if (brief.customer || demand?.tender?.authority) score += 6;
+  if (number(brief.budget)) score += 8;
+  if (brief.postcode) score += 5;
   if (number(brief.quantity) > 0) score += 4;
-  if (normalise(brief.urgency).includes("today") || normalise(brief.urgency).includes("week")) score += 4;
-  if (normalise(brief.notes).length > 60) score += 4;
+  if (opportunityDeadline(brief)) score += 5;
+  if (normalise(brief.notes).length > 80 || normalise(demand?.tender?.notes).length > 80) score += 4;
   return clamp(score);
 }
 
@@ -537,6 +563,17 @@ function urgencyScore(brief, candidate) {
 }
 
 function availabilityScore(brief, candidate) {
+  const deadline = opportunityDeadline(brief);
+  if (deadline) {
+    if (!candidate.availableBy) return 32;
+    const candidateDate = new Date(`${candidate.availableBy}T12:00:00`);
+    const deadlineDate = new Date(`${deadline}T12:00:00`);
+    const daysBeforeDeadline = Math.floor((deadlineDate - candidateDate) / 86400000);
+    if (daysBeforeDeadline >= 7) return 100;
+    if (daysBeforeDeadline >= 3) return 88;
+    if (daysBeforeDeadline >= 0) return 68;
+    return 12;
+  }
   const days = daysUntil(candidate.availableBy);
   if (days <= 1) return 82;
   if (days <= 4) return 100;
@@ -585,7 +622,10 @@ function scoreCandidateData(brief, candidate) {
 
 function recommendationFor(score, dimensions, financials) {
   if (dimensions.demand < 55) {
-    return "Hold - save or select a buyer request before purchase review.";
+    return "Hold - save or select a contract/tender opportunity before purchase review.";
+  }
+  if (dimensions.availability < 40) {
+    return "Hold - stock timing does not clearly fit the contract submission window.";
   }
   if (financials.sale && financials.landed && !financials.passes) {
     return `Hold - ROI is ${percent(financials.roi)}, below the ${percent(financials.settings.targetRoi)} target. Max safe bid is ${money(financials.maxBid)}.`;
@@ -626,6 +666,8 @@ function renderScore(result) {
 }
 
 function label(value) {
+  if (value === "demand") return "Opportunity";
+  if (value === "availability") return "Deadline fit";
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
@@ -772,30 +814,31 @@ function renderAgentSummary() {
   if (!agentSummary) return;
   const settings = currentAgentSettings();
   const demand = activeDemandRecord();
+  const deadline = opportunityDeadline();
   const maxBid = maxSafeBid(settings);
   const maxCost = maxLandedCost(settings);
   agentSummary.innerHTML = `
     <div class="agent-kpis">
-      <div><span>Buyer status</span><strong>${demand ? "Selected" : "Select demand"}</strong></div>
-      <div><span>Target sale</span><strong>${settings.targetSale ? money(settings.targetSale) : "Add budget"}</strong></div>
+      <div><span>Opportunity</span><strong>${demand ? "Selected" : "Select first"}</strong></div>
+      <div><span>Value / unit</span><strong>${settings.targetSale ? money(settings.targetSale) : "Add value"}</strong></div>
       <div><span>ROI target</span><strong>${percent(settings.targetRoi)}</strong></div>
       <div><span>Max landed cost</span><strong>${settings.targetSale ? money(maxCost) : "TBC"}</strong></div>
       <div><span>Max safe bid</span><strong>${settings.targetSale ? money(maxBid) : "TBC"}</strong></div>
+      <div><span>Submission deadline</span><strong>${deadline || "TBC"}</strong></div>
     </div>
-    ${demand ? `<p><strong>${demandLabel(demand)}</strong> is the active buyer request. Rank lots only if this request is still live and the customer budget/timing are realistic.</p>` : `<p><strong>No buyer selected.</strong> Add or select a demand request first so stock is matched to a waiting customer before purchase review.</p>`}
+    ${demand ? `<p><strong>${demandLabel(demand)}</strong> is the active contract/tender opportunity. Rank lots only if they can cover the required quantity before the submission deadline and protect the ROI gate.</p>` : `<p><strong>No contract selected.</strong> Save or select a contract/tender first so stock is matched to a live opportunity before purchase review.</p>`}
     <p>Formula uses ROI = profit divided by landed cost. Landed cost includes bid, buyer premium, VAT on buyer premium, logistics, and testing/refurb buffer. Check each auction lot before bidding because fees and collection rules can vary by sale.</p>
   `;
 }
 
 function generateSearches() {
-  saveBrief();
   renderAgentSummary();
   if (!agentSearchLinks) return;
   const demand = activeDemandRecord();
   const brief = activeBrief();
   const terms = searchTermsFor(brief.item);
   agentSearchLinks.innerHTML = `
-    <strong>${demand ? `Searches for ${demandLabel(demand)}.` : "No buyer request selected yet. Add or select demand before approving stock."}</strong>
+    <strong>${demand ? `Stock searches for ${demandLabel(demand)}.` : "No contract/tender selected yet. Save or select an opportunity before approving stock."}</strong>
     <div>
       ${terms.map((term) => `<a class="button secondary" href="${johnPyeSearchUrl(term)}" target="_blank" rel="noopener">${term}</a>`).join("")}
       <a class="button secondary" href="https://www.johnpye.co.uk/general-auctions/" target="_blank" rel="noopener">General auctions</a>
@@ -1017,7 +1060,7 @@ function tenderScore(tender, settings) {
     supplyLed: profile.supplyLed,
     deadlineDays,
     recommendation: viable
-      ? "Add to demand queue - then validate stock availability, delivery capacity, and margin before bidding."
+      ? "Save opportunity - then validate full stock availability, delivery capacity, deadline timing, and margin before bidding."
       : "Hold - either service-heavy, too broad, too large, too close to deadline, or not enough local/material fit.",
   };
 }
@@ -1028,25 +1071,35 @@ function bidReadiness(demand) {
   const requiredQuantity = number(brief.quantity) || number(tender.quantity) || 1;
   const coverage = stockCoverageForDemand(demand?.id);
   const details = document.querySelector("#tenderDetailNotes")?.value || tender.notes || brief.notes || "";
-  const hasTenderLink = Boolean(tender.url || String(brief.notes || "").includes("find-tender.service.gov.uk"));
+  const hasTenderLink = Boolean(tender.url || /find-tender\.service\.gov\.uk|contractsfinder\.service\.gov\.uk/i.test(String(brief.notes || "")));
   const hasDetails = normalise(details).length > 120;
   const hasApprovedStock = coverage.approvedQuantity >= requiredQuantity;
   const hasViableStock = coverage.quantityAvailable >= requiredQuantity;
   const hasMargin = coverage.lowestRoi >= DEFAULT_ROI_TARGET;
   const hasDeadline = Boolean(tender.deadline);
+  const timedViableQuantity = coverage.viable
+    .filter((record) => recordMeetsDeadline(record, tender.deadline))
+    .reduce((sum, record) => sum + recordQuantity(record), 0);
+  const timedApprovedQuantity = coverage.approved
+    .filter((record) => recordMeetsDeadline(record, tender.deadline))
+    .reduce((sum, record) => sum + recordQuantity(record), 0);
+  const hasTimedStock = !tender.deadline || timedViableQuantity >= requiredQuantity;
+  const hasTimedApprovedStock = !tender.deadline || timedApprovedQuantity >= requiredQuantity;
   const checks = [
-    { label: "Tender details reviewed", pass: hasDetails, advice: "Paste the specification, delivery requirements, award criteria, and buyer questions into Tender detail notes." },
-    { label: "Tender notice link available", pass: hasTenderLink, advice: "Open the tender notice and confirm the application route, deadline, and required documents." },
+    { label: "Opportunity details reviewed", pass: hasDetails, advice: "Paste the specification, delivery requirements, award criteria, and authority questions into Contract detail notes." },
+    { label: "Public notice link available", pass: hasTenderLink, advice: "Open the notice and confirm the application route, deadline, and required documents." },
     { label: "Stock covers full quantity", pass: hasViableStock, advice: `Need ${requiredQuantity} unit(s); currently matched ${coverage.quantityAvailable}.` },
     { label: "Approved stock covers full quantity", pass: hasApprovedStock, advice: "Approve the stock candidates that will be reserved for this bid." },
+    { label: "Stock available before submission", pass: hasTimedStock, advice: `Need ${requiredQuantity} unit(s) available before ${tender.deadline || "the deadline"}; currently ${timedViableQuantity}.` },
+    { label: "Approved timed stock covers full quantity", pass: hasTimedApprovedStock, advice: `Approve enough stock available before ${tender.deadline || "the deadline"}.` },
     { label: "45% ROI protected", pass: hasMargin, advice: "Only proceed if the lowest matched ROI is at least 45% after fees, logistics, and refurb buffer." },
     { label: "Deadline captured", pass: hasDeadline, advice: "Confirm the submission deadline and leave time for clarification questions." },
   ];
   const passed = checks.filter((item) => item.pass).length;
   const score = Math.round((passed / checks.length) * 100);
-  const decision = score >= 84 && hasApprovedStock && hasMargin ? "Proceed to manual application" : score >= 60 ? "Prepare, but do not submit yet" : "No-bid until gaps are closed";
+  const decision = score >= 84 && hasApprovedStock && hasTimedApprovedStock && hasMargin ? "Proceed to manual application" : score >= 60 ? "Prepare, but do not submit yet" : "No-bid until gaps are closed";
 
-  return { checks, score, decision, coverage, requiredQuantity, details };
+  return { checks, score, decision, coverage, requiredQuantity, details, timedViableQuantity, timedApprovedQuantity };
 }
 
 function bidPackText(demand, readiness) {
@@ -1054,14 +1107,14 @@ function bidPackText(demand, readiness) {
   const brief = demand?.brief || {};
   const coverage = readiness.coverage;
   const stockLines = coverage.viable.map((record) => {
-    return `- ${recordQuantity(record)} x ${record.candidate.title || record.candidate.category || "matched stock"} | ${record.candidate.supplier || "supplier TBC"} | landed ${money(record.result?.financials?.landed)} | ROI ${percent(record.result?.financials?.roi)} | status ${record.status}`;
+    return `- ${recordQuantity(record)} x ${record.candidate.title || record.candidate.category || "matched stock"} | ${record.candidate.supplier || "supplier TBC"} | available ${record.candidate.availableBy || "TBC"} | before deadline ${recordMeetsDeadline(record, tender.deadline) ? "yes" : "no/unknown"} | landed ${money(record.result?.financials?.landed)} | ROI ${percent(record.result?.financials?.roi)} | status ${record.status}`;
   }).join("\n") || "- No viable stock attached yet.";
 
   return [
     `RentalReady Appliances - Contract application pack`,
     ``,
     `Opportunity`,
-    `Buyer: ${brief.customer || tender.authority || "TBC"}`,
+    `Contracting authority: ${brief.customer || tender.authority || "TBC"}`,
     `Title: ${tender.title || "TBC"}`,
     `Source: ${brief.source || tender.source || "Find a Tender"}`,
     `Opportunity link: ${tender.url || "TBC"}`,
@@ -1074,6 +1127,8 @@ function bidPackText(demand, readiness) {
     `Recommendation: ${readiness.decision}`,
     `Matched stock quantity: ${coverage.quantityAvailable}`,
     `Approved stock quantity: ${coverage.approvedQuantity}`,
+    `Matched before deadline: ${readiness.timedViableQuantity}`,
+    `Approved before deadline: ${readiness.timedApprovedQuantity}`,
     `Lowest matched ROI: ${coverage.lowestRoi ? percent(coverage.lowestRoi) : "TBC"}`,
     `Projected profit from matched stock: ${money(coverage.projectedProfit)}`,
     ``,
@@ -1098,7 +1153,7 @@ function renderBidPack() {
   if (!bidPack) return;
   const demand = activeDemandRecord();
   if (!demand?.tender) {
-    bidPack.innerHTML = `<p class="empty-state">Select or add a public contract opportunity first. The bid desk only prepares application packs for contract-backed demand.</p>`;
+    bidPack.innerHTML = `<p class="empty-state">Select or add a public contract opportunity first. The bid desk only prepares application packs for contract-backed opportunities.</p>`;
     return;
   }
 
@@ -1199,9 +1254,12 @@ function parseLotLine(line, brief) {
 }
 
 function rankLots() {
-  saveBrief();
   renderAgentSummary();
   const demand = activeDemandRecord();
+  if (!demand) {
+    agentResults.innerHTML = `<p class="empty-state">Select a saved contract/tender opportunity first. The agent only ranks stock against an active opportunity with quantity, value, and timing.</p>`;
+    return;
+  }
   const importBox = document.querySelector("#lotImport");
   const raw = importBox?.value || "";
   const lines = raw.split(/\n+/).map((line) => line.trim()).filter(Boolean);
@@ -1225,11 +1283,11 @@ function rankLots() {
   agentResults.innerHTML = ranked.map((item, index) => `
     <article class="agent-result ${item.result.financials.passes ? "pass" : "hold"}">
       <div class="candidate-topline">
-        <span>${item.result.financials.passes && demand ? "Buyer-backed" : "Hold"}</span>
+        <span>${item.result.financials.passes ? "Contract-backed" : "Hold"}</span>
         <strong>#${index + 1} · ${item.result.score}% fit</strong>
       </div>
       <h3>${item.candidate.title || "Auction lot"}</h3>
-      <p class="demand-match">${demand ? `Matched to ${demandLabel(demand)}` : "No buyer request selected - do not buy yet."}</p>
+      <p class="demand-match">Matched to ${demandLabel(demand)} before ${opportunityDeadline(brief) || "deadline TBC"}</p>
       <p>${item.candidate.supplier} • ${recordQuantity({ candidate: item.candidate })} available • ${item.candidate.category} • ${item.candidate.location || "location TBC"}</p>
       ${renderScore(item.result)}
       <p class="candidate-note">${item.candidate.notes}</p>
@@ -1347,7 +1405,7 @@ function renderTenderWorkspace(review) {
 
     <div class="stock-source-plan">
       <strong>Stock availability review</strong>
-      <p>No stock is reserved from this opportunity yet. Start the bid pack, then attach John Pye, BPI, or BidSpotter lots. The demand queue will show whether fulfilment can come from one source or requires multiple sources by price and quantity.</p>
+      <p>No stock is reserved from this opportunity yet. Save the opportunity, then attach John Pye, BPI, or BidSpotter lots. The saved opportunity will show whether fulfilment can come from one source or requires multiple sources by price, quantity, and timing.</p>
       ${sourceSearchLinks(terms)}
     </div>
 
@@ -1365,7 +1423,7 @@ function renderTenderWorkspace(review) {
     <div class="dashboard-actions">
       ${tender.url ? `<a class="button secondary" href="${tender.url}" target="_blank" rel="noopener">Open opportunity</a>` : ""}
       ${tender.url ? `<button class="button secondary" type="button" data-tender-detail="${encodeURIComponent(tender.url)}">Load details</button>` : ""}
-      <button class="button primary" type="button" data-tender-add="${encodeURIComponent(JSON.stringify(tender))}">Start bid pack</button>
+      <button class="button primary" type="button" data-tender-add="${encodeURIComponent(JSON.stringify(tender))}">Save opportunity & match stock</button>
     </div>
   `;
 }
@@ -1373,15 +1431,17 @@ function renderTenderWorkspace(review) {
 function addTenderDemand(encodedTender) {
   const tender = JSON.parse(decodeURIComponent(encodedTender));
   const settings = tenderSettings();
+  const unitValue = opportunityUnitValue(tender);
   const brief = {
     customer: tender.authority,
     source: tender.source || "Public contract",
     item: tender.item,
     quantity: String(number(tender.quantity) || 1),
     postcode: settings.postcode,
-    budget: tender.value ? String(Math.round(number(tender.value))) : "",
+    budget: unitValue ? String(unitValue) : "",
     quality: "Standard",
     urgency: tender.deadline && daysUntil(tender.deadline) <= 7 ? "This week" : "This month",
+    deadline: tender.deadline || "",
     notes: `${tender.title}\n${tender.notes}${tender.url ? `\n${tender.url}` : ""}`,
   };
   const demand = {
@@ -1398,7 +1458,8 @@ function addTenderDemand(encodedTender) {
   fillForm(briefForm, brief);
   persist();
   render();
-  scorePreview.textContent = `${demandLabel(demand)} added from ${tender.source || "public procurement"}. Now match supplier stock before bid review.`;
+  showWorkflowStep("agent");
+  scorePreview.textContent = `${demandLabel(demand)} saved from ${tender.source || "public procurement"}. Now match supplier stock before bid review.`;
 }
 
 async function loadTenderDetails(encodedUrl) {
@@ -1465,7 +1526,7 @@ function scoreCurrentCandidate() {
 function saveBrief() {
   state.brief = formData(briefForm);
   save("rentalready_sourcing_brief", state.brief);
-  scorePreview.textContent = "Requirement saved. Add or score a supplier candidate next.";
+  scorePreview.textContent = "Manual opportunity brief saved. Select it or a live contract before scoring stock.";
   renderAgentSummary();
 }
 
@@ -1473,7 +1534,7 @@ function saveDemand() {
   saveBrief();
   const brief = { ...state.brief };
   if (!brief.customer && !brief.notes) {
-    scorePreview.textContent = "Add a customer, company, or enquiry note before adding demand.";
+    scorePreview.textContent = "Add the contracting authority or opportunity notes before saving.";
     return;
   }
 
@@ -1489,13 +1550,19 @@ function saveDemand() {
   state.activeDemandId = demand.id;
   persist();
   render();
-  scorePreview.textContent = `${demandLabel(demand)} added to the demand queue. Rank stock against this buyer before purchase review.`;
+  showWorkflowStep("agent");
+  scorePreview.textContent = `${demandLabel(demand)} saved as an opportunity. Rank stock against this contract before purchase review.`;
 }
 
 function addCandidate(event) {
   event.preventDefault();
-  const { brief, candidate, result } = scoreCurrentCandidate();
   const demand = activeDemandRecord();
+  if (!demand) {
+    scorePreview.textContent = "Select a saved contract/tender opportunity before adding stock to the shortlist.";
+    showWorkflowStep("demand");
+    return;
+  }
+  const { brief, candidate, result } = scoreCurrentCandidate();
   const record = {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
@@ -1521,7 +1588,7 @@ function selectDemand(id) {
   save("rentalready_sourcing_active_demand", state.activeDemandId);
   persist();
   render();
-  scorePreview.textContent = `${demandLabel(demand)} selected. Search and rank lots against this buyer request.`;
+  scorePreview.textContent = `${demandLabel(demand)} selected. Search and rank lots against this contract/tender opportunity.`;
 }
 
 function updateDemandStatus(id, status) {
@@ -1529,7 +1596,7 @@ function updateDemandStatus(id, status) {
   if (!demand) return;
   demand.status = status;
   demand.updatedAt = new Date().toISOString();
-  if (status === "Won" || status === "Closed") {
+  if (status === "Submitted" || status === "Closed") {
     state.activeDemandId = state.activeDemandId === id ? "" : state.activeDemandId;
   }
   persist();
@@ -1604,15 +1671,16 @@ function render() {
 function renderDemandQueue() {
   const demand = activeDemandRecord();
   if (activeDemand) {
+    const deadline = demand?.tender?.deadline || demand?.brief?.deadline || "";
     activeDemand.innerHTML = demand ? `
       <strong>${demandLabel(demand)}</strong>
-      <span>${demand.brief.quality || "Quality TBC"} • ${demand.brief.urgency || "Timing TBC"} • ${demand.brief.postcode || "Postcode TBC"} • ${money(demandValue(demand.brief))} request value</span>
-    ` : "No buyer request selected yet.";
+      <span>${demand.brief.quality || "Quality TBC"} • deadline ${deadline || "TBC"} • ${demand.brief.postcode || "Postcode TBC"} • ${money(demandValue(demand.brief))} contract value</span>
+    ` : "No contract/tender opportunity selected yet.";
   }
 
   if (!demandList) return;
   if (!state.demands.length) {
-    demandList.innerHTML = `<p class="empty-state">No saved buyer demand yet. Add the first live enquiry from the customer requirement form.</p>`;
+    demandList.innerHTML = `<p class="empty-state">No saved contract or tender opportunities yet. Fetch live contracts in Step 3 or save a manual opportunity.</p>`;
     return;
   }
 
@@ -1622,6 +1690,7 @@ function renderDemandQueue() {
     const required = number(brief.quantity) || number(item.tender?.quantity) || 1;
     const coverage = item.tender ? stockCoverageForDemand(item.id) : null;
     const sourceSummary = coverage ? stockSourceSummary(coverage, required) : null;
+    const deadline = item.tender?.deadline || brief.deadline || "";
     return `
       <article class="demand-card ${isActive ? "active" : ""}">
         <div class="candidate-topline">
@@ -1630,10 +1699,10 @@ function renderDemandQueue() {
         </div>
         <h3>${demandLabel(item)}</h3>
         <dl>
-          <div><dt>Budget/item</dt><dd>${number(brief.budget) ? money(brief.budget) : "TBC"}</dd></div>
-          <div><dt>Total value</dt><dd>${number(brief.budget) ? money(demandValue(brief)) : "TBC"}</dd></div>
-          <div><dt>Location</dt><dd>${brief.postcode || "TBC"}</dd></div>
-          <div><dt>Urgency</dt><dd>${brief.urgency || "TBC"}</dd></div>
+          <div><dt>Value/unit</dt><dd>${number(brief.budget) ? money(brief.budget) : "TBC"}</dd></div>
+          <div><dt>Contract value</dt><dd>${number(brief.budget) ? money(demandValue(brief)) : "TBC"}</dd></div>
+          <div><dt>Fulfilment</dt><dd>${brief.postcode || "TBC"}</dd></div>
+          <div><dt>Deadline</dt><dd>${deadline || "TBC"}</dd></div>
         </dl>
         ${sourceSummary ? `
           <div class="demand-source-status ${sourceSummary.tone}">
@@ -1641,11 +1710,11 @@ function renderDemandQueue() {
             <span>${coverage.quantityAvailable}/${required} viable stock matched • ${coverage.approvedQuantity} approved</span>
           </div>
         ` : ""}
-        <p>${brief.notes || "No enquiry notes saved."}</p>
+        <p>${brief.notes || "No opportunity notes saved."}</p>
         <div class="dashboard-actions">
           <button class="button primary" type="button" data-demand-select="${item.id}">${isActive ? "Selected" : "Use for matching"}</button>
-          <button class="button secondary" type="button" data-demand-status="Quoted" data-demand-id="${item.id}">Quoted</button>
-          <button class="button secondary" type="button" data-demand-status="Won" data-demand-id="${item.id}">Won</button>
+          <button class="button secondary" type="button" data-demand-status="Bid Pack" data-demand-id="${item.id}">Bid pack</button>
+          <button class="button secondary" type="button" data-demand-status="Submitted" data-demand-id="${item.id}">Submitted</button>
           <button class="button secondary danger" type="button" data-demand-status="Closed" data-demand-id="${item.id}">Close</button>
         </div>
       </article>
@@ -1666,14 +1735,14 @@ function renderCandidates() {
         <strong>${record.result.score}% fit</strong>
       </div>
       <h3>${record.candidate.title || "Untitled candidate"}</h3>
-      <p class="demand-match">${record.demandSnapshot ? `Buyer-backed: ${demandLabel(record.demandSnapshot)}` : "No saved buyer request attached."}</p>
+      <p class="demand-match">${record.demandSnapshot ? `Contract-backed: ${demandLabel(record.demandSnapshot)}` : "No saved contract/tender opportunity attached."}</p>
       <p>${record.candidate.supplier || "Supplier to confirm"} • ${record.candidate.category || "Category to confirm"} • ${record.candidate.brand || "Brand unknown"}</p>
       <dl>
         <div><dt>Landed est.</dt><dd>${money(record.result.financials?.landed || number(record.candidate.price) + number(record.candidate.fees))}</dd></div>
         <div><dt>ROI</dt><dd>${record.result.financials?.sale ? percent(record.result.financials.roi) : "TBC"}</dd></div>
         <div><dt>Quantity</dt><dd>${recordQuantity(record)} available</dd></div>
-        <div><dt>Brief</dt><dd>${record.brief.quantity || 1} x ${record.brief.item || "item"} for ${record.brief.postcode || "postcode TBC"}</dd></div>
-        <div><dt>Timing</dt><dd>${record.brief.urgency || "TBC"} / available ${record.candidate.availableBy || "TBC"}</dd></div>
+        <div><dt>Opportunity</dt><dd>${record.brief.quantity || 1} x ${record.brief.item || "item"} for ${record.brief.postcode || "postcode TBC"}</dd></div>
+        <div><dt>Timing</dt><dd>deadline ${record.brief.deadline || record.demandSnapshot?.tender?.deadline || "TBC"} / available ${record.candidate.availableBy || "TBC"}</dd></div>
         <div><dt>Quality</dt><dd>${record.brief.quality || "TBC"} / ${record.candidate.condition || "TBC"}</dd></div>
       </dl>
       ${renderScore(record.result)}
@@ -1698,19 +1767,20 @@ function renderLearning() {
 
   const approved = state.feedback.filter((item) => item.status === "Approved").length;
   const rejected = state.feedback.filter((item) => item.status === "Rejected").length;
-  const liveDemand = state.demands.filter((item) => ["Live", "Tender", "Matched"].includes(item.status)).length;
+  const liveDemand = state.demands.filter((item) => ["Live", "Tender", "Matched", "Bid Pack"].includes(item.status)).length;
   memoryStats.innerHTML = `
     <strong>${state.feedback.length}</strong>
     <span>review decisions recorded</span>
-    <p>${approved} approved, ${rejected} rejected. ${liveDemand} live or matched buyer requests are available for demand-led sourcing.</p>
+    <p>${approved} approved, ${rejected} rejected. ${liveDemand} live or matched contract/tender opportunities are available for stock-led fulfilment.</p>
   `;
 }
 
 function syncAgentDefaults() {
   const targetField = document.querySelector("#targetSalePrice");
   const postcodeField = document.querySelector("#agentPostcode");
-  if (targetField && !targetField.value && state.brief.budget) targetField.placeholder = `Saved budget ${money(state.brief.budget)}`;
-  if (postcodeField && !postcodeField.value && state.brief.postcode) postcodeField.placeholder = `Saved postcode ${state.brief.postcode}`;
+  const brief = activeBrief();
+  if (targetField && !targetField.value && brief.budget) targetField.placeholder = `Opportunity value/unit ${money(brief.budget)}`;
+  if (postcodeField && !postcodeField.value && brief.postcode) postcodeField.placeholder = `Fulfilment postcode ${brief.postcode}`;
   renderAgentSummary();
 }
 
@@ -1741,9 +1811,9 @@ function exportActiveBidPack() {
   const blob = new Blob([bidPackText(demand, readiness)], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  const safeBuyer = normalise(demand.brief?.customer || "tender").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const safeOpportunity = normalise(demand.brief?.customer || demand.tender?.title || "contract").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   link.href = url;
-  link.download = `rentalready-bid-pack-${safeBuyer || "tender"}-${new Date().toISOString().slice(0, 10)}.txt`;
+  link.download = `rentalready-bid-pack-${safeOpportunity || "contract"}-${new Date().toISOString().slice(0, 10)}.txt`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -1754,6 +1824,8 @@ function clearData() {
     .filter((key) => key.startsWith("rentalready_sourcing_"))
     .forEach((key) => localStorage.removeItem(key));
   state.brief = {};
+  state.demands = [];
+  state.activeDemandId = "";
   state.candidates = [];
   state.feedback = [];
   state.weights = { ...DEFAULT_WEIGHTS };

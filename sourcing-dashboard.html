@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0d141d">
     <link rel="icon" href="brand/rentalready_mark.svg" type="image/svg+xml">
     <script src="theme-init.js?v=20260526b"></script>
-    <link rel="stylesheet" href="styles.css?v=20260602e">
+    <link rel="stylesheet" href="styles.css?v=20260604a">
   </head>
   <body class="dashboard-body">
     <header class="site-header dashboard-header">
@@ -18,9 +18,9 @@
         <span class="brand-name"><strong>RentalReady</strong><em>Appliances</em></span>
       </a>
       <nav aria-label="Dashboard navigation">
-        <a href="#brief">Brief</a>
-        <a href="#demand">Demand</a>
-        <a href="#tenders">Tenders</a>
+        <a href="#brief">Manual</a>
+        <a href="#demand">Saved</a>
+        <a href="#tenders">Contracts</a>
         <a href="#agent">Agent</a>
         <a href="#candidate">Candidate</a>
         <a href="#shortlist">Shortlist</a>
@@ -35,23 +35,23 @@
       <section class="dashboard-hero" aria-labelledby="dashboard-title">
         <div>
           <p class="eyebrow">Internal sourcing assistant</p>
-          <h1 id="dashboard-title">Buy against live demand, not guesswork.</h1>
-          <p>This dashboard turns email, WhatsApp, Contracts Finder, and Find a Tender opportunities into buyer requests, matches those requests to John Pye-style auction lots, protects a 45% ROI target, and learns from the items you approve or reject.</p>
+          <h1 id="dashboard-title">Match live contracts to stock you can actually fulfil.</h1>
+          <p>This dashboard finds Contracts Finder and Find a Tender opportunities, saves the contract/tender record, checks whether available stock can cover the full requirement before the submission deadline, protects a 45% ROI target, and learns from the lots you approve or reject.</p>
         </div>
         <div class="dashboard-alert">
-          <strong>Demand-first workflow</strong>
-          <span>The assistant only recommends stock against a saved buyer request. It does not auto-buy; every lot still needs manual condition, fee, and collection checks.</span>
+          <strong>Contract-first workflow</strong>
+          <span>The assistant only recommends stock against a saved contract or tender opportunity. It does not auto-buy; every lot still needs manual condition, fee, deadline, and collection checks.</span>
         </div>
       </section>
 
       <nav class="workflow-tabs" aria-label="Sourcing workflow steps">
         <button type="button" data-step-tab="brief" aria-controls="briefForm">
           <span>Step 1</span>
-          <strong>Brief</strong>
+          <strong>Manual</strong>
         </button>
         <button type="button" data-step-tab="demand" aria-controls="demand">
           <span>Step 2</span>
-          <strong>Demand</strong>
+          <strong>Saved</strong>
         </button>
         <button type="button" data-step-tab="tenders" aria-controls="tenders">
           <span>Step 3</span>
@@ -75,25 +75,25 @@
         <form class="dashboard-panel sourcing-form step-panel" id="briefForm" data-step-panel="brief">
           <div class="panel-heading">
             <p class="eyebrow">Step 1</p>
-            <h2 id="brief-title">Customer requirement</h2>
-            <p>Paste from email, quote form, or WhatsApp, then tidy the key fields.</p>
+            <h2 id="brief-title">Manual contract opportunity</h2>
+            <p>Use this only when a contract or tender has come from outside the live feed. The main workflow starts from Step 3.</p>
           </div>
 
           <label>
-            Customer / company
-            <input name="customer" type="text" placeholder="Example: ABC Lettings">
+            Contracting authority / buyer
+            <input name="customer" type="text" placeholder="Example: Leicester City Council">
           </label>
           <label>
-            Enquiry source
+            Opportunity source
             <select name="source">
-              <option>Email</option>
-              <option>WhatsApp</option>
-              <option>Website quote form</option>
-              <option>Phone call</option>
+              <option>Contracts Finder</option>
+              <option>Find a Tender</option>
+              <option>Email / portal invite</option>
+              <option>Manual research</option>
             </select>
           </label>
           <label>
-            Appliance needed
+            Requirement category
             <select name="item">
               <option>Fridge freezer</option>
               <option>Electric cooker</option>
@@ -111,11 +111,11 @@
             <input name="quantity" type="number" min="1" value="1">
           </label>
           <label>
-            Property postcode
+            Fulfilment / delivery postcode
             <input name="postcode" type="text" placeholder="Example: B1 1AA">
           </label>
           <label>
-            Budget per item
+            Target value per item
             <input name="budget" type="number" min="0" step="1" placeholder="Example: 250">
           </label>
           <label>
@@ -127,7 +127,7 @@
             </select>
           </label>
           <label>
-            Urgency
+            Submission window
             <select name="urgency">
               <option>Today / emergency</option>
               <option selected>This week</option>
@@ -136,22 +136,22 @@
             </select>
           </label>
           <label class="span-2">
-            Raw enquiry notes
-            <textarea name="notes" rows="7" placeholder="Paste the email, quote form, or WhatsApp message here."></textarea>
+            Contract / tender notes
+            <textarea name="notes" rows="7" placeholder="Paste the contract title, specification notes, deadline, value, buyer portal link, and delivery requirement here."></textarea>
           </label>
           <div class="dashboard-actions span-2">
-            <button class="button secondary" type="button" id="saveBrief">Save working brief</button>
-            <button class="button primary" type="button" id="saveDemand">Add to demand queue</button>
+            <button class="button secondary" type="button" id="saveBrief">Save manual opportunity brief</button>
+            <button class="button primary" type="button" id="saveDemand">Save manual opportunity</button>
           </div>
         </form>
 
         <section class="dashboard-panel demand-panel step-panel" id="demand" data-step-panel="demand" aria-labelledby="demand-title">
           <div class="panel-heading">
             <p class="eyebrow">Step 2</p>
-            <h2 id="demand-title">Buyer demand queue</h2>
-            <p>Select a live request before ranking auction lots. The agent will only recommend purchases where a buyer need, budget, timing, and ROI case already exist.</p>
+            <h2 id="demand-title">Saved contract and tender opportunities</h2>
+            <p>Select the contract or tender you want to fulfil before ranking stock. The agent checks quantity, value, deadline, ROI, and whether fulfilment needs one or multiple sources.</p>
           </div>
-          <div class="active-demand" id="activeDemand" aria-live="polite">No buyer request selected yet.</div>
+          <div class="active-demand" id="activeDemand" aria-live="polite">No contract or tender selected yet.</div>
           <div class="demand-list" id="demandList"></div>
         </section>
 
@@ -187,7 +187,7 @@
             <input id="tenderValueCap" type="number" min="0" step="1000" value="30000">
           </label>
           <label>
-            Minimum tender ROI %
+            Minimum contract ROI %
             <input id="tenderRoi" type="number" min="0" step="1" value="45">
           </label>
           <label>
@@ -240,13 +240,13 @@ kitchen equipment</textarea>
         <section class="dashboard-panel sourcing-form agent-panel step-panel" id="agent" data-step-panel="agent" aria-labelledby="agent-title">
           <div class="panel-heading">
             <p class="eyebrow">Step 4</p>
-            <h2 id="agent-title">John Pye sourcing agent</h2>
-            <p>Match John Pye-style lots to the selected buyer request. The agent calculates the maximum safe bid needed to protect ROI before anything moves to purchase review.</p>
+            <h2 id="agent-title">Stock fulfilment agent</h2>
+            <p>Match John Pye, BPI, BidSpotter, or similar lots to the selected contract/tender. The agent checks full quantity coverage, submission timing, and maximum safe bid before anything moves to purchase review.</p>
           </div>
 
           <label>
-            Target sale price
-            <input id="targetSalePrice" type="number" min="0" step="1" placeholder="Uses saved budget if blank">
+            Target contract value per item
+            <input id="targetSalePrice" type="number" min="0" step="1" placeholder="Uses selected opportunity value if blank">
           </label>
           <label>
             Minimum ROI %
@@ -270,7 +270,7 @@ kitchen equipment</textarea>
           </label>
           <label>
             Search postcode
-            <input id="agentPostcode" type="text" placeholder="Uses saved postcode if blank">
+            <input id="agentPostcode" type="text" placeholder="Uses opportunity fulfilment postcode if blank">
           </label>
           <label>
             Max miles
@@ -284,7 +284,7 @@ kitchen equipment</textarea>
             <button class="button secondary" type="button" id="generateSearches">Generate John Pye searches</button>
             <button class="button primary" type="button" id="rankLots">Rank pasted lots</button>
           </div>
-          <div class="agent-summary span-2" id="agentSummary" aria-live="polite">Save a requirement, then generate searches or paste auction lots to rank.</div>
+          <div class="agent-summary span-2" id="agentSummary" aria-live="polite">Save a contract/tender opportunity, then generate searches or paste auction lots to rank.</div>
           <div class="agent-search-links span-2" id="agentSearchLinks"></div>
           <div class="agent-results span-2" id="agentResults"></div>
         </section>
@@ -386,10 +386,10 @@ kitchen equipment</textarea>
       <section class="dashboard-results step-panel" id="shortlist" data-step-panel="shortlist" aria-labelledby="shortlist-title">
         <div class="section-heading">
           <p class="eyebrow">Step 6</p>
-          <h2 id="shortlist-title">Sourcing shortlist</h2>
-          <p class="section-copy">Approve the candidate you would actually buy. Rejections matter too: the assistant adjusts future scoring based on your selections.</p>
+          <h2 id="shortlist-title">Contract fulfilment shortlist</h2>
+          <p class="section-copy">Approve the stock you would actually use to fulfil the selected contract or tender. Rejections matter too: the assistant adjusts future scoring based on your selections.</p>
         </div>
-        <div class="score-preview" id="scorePreview" aria-live="polite">Add a customer requirement and a supplier candidate to generate a fit score.</div>
+        <div class="score-preview" id="scorePreview" aria-live="polite">Select a contract/tender opportunity and add supplier stock to generate a fit score.</div>
         <div class="candidate-list" id="candidateList"></div>
       </section>
 
@@ -416,6 +416,6 @@ kitchen equipment</textarea>
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260602e"></script>
+    <script src="sourcing-dashboard.js?v=20260604a"></script>
   </body>
 </html>
