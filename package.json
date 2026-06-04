@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/build_site.mjs"
+    "build": "node scripts/build_site.mjs",
+    "verify:sourcing-contracts": "node scripts/verify_sourcing_contracts.mjs"
   }
 }

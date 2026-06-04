@@ -1,0 +1,26 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+
+const html = await readFile("dist/sourcing-dashboard.html", "utf8");
+const script = await readFile("dist/sourcing-dashboard.js", "utf8");
+const worker = await readFile("dist/_worker.js", "utf8");
+
+assert.match(html, /styles\.css\?v=20260602e/, "dashboard must load the new stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260602e/, "dashboard must load the new script version");
+assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
+assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
+assert.match(html, /Goods contract matcher/, "dashboard must use contract-first wording");
+
+assert.match(script, /CONTRACTS_FINDER_SEARCH_BASE/, "front end must generate Contracts Finder search links");
+assert.match(script, /GOODS_SIGNAL_TERMS/, "front end must score goods signals");
+assert.match(script, /SERVICE_RISK_TERMS/, "front end must score service-heavy risk");
+assert.match(script, /goodsScore/, "front end must show goods-fit scoring");
+assert.ok(script.includes("source=${encodeURIComponent(settings.source)}"), "front end must pass the selected live source to the API");
+assert.ok(script.includes("valueCap=${encodeURIComponent(settings.valueCap)}"), "front end must pass the starter cap to the API");
+
+assert.match(worker, /CONTRACTS_FINDER_RESULTS_URL/, "manual-deploy worker must fetch Contracts Finder");
+assert.match(worker, /CONTRACTS_FINDER_API_URL/, "manual-deploy worker must use the official Contracts Finder JSON API");
+assert.match(worker, /parseContractsFinderResults/, "manual-deploy worker must parse Contracts Finder results");
+assert.match(worker, /www\.contractsfinder\.service\.gov\.uk/, "detail loader must allow Contracts Finder notice URLs");
+
+console.log("Sourcing contract dashboard verification passed.");

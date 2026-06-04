@@ -16,11 +16,15 @@ function stripTags(value = "") {
 
 function safeNoticeUrl(value) {
   const url = new URL(value);
-  if (url.hostname !== "www.find-tender.service.gov.uk") {
-    throw new Error("Only Find a Tender notice URLs are supported.");
+  const allowedHosts = ["www.find-tender.service.gov.uk", "www.contractsfinder.service.gov.uk"];
+  if (!allowedHosts.includes(url.hostname)) {
+    throw new Error("Only Find a Tender and Contracts Finder notice URLs are supported.");
   }
-  if (!url.pathname.startsWith("/Notice/")) {
+  if (url.hostname === "www.find-tender.service.gov.uk" && !url.pathname.startsWith("/Notice/")) {
     throw new Error("Only Find a Tender notice pages are supported.");
+  }
+  if (url.hostname === "www.contractsfinder.service.gov.uk" && !url.pathname.startsWith("/notice/")) {
+    throw new Error("Only Contracts Finder notice pages are supported.");
   }
   return url;
 }
@@ -39,7 +43,7 @@ export async function onRequestGet({ request }) {
   const requestUrl = new URL(request.url);
   const target = requestUrl.searchParams.get("url");
   if (!target) {
-    return Response.json({ ok: false, error: "Missing Find a Tender notice URL." }, { status: 400 });
+    return Response.json({ ok: false, error: "Missing public procurement notice URL." }, { status: 400 });
   }
 
   let noticeUrl;
@@ -54,14 +58,16 @@ export async function onRequestGet({ request }) {
     response = await fetch(noticeUrl.toString(), {
       headers: {
         "accept": "text/html,application/xhtml+xml",
-        "referer": "https://www.find-tender.service.gov.uk/Search/Results",
-        "user-agent": "RentalReadyAppliancesTenderMatcher/1.0 (+https://rentalreadyappliances.com)",
+        "referer": noticeUrl.hostname === "www.contractsfinder.service.gov.uk"
+          ? "https://www.contractsfinder.service.gov.uk/Search/Results"
+          : "https://www.find-tender.service.gov.uk/Search/Results",
+        "user-agent": "RentalReadyAppliancesContractMatcher/1.0 (+https://rentalreadyappliances.com)",
       },
     });
   } catch (error) {
     return Response.json({
       ok: false,
-      error: `Find a Tender notice details could not be loaded server-side. Open the tender link and paste the notice detail text into Tender detail notes. (${error.message})`,
+      error: `Public procurement notice details could not be loaded server-side. Open the opportunity link and paste the detail text into Contract detail notes. (${error.message})`,
       url: noticeUrl.toString(),
     });
   }
@@ -69,7 +75,7 @@ export async function onRequestGet({ request }) {
   if (!response.ok) {
     return Response.json({
       ok: false,
-      error: `Find a Tender notice details returned HTTP ${response.status}. Open the tender link and paste the notice detail text into Tender detail notes.`,
+      error: `Public procurement notice details returned HTTP ${response.status}. Open the opportunity link and paste the detail text into Contract detail notes.`,
       url: noticeUrl.toString(),
     });
   }

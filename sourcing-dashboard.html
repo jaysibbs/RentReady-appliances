@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0d141d">
     <link rel="icon" href="brand/rentalready_mark.svg" type="image/svg+xml">
     <script src="theme-init.js?v=20260526b"></script>
-    <link rel="stylesheet" href="styles.css?v=20260602d">
+    <link rel="stylesheet" href="styles.css?v=20260602e">
   </head>
   <body class="dashboard-body">
     <header class="site-header dashboard-header">
@@ -36,7 +36,7 @@
         <div>
           <p class="eyebrow">Internal sourcing assistant</p>
           <h1 id="dashboard-title">Buy against live demand, not guesswork.</h1>
-          <p>This dashboard turns email, WhatsApp, and Find a Tender opportunities into buyer requests, matches those requests to John Pye-style auction lots, protects a 45% ROI target, and learns from the items you approve or reject.</p>
+          <p>This dashboard turns email, WhatsApp, Contracts Finder, and Find a Tender opportunities into buyer requests, matches those requests to John Pye-style auction lots, protects a 45% ROI target, and learns from the items you approve or reject.</p>
         </div>
         <div class="dashboard-alert">
           <strong>Demand-first workflow</strong>
@@ -55,7 +55,7 @@
         </button>
         <button type="button" data-step-tab="tenders" aria-controls="tenders">
           <span>Step 3</span>
-          <strong>Tenders</strong>
+          <strong>Contracts</strong>
         </button>
         <button type="button" data-step-tab="agent" aria-controls="agent">
           <span>Step 4</span>
@@ -158,10 +158,18 @@
         <section class="dashboard-panel sourcing-form tender-panel step-panel" id="tenders" data-step-panel="tenders" aria-labelledby="tender-title">
           <div class="panel-heading">
             <p class="eyebrow">Step 3</p>
-            <h2 id="tender-title">Find a Tender contract matcher</h2>
-            <p>Use narrow public-sector searches for local/regional materials, appliances, and equipment supply requests. Add only viable opportunities to demand when stock can be sourced with margin.</p>
+            <h2 id="tender-title">Goods contract matcher</h2>
+            <p>Search Contracts Finder and Find a Tender for local/regional goods, materials, appliances, and equipment supply opportunities. Service-heavy work is downgraded so stock-backed contracts are easier to find first.</p>
           </div>
 
+          <label>
+            Opportunity source
+            <select id="opportunitySource">
+              <option value="all" selected>Goods contracts first</option>
+              <option value="contracts">Contracts Finder only</option>
+              <option value="tenders">Find a Tender only</option>
+            </select>
+          </label>
           <label>
             Region focus
             <select id="tenderRegion">
@@ -175,7 +183,7 @@
             </select>
           </label>
           <label>
-            Starter contract cap
+            Starter opportunity cap
             <input id="tenderValueCap" type="number" min="0" step="1000" value="30000">
           </label>
           <label>
@@ -187,7 +195,7 @@
             <input id="tenderPostcode" type="text" placeholder="Example: LE1 4AN">
           </label>
           <label class="span-2">
-            Tender search keywords
+            Goods contract search keywords
             <textarea id="tenderKeywords" rows="5">white goods
 appliances
 washing machines
@@ -196,23 +204,23 @@ cookers ovens
 kitchen equipment</textarea>
           </label>
           <div class="dashboard-actions span-2">
-            <button class="button secondary" type="button" id="generateTenderSearches">Generate tender searches</button>
-            <button class="button primary" type="button" id="fetchLiveTenders">Fetch live tenders</button>
-            <button class="button primary" type="button" id="rankTenders">Rank tender opportunities</button>
+            <button class="button secondary" type="button" id="generateTenderSearches">Generate contract searches</button>
+            <button class="button primary" type="button" id="fetchLiveTenders">Fetch live contracts</button>
+            <button class="button primary" type="button" id="rankTenders">Rank pasted opportunities</button>
             <button class="button secondary" type="button" id="prepareBidPack">Prepare bid pack</button>
           </div>
-          <div class="agent-summary span-2" id="tenderSummary" aria-live="polite">Use narrow, local/regional searches first. Avoid big national frameworks until the business has stronger capacity and references.</div>
+          <div class="agent-summary span-2" id="tenderSummary" aria-live="polite">Use Contracts Finder for smaller goods opportunities first. Keep Find a Tender for larger notices only when the requirement is clearly supply-led and stock can be validated.</div>
           <section class="tender-opportunity-panel span-2" aria-labelledby="tender-opportunities-title">
             <div class="panel-heading compact-heading">
-              <p class="eyebrow">Tender opportunities</p>
-              <h3 id="tender-opportunities-title">Live and pasted tender results</h3>
-              <p>Select a tender here. The full contract figures and bid-readiness information appear in the section below.</p>
+              <p class="eyebrow">Contract opportunities</p>
+              <h3 id="tender-opportunities-title">Live and pasted contract results</h3>
+              <p>Select a contract here. The full figures, goods fit, service risk, stock coverage, and bid-readiness information appear in the section below.</p>
             </div>
             <details class="manual-import">
-              <summary>Paste tender opportunities manually</summary>
+              <summary>Paste contract opportunities manually</summary>
               <label>
-                Paste Find a Tender opportunities
-                <textarea id="tenderImport" rows="6" placeholder="Paste one opportunity per line. Example: Leicester City Council | White goods supply for temporary accommodation | Value £18,000 | East Midlands | Deadline 2026-06-18 | https://www.find-tender.service.gov.uk/..."></textarea>
+                Paste Contracts Finder or Find a Tender opportunities
+                <textarea id="tenderImport" rows="6" placeholder="Paste one opportunity per line. Example: Leicester City Council | White goods supply for temporary accommodation | Value £18,000 | East Midlands | Deadline 2026-06-18 | https://www.contractsfinder.service.gov.uk/..."></textarea>
               </label>
             </details>
             <div class="live-tender-status" id="liveTenderStatus" aria-live="polite"></div>
@@ -220,11 +228,11 @@ kitchen equipment</textarea>
             <div class="agent-results" id="tenderResults"></div>
           </section>
           <section class="tender-workspace span-2" id="tenderWorkspace" aria-live="polite">
-            <p class="empty-state">Fetch or rank tender opportunities, then select one to review the full contract figures, match percentage, eligibility, stock source plan, and bid-pack action.</p>
+            <p class="empty-state">Fetch or rank contract opportunities, then select one to review the full contract figures, goods match percentage, service risk, stock source plan, and bid-pack action.</p>
           </section>
           <label class="span-2">
-            Tender detail notes
-            <textarea id="tenderDetailNotes" rows="8" placeholder="Paste tender details, specification, delivery requirements, award criteria, insurance/compliance notes, or buyer questions here. The bid desk uses this to prepare a response pack."></textarea>
+            Contract detail notes
+            <textarea id="tenderDetailNotes" rows="8" placeholder="Paste contract/tender details, specification, delivery requirements, award criteria, insurance/compliance notes, or buyer questions here. The bid desk uses this to prepare a response pack."></textarea>
           </label>
           <div class="bid-pack span-2" id="bidPack" aria-live="polite"></div>
         </section>
@@ -408,6 +416,6 @@ kitchen equipment</textarea>
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260602d"></script>
+    <script src="sourcing-dashboard.js?v=20260602e"></script>
   </body>
 </html>

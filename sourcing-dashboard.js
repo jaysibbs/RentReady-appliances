@@ -12,6 +12,7 @@ const DEFAULT_WEIGHTS = {
 const DEFAULT_ROI_TARGET = 45;
 const JOHN_PYE_SEARCH_BASE = "https://www.johnpye.co.uk/";
 const FIND_TENDER_SEARCH_BASE = "https://www.find-tender.service.gov.uk/Search/Results";
+const CONTRACTS_FINDER_SEARCH_BASE = "https://www.contractsfinder.service.gov.uk/Search/Results";
 const STOCK_SOURCES = [
   {
     name: "John Pye",
@@ -39,6 +40,50 @@ const STRONG_BRANDS = [
   "beko",
   "zanussi",
   "indesit",
+];
+
+const GOODS_SIGNAL_TERMS = [
+  "supply",
+  "goods",
+  "equipment",
+  "appliances",
+  "white goods",
+  "washing machine",
+  "washer",
+  "fridge",
+  "freezer",
+  "cooker",
+  "oven",
+  "hob",
+  "dryer",
+  "dishwasher",
+  "microwave",
+  "kitchen equipment",
+  "domestic appliance",
+  "electrical goods",
+  "furniture",
+  "materials",
+  "stock",
+];
+
+const SERVICE_RISK_TERMS = [
+  "service specification",
+  "consultancy",
+  "maintenance service",
+  "servicing",
+  "installation works",
+  "mechanical works",
+  "taxi",
+  "transport",
+  "passenger assistant",
+  "driver",
+  "cleaning service",
+  "staffing",
+  "training",
+  "design and build",
+  "minor works",
+  "repair service",
+  "managed service",
 ];
 
 const state = {
@@ -263,6 +308,7 @@ function tenderDetailRows(tender) {
   return [
     ["Buyer", tender.authority || "TBC"],
     ["Title", tender.title || "TBC"],
+    ["Opportunity type", tender.opportunityType || tender.noticeType || "Contract / tender"],
     ["Category", tender.item || "TBC"],
     ["Required stock", `${number(tender.quantity) || 1} unit(s)`],
     ["Estimated value", tender.value ? money(tender.value) : "TBC"],
@@ -613,6 +659,7 @@ function johnPyeSearchUrl(term) {
 
 function tenderSettings() {
   return {
+    source: document.querySelector("#opportunitySource")?.value || "all",
     region: document.querySelector("#tenderRegion")?.value || "East Midlands",
     valueCap: number(document.querySelector("#tenderValueCap")?.value) || 30000,
     roi: number(document.querySelector("#tenderRoi")?.value) || DEFAULT_ROI_TARGET,
@@ -627,6 +674,18 @@ function tenderSettings() {
 function findTenderSearchUrl(term, settings) {
   const query = [term, settings.region].filter(Boolean).join(" ");
   return `${FIND_TENDER_SEARCH_BASE}?keywords=${encodeURIComponent(query)}`;
+}
+
+function contractsFinderSearchUrl(term, settings) {
+  const query = [term, settings.region].filter(Boolean).join(" ");
+  const search = new URL(CONTRACTS_FINDER_SEARCH_BASE);
+  search.searchParams.set("keywords", query);
+  search.searchParams.set("tender", "1");
+  search.searchParams.set("planning", "1");
+  search.searchParams.set("speculative", "1");
+  search.searchParams.set("awarded", "0");
+  if (settings.postcode) search.searchParams.set("postcode", settings.postcode);
+  return search.toString();
 }
 
 function sourceSearchLinks(terms) {
@@ -647,10 +706,10 @@ function renderTenderSummary() {
       <div><span>Region</span><strong>${settings.region}</strong></div>
       <div><span>Starter cap</span><strong>${money(settings.valueCap)}</strong></div>
       <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong></div>
-      <div><span>Sources</span><strong>${STOCK_SOURCES.length}</strong></div>
-      <div><span>Mode</span><strong>Demand first</strong></div>
+      <div><span>Feed</span><strong>${settings.source === "contracts" ? "Contracts" : settings.source === "tenders" ? "Tenders" : "Both"}</strong></div>
+      <div><span>Mode</span><strong>Goods first</strong></div>
     </div>
-    <p>Start with below-cap local/regional supply opportunities. Add only tenders where stock availability, delivery capacity, and margin can be checked before bidding.</p>
+    <p>Start with below-cap local/regional goods supply contracts. Service-heavy opportunities are deliberately downgraded unless the requirement can be fulfilled with available stock and a protected margin.</p>
   `;
 }
 
@@ -660,10 +719,12 @@ function generateTenderSearches() {
   const settings = tenderSettings();
   const terms = settings.keywords.length ? settings.keywords : ["white goods", "appliances", "kitchen equipment"];
   tenderSearchLinks.innerHTML = `
-    <strong>Find a Tender searches</strong>
+    <strong>Live contract searches</strong>
     <div>
-      ${terms.map((term) => `<a class="button secondary" href="${findTenderSearchUrl(term, settings)}" target="_blank" rel="noopener">${term}</a>`).join("")}
-      <a class="button secondary" href="https://www.find-tender.service.gov.uk/Search" target="_blank" rel="noopener">Advanced search</a>
+      ${settings.source !== "tenders" ? terms.map((term) => `<a class="button secondary" href="${contractsFinderSearchUrl(term, settings)}" target="_blank" rel="noopener">Contracts Finder: ${term}</a>`).join("") : ""}
+      ${settings.source !== "contracts" ? terms.map((term) => `<a class="button secondary" href="${findTenderSearchUrl(term, settings)}" target="_blank" rel="noopener">Find a Tender: ${term}</a>`).join("") : ""}
+      <a class="button secondary" href="https://www.contractsfinder.service.gov.uk/Search" target="_blank" rel="noopener">Contracts Finder advanced</a>
+      <a class="button secondary" href="https://www.find-tender.service.gov.uk/Search" target="_blank" rel="noopener">Find a Tender advanced</a>
     </div>
     <strong>Stock source searches</strong>
     ${sourceSearchLinks(terms)}
@@ -678,30 +739,31 @@ async function fetchLiveTenders() {
   renderTenderSummary();
   const settings = tenderSettings();
   if (liveTenderStatus) {
-    liveTenderStatus.innerHTML = `<strong>Fetching live Find a Tender results...</strong><span>Searching ${escapeHtml(tenderKeywordsQuery(settings))} in ${escapeHtml(settings.region)}.</span>`;
+    liveTenderStatus.innerHTML = `<strong>Fetching live contract opportunities...</strong><span>Searching ${escapeHtml(tenderKeywordsQuery(settings))} in ${escapeHtml(settings.region)} with ${escapeHtml(settings.source === "all" ? "Contracts Finder + Find a Tender" : settings.source)}.</span>`;
   }
 
   try {
-    const response = await fetch(`/api/tenders?keywords=${encodeURIComponent(tenderKeywordsQuery(settings))}&region=${encodeURIComponent(settings.region)}`);
+    const response = await fetch(`/api/tenders?keywords=${encodeURIComponent(tenderKeywordsQuery(settings))}&region=${encodeURIComponent(settings.region)}&postcode=${encodeURIComponent(settings.postcode)}&source=${encodeURIComponent(settings.source)}&valueCap=${encodeURIComponent(settings.valueCap)}`);
     const payload = await response.json();
     if (!response.ok || !payload.ok) throw new Error(payload.error || "Live tender search failed.");
 
     const tenders = payload.results.map((item) => tenderFromApiResult(item, settings));
     if (!tenders.length) {
-      if (liveTenderStatus) liveTenderStatus.innerHTML = `<strong>No live results returned.</strong><span>Try broader keywords or open the Find a Tender search links.</span>`;
+      if (liveTenderStatus) liveTenderStatus.innerHTML = `<strong>No live results returned.</strong><span>Try broader goods keywords or open the generated contract search links.</span>`;
       tenderResults.innerHTML = "";
       activeTenderReview = null;
       renderTenderWorkspace(null);
       return;
     }
 
-    renderTenderMatches(tenders, settings, `Live results from Find a Tender. Source: ${payload.sourceUrl}`);
+    const warning = payload.warnings?.length ? ` Partial feed warning: ${payload.warnings.join(" | ")}` : "";
+    renderTenderMatches(tenders, settings, `Live results from ${settings.source === "all" ? "Contracts Finder and Find a Tender" : settings.source}.${warning} Source: ${payload.sourceUrl}`);
     if (liveTenderStatus) {
-      liveTenderStatus.innerHTML = `<strong>${tenders.length} live tender results loaded.</strong><span>Review details, check stock coverage, then add viable opportunities to demand.</span>`;
+      liveTenderStatus.innerHTML = `<strong>${tenders.length} live contract result(s) loaded.</strong><span>Goods-based opportunities are ranked ahead of service-heavy notices. Review stock coverage before starting a bid pack.</span>`;
     }
   } catch (error) {
     if (liveTenderStatus) {
-      liveTenderStatus.innerHTML = `<strong>Live tender fetch unavailable.</strong><span>${escapeHtml(error.message)} Use the generated Find a Tender links, then paste relevant results into the matcher.</span>`;
+      liveTenderStatus.innerHTML = `<strong>Live contract fetch unavailable.</strong><span>${escapeHtml(error.message)} Use the generated Contracts Finder / Find a Tender links, then paste relevant results into the matcher.</span>`;
     }
   }
 }
@@ -748,8 +810,10 @@ function parseMoneyFromText(text) {
 }
 
 function parseMoneyLoose(value) {
-  const match = String(value || "").match(/£?\s?([0-9]+(?:,[0-9]{3})*(?:\.\d{1,2})?)/);
-  return match ? number(match[1]) : 0;
+  const matches = [...String(value || "").matchAll(/£?\s?([0-9]+(?:,[0-9]{3})*(?:\.\d{1,2})?)/g)]
+    .map((match) => number(match[1]))
+    .filter(Boolean);
+  return matches.length ? Math.max(...matches) : 0;
 }
 
 function isoFromTenderDate(value) {
@@ -808,7 +872,41 @@ function tenderSearchTerms(tender) {
     tender.item,
     "white goods",
     "appliances",
+    "equipment supply",
   ].filter(Boolean))];
+}
+
+function opportunityText(tender) {
+  return normalise([
+    tender.title,
+    tender.authority,
+    tender.item,
+    tender.source,
+    tender.noticeType,
+    tender.opportunityType,
+    tender.description,
+    tender.notes,
+  ].filter(Boolean).join(" "));
+}
+
+function termHits(text, terms) {
+  const value = normalise(text);
+  return terms.filter((term) => value.includes(normalise(term)));
+}
+
+function opportunityProfile(tender) {
+  const text = opportunityText(tender);
+  const goodsHits = termHits(text, GOODS_SIGNAL_TERMS);
+  const serviceHits = termHits(text, SERVICE_RISK_TERMS);
+  const supplyLed = goodsHits.length >= 2 || /\bsupply(?:ing)?\b/.test(text);
+  const serviceHeavy = serviceHits.length >= 2 || (!goodsHits.length && /\b(service|services|works|consultancy|maintenance)\b/.test(text));
+  return {
+    goodsHits,
+    serviceHits,
+    supplyLed,
+    serviceHeavy,
+    goodsScore: clamp(40 + goodsHits.length * 14 - serviceHits.length * 10 + (supplyLed ? 18 : 0) - (serviceHeavy ? 24 : 0)),
+  };
 }
 
 function parseTenderLine(line, settings) {
@@ -823,13 +921,15 @@ function parseTenderLine(line, settings) {
   return {
     authority,
     title: cleanLine.split(/\s+\|\s+|\t+/).find((part) => !/£|value|deadline|region/i.test(part) && part !== authority)?.trim() || `${item} supply opportunity`,
-    source: "Find a Tender",
+    source: cleanLine.includes("contractsfinder.service.gov.uk") ? "Contracts Finder pasted result" : "Find a Tender pasted result",
     url,
     item,
     quantity,
     value,
     region,
     deadline,
+    noticeType: cleanLine.match(/opportunity|future opportunity|early engagement|tender/i)?.[0] || "",
+    opportunityType: cleanLine.includes("contractsfinder.service.gov.uk") ? "Contract opportunity" : "Tender",
     notes: cleanLine,
   };
 }
@@ -847,8 +947,8 @@ function tenderFromApiResult(result, settings) {
 
   return {
     authority: result.buyer || "Public sector buyer",
-    title: result.title || "Tender opportunity",
-    source: "Find a Tender live result",
+    title: result.title || "Contract opportunity",
+    source: result.platform ? `${result.platform} live result` : "Public procurement live result",
     url: result.url || "",
     item: inferCategory(`${result.title || ""} ${result.description || ""}`, "Portfolio / batch request"),
     quantity: parseQuantityFromText(`${result.title || ""} ${result.description || ""}`),
@@ -857,6 +957,9 @@ function tenderFromApiResult(result, settings) {
     deadline: isoFromTenderDate(result.deadline),
     notes,
     description: result.description || "",
+    noticeType: result.noticeType || "",
+    opportunityType: result.opportunityType || result.platform || "Contract opportunity",
+    platform: result.platform || "",
   };
 }
 
@@ -864,28 +967,36 @@ function tenderScore(tender, settings) {
   const value = number(tender.value);
   const deadlineDays = daysUntil(tender.deadline);
   const regionMatch = normalise(tender.region).includes(normalise(settings.region)) || normalise(settings.region).includes(normalise(tender.region));
-  const localMatch = regionMatch || ["leicester", "nottingham", "derby", "birmingham", "midlands"].some((place) => normalise(tender.notes).includes(place));
-  const keywordHit = tenderSearchTerms(tender).some((term) => normalise(tender.notes).includes(normalise(term)));
+  const profile = opportunityProfile(tender);
+  const localMatch = regionMatch || ["leicester", "nottingham", "derby", "birmingham", "midlands"].some((place) => opportunityText(tender).includes(place));
+  const keywordHit = tenderSearchTerms(tender).some((term) => opportunityText(tender).includes(normalise(term)));
   const valueOk = !value || value <= settings.valueCap;
   const valueWatch = value && value > settings.valueCap && value <= settings.valueCap * 1.5;
   const deadlineOk = deadlineDays >= 5 && deadlineDays <= 60;
   const deadlineRisk = deadlineDays < 5;
-  let score = 42;
+  const contractsFinder = normalise(tender.source).includes("contracts finder") || normalise(tender.platform).includes("contracts finder");
+  let score = 34;
 
   if (value && valueOk) score += 24;
   if (valueWatch) score += 8;
+  if (contractsFinder) score += 8;
   if (localMatch) score += 18;
   if (keywordHit) score += 14;
+  if (profile.supplyLed) score += 18;
+  if (profile.serviceHeavy) score -= 28;
+  score += Math.round((profile.goodsScore - 50) * 0.25);
   if (deadlineDays >= 5 && deadlineDays <= 28) score += 12;
   if (deadlineDays > 28 && deadlineDays <= 60) score += 6;
   if (deadlineDays < 3) score -= 18;
   if (!value) score -= 6;
 
-  const viable = score >= 72 && (!value || value <= settings.valueCap * 1.5) && !deadlineRisk;
-  const decision = viable ? "Worth checking stock" : score >= 58 ? "Needs review" : "Poor fit";
+  const viable = score >= 72 && profile.goodsScore >= 58 && (!profile.serviceHeavy || profile.supplyLed) && (!value || value <= settings.valueCap * 1.5) && !deadlineRisk;
+  const decision = viable ? "Worth checking stock" : score >= 58 ? "Needs goods review" : "Poor fit";
   const tone = viable ? "pass" : score >= 58 ? "prepare" : "hold";
   const checks = [
     { label: "Local/regional fit", pass: localMatch, detail: localMatch ? "Matches your region focus." : "Buyer/location needs manual checking." },
+    { label: "Goods supply fit", pass: profile.goodsScore >= 58, detail: profile.goodsHits.length ? `Goods signals: ${profile.goodsHits.slice(0, 4).join(", ")}.` : "No clear goods/appliance/material signals found." },
+    { label: "Service risk", pass: !profile.serviceHeavy, detail: profile.serviceHits.length ? `Service signals: ${profile.serviceHits.slice(0, 4).join(", ")}.` : "No major service-heavy signals found." },
     { label: "Material fit", pass: keywordHit, detail: keywordHit ? "Appliance/material keywords found." : "Specification may not match target stock." },
     { label: "Value within starter cap", pass: valueOk || valueWatch, detail: value ? `${money(value)} against ${money(settings.valueCap)} cap.` : "Value not published." },
     { label: "Deadline workable", pass: deadlineOk, detail: tender.deadline ? `${deadlineDays} day(s) left.` : "Deadline not captured." },
@@ -899,10 +1010,15 @@ function tenderScore(tender, settings) {
     checks,
     localMatch,
     keywordHit,
+    goodsScore: profile.goodsScore,
+    goodsHits: profile.goodsHits,
+    serviceHits: profile.serviceHits,
+    serviceHeavy: profile.serviceHeavy,
+    supplyLed: profile.supplyLed,
     deadlineDays,
     recommendation: viable
-      ? "Add to demand queue - then validate stock availability and margin before bidding."
-      : "Hold - either too broad, too large, too close to deadline, or not enough local/material fit.",
+      ? "Add to demand queue - then validate stock availability, delivery capacity, and margin before bidding."
+      : "Hold - either service-heavy, too broad, too large, too close to deadline, or not enough local/material fit.",
   };
 }
 
@@ -942,13 +1058,13 @@ function bidPackText(demand, readiness) {
   }).join("\n") || "- No viable stock attached yet.";
 
   return [
-    `RentalReady Appliances - Tender application pack`,
+    `RentalReady Appliances - Contract application pack`,
     ``,
     `Opportunity`,
     `Buyer: ${brief.customer || tender.authority || "TBC"}`,
     `Title: ${tender.title || "TBC"}`,
     `Source: ${brief.source || tender.source || "Find a Tender"}`,
-    `Tender link: ${tender.url || "TBC"}`,
+    `Opportunity link: ${tender.url || "TBC"}`,
     `Deadline: ${tender.deadline || "TBC"}`,
     `Estimated value: ${tender.value ? money(tender.value) : "TBC"}`,
     `Required quantity: ${readiness.requiredQuantity}`,
@@ -965,7 +1081,7 @@ function bidPackText(demand, readiness) {
     stockLines,
     ``,
     `Suggested response points`,
-    `- RentalReady Appliances can source and supply the requested appliance/equipment requirement using reviewed stock matched to the specification.`,
+    `- RentalReady Appliances can source and supply the requested goods, appliance, material, or equipment requirement using reviewed stock matched to the specification.`,
     `- Stock is only committed after final condition, collection, delivery, and compliance checks are complete.`,
     `- Delivery planning should confirm postcode, access, timing, and any old-appliance removal or installation exclusions.`,
     `- The bid should state any assumptions around refurbished/graded condition, warranties, replacement route, and lead times.`,
@@ -973,7 +1089,7 @@ function bidPackText(demand, readiness) {
     `Missing items to confirm before submission`,
     ...readiness.checks.filter((item) => !item.pass).map((item) => `- ${item.label}: ${item.advice}`),
     ``,
-    `Tender detail notes`,
+    `Contract detail notes`,
     readiness.details || "No tender detail notes pasted yet.",
   ].join("\n");
 }
@@ -982,7 +1098,7 @@ function renderBidPack() {
   if (!bidPack) return;
   const demand = activeDemandRecord();
   if (!demand?.tender) {
-    bidPack.innerHTML = `<p class="empty-state">Select or add a Find a Tender opportunity first. The bid desk only prepares application packs for tender-backed demand.</p>`;
+    bidPack.innerHTML = `<p class="empty-state">Select or add a public contract opportunity first. The bid desk only prepares application packs for contract-backed demand.</p>`;
     return;
   }
 
@@ -1022,7 +1138,7 @@ function renderBidPack() {
       <textarea rows="18" readonly>${escapeHtml(text)}</textarea>
     </label>
     <div class="dashboard-actions">
-      ${demand.tender.url ? `<a class="button secondary" href="${demand.tender.url}" target="_blank" rel="noopener">Open tender details</a>` : ""}
+      ${demand.tender.url ? `<a class="button secondary" href="${demand.tender.url}" target="_blank" rel="noopener">Open opportunity details</a>` : ""}
       <button class="button secondary" type="button" id="exportBidPack">Export bid pack</button>
     </div>
   `;
@@ -1132,14 +1248,14 @@ function rankTenders() {
   const raw = document.querySelector("#tenderImport")?.value || "";
   const lines = raw.split(/\n+/).map((line) => line.trim()).filter(Boolean);
   if (!lines.length) {
-    tenderResults.innerHTML = `<p class="empty-state">Paste one or more Find a Tender opportunities first. Keep one opportunity per line for best results.</p>`;
+    tenderResults.innerHTML = `<p class="empty-state">Paste one or more Contracts Finder or Find a Tender opportunities first. Keep one opportunity per line for best results.</p>`;
     activeTenderReview = null;
     renderTenderWorkspace(null);
     return;
   }
 
   const tenders = lines.map((line) => parseTenderLine(line, settings));
-  renderTenderMatches(tenders, settings, "Pasted tender opportunities ranked locally.");
+  renderTenderMatches(tenders, settings, "Pasted contract opportunities ranked locally.");
 }
 
 function renderTenderMatches(tenders, settings, sourceNote = "") {
@@ -1168,9 +1284,9 @@ function renderTenderMatches(tenders, settings, sourceNote = "") {
           </div>
           <div class="summary-metrics">
             <div><span>Match</span><strong>${Math.round(item.result.score)}%</strong></div>
+            <div><span>Goods</span><strong>${Math.round(item.result.goodsScore || item.result.score)}%</strong></div>
             <div><span>Value</span><strong>${value ? money(value) : "TBC"}</strong></div>
             <div><span>Stock</span><strong>${required}</strong></div>
-            <div><span>Deadline</span><strong>${deadlineLabel}</strong></div>
           </div>
           <div class="decision-badge ${item.result.tone}">
             <strong>${item.result.decision}</strong>
@@ -1188,7 +1304,7 @@ function renderTenderMatches(tenders, settings, sourceNote = "") {
 function renderTenderWorkspace(review) {
   if (!tenderWorkspace) return;
   if (!review) {
-    tenderWorkspace.innerHTML = `<p class="empty-state">Select a tender opportunity to review the full contract figures, match percentage, eligibility, stock source plan, and bid-pack action.</p>`;
+    tenderWorkspace.innerHTML = `<p class="empty-state">Select a contract opportunity to review the full figures, goods match percentage, service risk, stock source plan, and bid-pack action.</p>`;
     return;
   }
 
@@ -1201,7 +1317,7 @@ function renderTenderWorkspace(review) {
   tenderWorkspace.innerHTML = `
     <div class="tender-workspace-header">
       <div>
-        <span class="result-rank">Selected tender #${index + 1}</span>
+        <span class="result-rank">Selected opportunity #${index + 1}</span>
         <h3>${escapeHtml(tender.title)}</h3>
         <p>${escapeHtml(tender.authority)} • ${escapeHtml(tender.region || "region TBC")} • ${escapeHtml(tender.source || "Find a Tender")}</p>
       </div>
@@ -1214,6 +1330,7 @@ function renderTenderWorkspace(review) {
     <div class="tender-fact-grid">
       <div><span>Estimated value</span><strong>${value ? money(value) : "TBC"}</strong><em>${valuePerUnit ? `${money(valuePerUnit)} per required unit` : "Confirm in notice"}</em></div>
       <div><span>Required stock</span><strong>${required}</strong><em>${escapeHtml(tender.item || "Category TBC")}</em></div>
+      <div><span>Goods fit</span><strong>${Math.round(result.goodsScore || result.score)}%</strong><em>${result.serviceHeavy ? "Service-heavy risk found" : "Supply-led check"}</em></div>
       <div><span>Deadline</span><strong>${tender.deadline || "TBC"}</strong><em>${Number.isFinite(result.deadlineDays) ? `${result.deadlineDays} day(s) left` : "Confirm deadline"}</em></div>
       <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong><em>Only bid if landed stock protects this</em></div>
     </div>
@@ -1230,12 +1347,12 @@ function renderTenderWorkspace(review) {
 
     <div class="stock-source-plan">
       <strong>Stock availability review</strong>
-      <p>No stock is reserved from this tender result yet. Start the bid pack, then attach John Pye, BPI, or BidSpotter lots. The demand queue will show whether fulfilment can come from one source or requires multiple sources.</p>
+      <p>No stock is reserved from this opportunity yet. Start the bid pack, then attach John Pye, BPI, or BidSpotter lots. The demand queue will show whether fulfilment can come from one source or requires multiple sources by price and quantity.</p>
       ${sourceSearchLinks(terms)}
     </div>
 
     <details class="tender-details tender-result-details" open>
-      <summary>Full tender / contract information</summary>
+      <summary>Full contract / tender information</summary>
       <dl>
         ${tenderDetailRows(tender).map(([key, value]) => `
           <div><dt>${key}</dt><dd>${escapeHtml(value)}</dd></div>
@@ -1246,7 +1363,7 @@ function renderTenderWorkspace(review) {
 
     <p class="candidate-note">${escapeHtml(result.recommendation)}</p>
     <div class="dashboard-actions">
-      ${tender.url ? `<a class="button secondary" href="${tender.url}" target="_blank" rel="noopener">Open tender</a>` : ""}
+      ${tender.url ? `<a class="button secondary" href="${tender.url}" target="_blank" rel="noopener">Open opportunity</a>` : ""}
       ${tender.url ? `<button class="button secondary" type="button" data-tender-detail="${encodeURIComponent(tender.url)}">Load details</button>` : ""}
       <button class="button primary" type="button" data-tender-add="${encodeURIComponent(JSON.stringify(tender))}">Start bid pack</button>
     </div>
@@ -1258,7 +1375,7 @@ function addTenderDemand(encodedTender) {
   const settings = tenderSettings();
   const brief = {
     customer: tender.authority,
-    source: "Find a Tender",
+    source: tender.source || "Public contract",
     item: tender.item,
     quantity: String(number(tender.quantity) || 1),
     postcode: settings.postcode,
@@ -1281,14 +1398,14 @@ function addTenderDemand(encodedTender) {
   fillForm(briefForm, brief);
   persist();
   render();
-  scorePreview.textContent = `${demandLabel(demand)} added from Find a Tender. Now match supplier stock before bid review.`;
+  scorePreview.textContent = `${demandLabel(demand)} added from ${tender.source || "public procurement"}. Now match supplier stock before bid review.`;
 }
 
 async function loadTenderDetails(encodedUrl) {
   const url = decodeURIComponent(encodedUrl);
   const notesBox = document.querySelector("#tenderDetailNotes");
   if (liveTenderStatus) {
-    liveTenderStatus.innerHTML = `<strong>Loading tender details...</strong><span>${escapeHtml(url)}</span>`;
+    liveTenderStatus.innerHTML = `<strong>Loading opportunity details...</strong><span>${escapeHtml(url)}</span>`;
   }
 
   try {
@@ -1307,12 +1424,12 @@ async function loadTenderDetails(encodedUrl) {
       ].filter(Boolean).join("\n\n");
     }
     if (liveTenderStatus) {
-      liveTenderStatus.innerHTML = `<strong>Tender details loaded.</strong><span>Review the detail notes, add the tender to demand, then match stock coverage.</span>`;
+      liveTenderStatus.innerHTML = `<strong>Opportunity details loaded.</strong><span>Review the detail notes, add the opportunity to demand, then match stock coverage.</span>`;
     }
     renderBidPack();
   } catch (error) {
     if (liveTenderStatus) {
-      liveTenderStatus.innerHTML = `<strong>Tender detail fetch unavailable.</strong><span>${escapeHtml(error.message)} Open the tender, copy the specification text, and paste it into Tender detail notes.</span>`;
+      liveTenderStatus.innerHTML = `<strong>Opportunity detail fetch unavailable.</strong><span>${escapeHtml(error.message)} Open the opportunity, copy the specification text, and paste it into Contract detail notes.</span>`;
     }
   }
 }

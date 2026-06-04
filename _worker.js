@@ -1,4 +1,6 @@
 const FIND_TENDER_RESULTS_URL = "https://www.find-tender.service.gov.uk/Search/Results";
+const CONTRACTS_FINDER_RESULTS_URL = "https://www.contractsfinder.service.gov.uk/Search/Results";
+const CONTRACTS_FINDER_API_URL = "https://www.contractsfinder.service.gov.uk/api/rest/2/search_notices/json";
 
 function decodeEntities(value = "") {
   return String(value)
@@ -17,8 +19,9 @@ function stripTags(value = "") {
 }
 
 function fieldFromBlock(block, label) {
-  const pattern = new RegExp(`<dt[^>]*>\\s*<strong>\\s*${label}\\s*<\\/strong>\\s*<\\/dt>\\s*<dd[^>]*>([\\s\\S]*?)<\\/dd>`, "i");
-  return stripTags(block.match(pattern)?.[1] || "");
+  const dtPattern = new RegExp(`<dt[^>]*>\\s*<strong>\\s*${label}\\s*<\\/strong>\\s*<\\/dt>\\s*<dd[^>]*>([\\s\\S]*?)<\\/dd>`, "i");
+  const entryPattern = new RegExp(`<div[^>]*class="[^"]*search-result-entry[^"]*"[^>]*>\\s*<strong>\\s*${label}\\s*<\\/strong>\\s*([\\s\\S]*?)<\\/div>`, "i");
+  return stripTags(block.match(dtPattern)?.[1] || block.match(entryPattern)?.[1] || "");
 }
 
 function parseTenderResults(html) {
@@ -45,7 +48,38 @@ function parseTenderResults(html) {
         deadline,
         published,
         noticeType,
+        platform: "Find a Tender",
+        opportunityType: "Tender",
         url: href,
+      };
+    })
+    .filter((item) => item.title && item.url)
+    .slice(0, 12);
+}
+
+function parseContractsFinderResults(payload) {
+  return (payload.noticeList || [])
+    .map(({ item }) => {
+      const valueLow = Number(item?.valueLow) || 0;
+      const valueHigh = Number(item?.valueHigh) || 0;
+      const value = valueHigh && valueLow && valueHigh !== valueLow
+        ? `£${valueLow.toLocaleString("en-GB")} to £${valueHigh.toLocaleString("en-GB")}`
+        : valueHigh || valueLow
+          ? `£${(valueHigh || valueLow).toLocaleString("en-GB")}`
+          : "";
+      return {
+        title: stripTags(item?.title || ""),
+        buyer: stripTags(item?.organisationName || ""),
+        description: stripTags([item?.description, item?.cpvDescriptionExpanded || item?.cpvDescription].filter(Boolean).join(" ")),
+        value,
+        location: stripTags(item?.regionText || item?.region || item?.postcode || ""),
+        deadline: item?.deadlineDate || "",
+        published: item?.publishedDate || "",
+        noticeType: [item?.noticeType, item?.noticeStatus].filter(Boolean).join(" / "),
+        platform: "Contracts Finder",
+        opportunityType: "Contract opportunity",
+        cpv: item?.cpvDescriptionExpanded || item?.cpvDescription || "",
+        url: item?.id ? `https://www.contractsfinder.service.gov.uk/notice/${item.id}` : "",
       };
     })
     .filter((item) => item.title && item.url)
@@ -54,11 +88,15 @@ function parseTenderResults(html) {
 
 function safeNoticeUrl(value) {
   const url = new URL(value);
-  if (url.hostname !== "www.find-tender.service.gov.uk") {
-    throw new Error("Only Find a Tender notice URLs are supported.");
+  const allowedHosts = ["www.find-tender.service.gov.uk", "www.contractsfinder.service.gov.uk"];
+  if (!allowedHosts.includes(url.hostname)) {
+    throw new Error("Only Find a Tender and Contracts Finder notice URLs are supported.");
   }
-  if (!url.pathname.startsWith("/Notice/")) {
+  if (url.hostname === "www.find-tender.service.gov.uk" && !url.pathname.startsWith("/Notice/")) {
     throw new Error("Only Find a Tender notice pages are supported.");
+  }
+  if (url.hostname === "www.contractsfinder.service.gov.uk" && !url.pathname.startsWith("/notice/")) {
+    throw new Error("Only Contracts Finder notice pages are supported.");
   }
   return url;
 }
@@ -73,10 +111,7 @@ function parseNotice(html, url) {
   };
 }
 
-async function handleTenderSearch(request) {
-  const url = new URL(request.url);
-  const keywords = url.searchParams.get("keywords") || "white goods appliances";
-  const region = url.searchParams.get("region") || "";
+async function fetchFindTenderResults(keywords, region) {
   const search = new URL(FIND_TENDER_RESULTS_URL);
   search.searchParams.set("keywords", [keywords, region].filter(Boolean).join(" "));
   search.searchParams.set("sort", "unix_published_date:DESC");
@@ -88,28 +123,122 @@ async function handleTenderSearch(request) {
     },
   });
 
-  if (!response.ok) {
+  if (!response.ok) throw new Error(`Find a Tender returned HTTP ${response.status}`);
+
+  return {
+    sourceUrl: search.toString(),
+    results: parseTenderResults(await response.text()),
+  };
+}
+
+async function fetchContractsFinderResults(keywords, region, postcode, valueCap, widened = false) {
+  const sourceUrl = new URL(CONTRACTS_FINDER_RESULTS_URL);
+  sourceUrl.searchParams.set("keywords", [keywords, region].filter(Boolean).join(" "));
+  sourceUrl.searchParams.set("tender", "1");
+  sourceUrl.searchParams.set("planning", "1");
+  sourceUrl.searchParams.set("speculative", "1");
+  sourceUrl.searchParams.set("awarded", "0");
+  if (postcode) sourceUrl.searchParams.set("postcode", postcode);
+  const body = {
+    searchCriteria: {
+      types: ["Contract", "Pipeline", "PreProcurement"],
+      statuses: ["Open"],
+      keyword: keywords,
+      regions: widened ? null : region || null,
+      postcode: widened ? null : postcode || null,
+      valueTo: valueCap || null,
+      suitableForSme: true,
+    },
+    size: 12,
+  };
+
+  const response = await fetch(CONTRACTS_FINDER_API_URL, {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "content-type": "application/json",
+      "user-agent": "RentalReadyAppliancesContractMatcher/1.0 (+https://rentalreadyappliances.com)",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) throw new Error(`Contracts Finder returned HTTP ${response.status}`);
+
+  return {
+    sourceUrl: sourceUrl.toString(),
+    results: parseContractsFinderResults(await response.json()),
+    widened,
+  };
+}
+
+function uniqueResults(results) {
+  const seen = new Set();
+  return results.filter((item) => {
+    const key = `${item.platform}:${item.url || item.title}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function handleTenderSearch(request) {
+  const url = new URL(request.url);
+  const keywords = url.searchParams.get("keywords") || "white goods appliances";
+  const region = url.searchParams.get("region") || "";
+  const postcode = url.searchParams.get("postcode") || "";
+  const source = url.searchParams.get("source") || "all";
+  const valueCap = Number(url.searchParams.get("valueCap")) || 0;
+
+  try {
+    const fetches = [];
+    if (source === "all" || source === "contracts") {
+      fetches.push(fetchContractsFinderResults(keywords, region, postcode, valueCap).then(async (result) => {
+        if (!result.results.length && (region || postcode)) {
+          return fetchContractsFinderResults(keywords, "", "", valueCap, true);
+        }
+        return result;
+      }));
+    }
+    if (source === "all" || source === "tenders") fetches.push(fetchFindTenderResults(keywords, region));
+    const settled = await Promise.allSettled(fetches);
+    const results = uniqueResults(settled.flatMap((item) => item.status === "fulfilled" ? item.value.results : [])).slice(0, 18);
+    const sourceUrls = settled
+      .filter((item) => item.status === "fulfilled")
+      .map((item) => item.value.sourceUrl);
+    const errors = settled
+      .filter((item) => item.status === "rejected")
+      .map((item) => item.reason.message);
+
+    if (!results.length && errors.length) {
+      return Response.json(
+        { ok: false, error: errors.join(" | "), sourceUrls, keywords, region, source, results: [] },
+        { status: 502 },
+      );
+    }
+
+    return Response.json({
+      ok: true,
+      sourceUrl: sourceUrls.join(" | "),
+      sourceUrls,
+      source,
+      keywords,
+      region,
+      results,
+      warnings: errors,
+    });
+  } catch (error) {
     return Response.json(
-      { ok: false, error: `Find a Tender returned HTTP ${response.status}`, sourceUrl: search.toString(), results: [] },
+      { ok: false, error: error.message, keywords, region, source, results: [] },
       { status: 502 },
     );
   }
-
-  const html = await response.text();
-  return Response.json({
-    ok: true,
-    sourceUrl: search.toString(),
-    keywords,
-    region,
-    results: parseTenderResults(html),
-  });
 }
 
 async function handleTenderDetail(request) {
   const requestUrl = new URL(request.url);
   const target = requestUrl.searchParams.get("url");
   if (!target) {
-    return Response.json({ ok: false, error: "Missing Find a Tender notice URL." }, { status: 400 });
+    return Response.json({ ok: false, error: "Missing public procurement notice URL." }, { status: 400 });
   }
 
   let noticeUrl;
@@ -124,14 +253,16 @@ async function handleTenderDetail(request) {
     response = await fetch(noticeUrl.toString(), {
       headers: {
         "accept": "text/html,application/xhtml+xml",
-        "referer": "https://www.find-tender.service.gov.uk/Search/Results",
-        "user-agent": "RentalReadyAppliancesTenderMatcher/1.0 (+https://rentalreadyappliances.com)",
+        "referer": noticeUrl.hostname === "www.contractsfinder.service.gov.uk"
+          ? "https://www.contractsfinder.service.gov.uk/Search/Results"
+          : "https://www.find-tender.service.gov.uk/Search/Results",
+        "user-agent": "RentalReadyAppliancesContractMatcher/1.0 (+https://rentalreadyappliances.com)",
       },
     });
   } catch (error) {
     return Response.json({
       ok: false,
-      error: `Find a Tender notice details could not be loaded server-side. Open the tender link and paste the notice detail text into Tender detail notes. (${error.message})`,
+      error: `Public procurement notice details could not be loaded server-side. Open the opportunity link and paste the detail text into Contract detail notes. (${error.message})`,
       url: noticeUrl.toString(),
     });
   }
@@ -139,7 +270,7 @@ async function handleTenderDetail(request) {
   if (!response.ok) {
     return Response.json({
       ok: false,
-      error: `Find a Tender notice details returned HTTP ${response.status}. Open the tender link and paste the notice detail text into Tender detail notes.`,
+      error: `Public procurement notice details returned HTTP ${response.status}. Open the opportunity link and paste the detail text into Contract detail notes.`,
       url: noticeUrl.toString(),
     });
   }
