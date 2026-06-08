@@ -3596,6 +3596,72 @@ meter::-webkit-meter-optimum-value {
   gap: 18px;
 }
 
+.learning-wide {
+  grid-column: 1 / -1;
+}
+
+.model-health {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.model-health div,
+.learning-row {
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--dash-card-soft);
+}
+
+.model-health span,
+.learning-row span {
+  display: block;
+  color: var(--dash-warning);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.model-health strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--dash-text);
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.model-health em,
+.learning-row em {
+  display: block;
+  margin-top: 5px;
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.learning-signal-list {
+  display: grid;
+  gap: 10px;
+}
+
+.learning-row strong {
+  display: block;
+  color: var(--dash-text);
+}
+
+.import-learning {
+  position: relative;
+  overflow: hidden;
+}
+
+.import-learning input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .memory-stats {
   display: grid;
   gap: 4px;
@@ -3644,6 +3710,7 @@ meter::-webkit-meter-optimum-value {
   .source-coverage-grid,
   .source-route-grid,
   .agent-run-grid,
+  .model-health,
   .candidate-card dl,
   .roi-strip,
   .agent-kpis {

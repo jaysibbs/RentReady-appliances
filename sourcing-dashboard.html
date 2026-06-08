@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0d141d">
     <link rel="icon" href="brand/rentalready_mark.svg" type="image/svg+xml">
     <script src="theme-init.js?v=20260526b"></script>
-    <link rel="stylesheet" href="styles.css?v=20260608a">
+    <link rel="stylesheet" href="styles.css?v=20260608b">
   </head>
   <body class="dashboard-body">
     <header class="site-header dashboard-header">
@@ -400,11 +400,15 @@ kitchen equipment supply</textarea>
 
       <section class="dashboard-results" id="learning" aria-labelledby="learning-title">
         <div class="section-heading">
-          <p class="eyebrow">Feedback loop</p>
+          <p class="eyebrow">Continuous learning loop</p>
           <h2 id="learning-title">What the sourcing assistant is learning.</h2>
-          <p class="section-copy">The current version stores feedback in this browser. Export the data when you want to turn it into a proper AI model or shared CRM workflow.</p>
+          <p class="section-copy">Every test run, approval, rejection, submitted bid, won contract, lost contract, and no-bid decision improves the model. Export and import the learning model so the agent keeps improving across deployments and browsers.</p>
         </div>
         <div class="learning-grid">
+          <article class="dashboard-panel learning-wide">
+            <h3>Model health</h3>
+            <div class="model-health" id="modelHealth"></div>
+          </article>
           <article class="dashboard-panel">
             <h3>Current scoring weights</h3>
             <div class="weights-list" id="weightsList"></div>
@@ -414,13 +418,29 @@ kitchen equipment supply</textarea>
             <div class="memory-stats" id="memoryStats"></div>
             <div class="dashboard-actions">
               <button class="button secondary" type="button" id="exportData">Export learning data</button>
+              <label class="button secondary import-learning">
+                Import learning data
+                <input id="importData" type="file" accept="application/json">
+              </label>
               <button class="button secondary danger" type="button" id="clearData">Clear dashboard data</button>
             </div>
+          </article>
+          <article class="dashboard-panel">
+            <h3>Source reliability</h3>
+            <div class="learning-signal-list" id="sourceLearning"></div>
+          </article>
+          <article class="dashboard-panel">
+            <h3>Route and buyer fit</h3>
+            <div class="learning-signal-list" id="routeLearning"></div>
+          </article>
+          <article class="dashboard-panel">
+            <h3>Outcome memory</h3>
+            <div class="learning-signal-list" id="outcomeLearning"></div>
           </article>
         </div>
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260608a"></script>
+    <script src="sourcing-dashboard.js?v=20260608b"></script>
   </body>
 </html>

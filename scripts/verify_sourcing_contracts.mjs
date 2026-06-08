@@ -5,8 +5,8 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260608a/, "dashboard must load the test-and-learn stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260608a/, "dashboard must load the test-and-learn script version");
+assert.match(html, /styles\.css\?v=20260608b/, "dashboard must load the continuous-learning stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260608b/, "dashboard must load the continuous-learning script version");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
 assert.match(html, /Goods contract matcher/, "dashboard must use contract-first wording");
@@ -15,6 +15,12 @@ assert.match(html, /Stock fulfilment agent/, "dashboard must rank stock against 
 assert.match(html, /Most viable live opportunities/, "highlighted contract area must be the live opportunity board");
 assert.match(html, /Run test-and-learn/, "dashboard must expose the full test-and-learn control");
 assert.match(html, /Regional portals watchlist/, "dashboard must expose regional public-sector portal routes");
+assert.match(html, /Continuous learning loop/, "dashboard must expose continuous learning wording");
+assert.match(html, /id="modelHealth"/, "dashboard must expose model health panel");
+assert.match(html, /id="sourceLearning"/, "dashboard must expose source learning panel");
+assert.match(html, /id="routeLearning"/, "dashboard must expose route learning panel");
+assert.match(html, /id="outcomeLearning"/, "dashboard must expose outcome learning panel");
+assert.match(html, /id="importData"/, "dashboard must allow learning import");
 assert.match(html, /Manual opportunity fallback/, "manual paste must be demoted to fallback workflow");
 assert.match(html, /temporary accommodation appliances/, "dashboard must target startup-fit anchor contract keywords");
 assert.match(html, /39700000/, "dashboard must include domestic appliance CPV targeting");
@@ -26,6 +32,13 @@ assert.match(script, /Sell2Wales/, "front end must include Welsh procurement wat
 assert.match(script, /eTendersNI/, "front end must include Northern Ireland procurement watchlist routes");
 assert.match(script, /John Pye trade auctions/, "front end must separate John Pye trade auction searches");
 assert.match(script, /runTestLearn/, "front end must run the full test-and-learn cycle");
+assert.match(script, /DEFAULT_LEARNING_MODEL/, "front end must maintain a continuous learning model");
+assert.match(script, /trackCandidateLearning/, "front end must learn from stock approve/reject decisions");
+assert.match(script, /trackDemandLearning/, "front end must learn from bid outcomes");
+assert.match(script, /modelConfidence/, "front end must show marketable model health");
+assert.match(script, /sourceLearningScore/, "front end must score source reliability continuously");
+assert.match(script, /importData/, "front end must import learning data");
+assert.match(script, /Source trust/, "front end must expose source-trust scoring");
 assert.match(script, /fetchStockEvidenceForTender/, "front end must fetch stock evidence for selected opportunities");
 assert.match(script, /stockEvidenceRecordForTender/, "front end must fold auction evidence into opportunity projections");
 assert.match(script, /renderStockEvidencePanel/, "front end must display parsed stock evidence and warnings");

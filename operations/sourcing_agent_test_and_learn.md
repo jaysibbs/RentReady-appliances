@@ -78,13 +78,25 @@ Do not submit where:
 
 ## Learning Loop
 
-Every approved or rejected stock decision changes the scoring weights in the browser. Export the learning data weekly before clearing browser data. The useful learning signals are:
+Every approved or rejected stock decision changes the scoring weights and the continuous learning model in the browser. Every submitted, won, lost, no-bid, and closed opportunity also becomes an outcome signal. Export the learning data weekly before clearing browser data, and import the latest learning file after a new deployment or when using another machine.
+
+The model learns from:
 
 - Which sources consistently return real appliance stock.
 - Which sources return false positives or poor condition risk.
 - Which product categories protect the 45% ROI target.
 - Which buyer routes are achievable for a startup.
 - Which deadlines are too close for auction-based fulfilment.
+- Which authorities, routes, and opportunity types become submitted, won, lost, or no-bid.
+- Which stock sources protect margin after buyer premium, VAT on fees, logistics, testing, and refurb buffer.
+
+Use the `Model health` panel to judge whether the agent is becoming marketable:
+
+- Below 40%: not enough real decisions yet.
+- 40-69%: useful operating assistant, but still needs more outcomes.
+- 70%+: training base is becoming credible for a repeatable product.
+
+The browser version is intentionally transparent. A commercial version should move this model into shared storage such as a database or managed key-value store so the learning survives devices, staff members, and browser resets.
 
 ## Bid Pack Output
 

@@ -7,6 +7,18 @@ const DEFAULT_WEIGHTS = {
   urgency: 16,
   logistics: 14,
   availability: 14,
+  source: 12,
+};
+const DEFAULT_LEARNING_MODEL = {
+  version: "20260608-continuous-learning",
+  createdAt: "",
+  updatedAt: "",
+  sourceStats: {},
+  categoryStats: {},
+  routeStats: {},
+  buyerStats: {},
+  outcomeStats: {},
+  decisionLog: [],
 };
 
 const DEFAULT_ROI_TARGET = 45;
@@ -199,11 +211,13 @@ const state = {
   candidates: load("rentalready_sourcing_candidates", []),
   feedback: load("rentalready_sourcing_feedback", []),
   runHistory: load("rentalready_sourcing_run_history", []),
+  learningModel: load("rentalready_sourcing_learning_model", DEFAULT_LEARNING_MODEL),
   weights: load("rentalready_sourcing_weights", DEFAULT_WEIGHTS),
 };
 
 state.weights = { ...DEFAULT_WEIGHTS, ...state.weights };
 if ((state.weights.availability || 0) < 10) state.weights.availability = DEFAULT_WEIGHTS.availability;
+state.learningModel = normaliseLearningModel(state.learningModel);
 
 const briefForm = document.querySelector("#briefForm");
 const candidateForm = document.querySelector("#candidateForm");
@@ -211,6 +225,10 @@ const scorePreview = document.querySelector("#scorePreview");
 const candidateList = document.querySelector("#candidateList");
 const weightsList = document.querySelector("#weightsList");
 const memoryStats = document.querySelector("#memoryStats");
+const modelHealth = document.querySelector("#modelHealth");
+const sourceLearning = document.querySelector("#sourceLearning");
+const routeLearning = document.querySelector("#routeLearning");
+const outcomeLearning = document.querySelector("#outcomeLearning");
 const activeDemand = document.querySelector("#activeDemand");
 const demandList = document.querySelector("#demandList");
 const tenderSummary = document.querySelector("#tenderSummary");
@@ -247,6 +265,120 @@ function load(key, fallback) {
 
 function save(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function blankLearningBucket() {
+  return {
+    seen: 0,
+    approved: 0,
+    rejected: 0,
+    submitted: 0,
+    won: 0,
+    lost: 0,
+    noBid: 0,
+    totalScore: 0,
+    totalRoi: 0,
+    totalProfit: 0,
+    lastSeen: "",
+  };
+}
+
+function normaliseLearningModel(model = {}) {
+  const createdAt = model.createdAt || new Date().toISOString();
+  return {
+    ...DEFAULT_LEARNING_MODEL,
+    ...model,
+    version: DEFAULT_LEARNING_MODEL.version,
+    createdAt,
+    updatedAt: model.updatedAt || createdAt,
+    sourceStats: model.sourceStats || {},
+    categoryStats: model.categoryStats || {},
+    routeStats: model.routeStats || {},
+    buyerStats: model.buyerStats || {},
+    outcomeStats: model.outcomeStats || {},
+    decisionLog: Array.isArray(model.decisionLog) ? model.decisionLog.slice(0, 250) : [],
+  };
+}
+
+function learningKey(value, fallback = "Unknown") {
+  return String(value || fallback).trim() || fallback;
+}
+
+function learningBucket(map, key) {
+  const safeKey = learningKey(key);
+  map[safeKey] = { ...blankLearningBucket(), ...(map[safeKey] || {}) };
+  return map[safeKey];
+}
+
+function updateLearningBucket(bucket, event = {}) {
+  const status = normalise(event.status);
+  bucket.seen += 1;
+  bucket.totalScore += number(event.score);
+  bucket.totalRoi += number(event.roi);
+  bucket.totalProfit += number(event.profit);
+  bucket.lastSeen = event.createdAt || new Date().toISOString();
+  if (status.includes("approved") || status.includes("matched")) bucket.approved += 1;
+  if (status.includes("rejected") || status.includes("closed")) bucket.rejected += 1;
+  if (status.includes("submitted")) bucket.submitted += 1;
+  if (status.includes("won")) bucket.won += 1;
+  if (status.includes("lost")) bucket.lost += 1;
+  if (status.includes("no bid") || status.includes("no-bid")) bucket.noBid += 1;
+}
+
+function bucketAverage(bucket, key) {
+  return bucket?.seen ? number(bucket[key]) / bucket.seen : 0;
+}
+
+function bucketConfidence(bucket) {
+  if (!bucket?.seen) return 58;
+  const positive = bucket.approved + bucket.submitted * 1.2 + bucket.won * 2;
+  const negative = bucket.rejected + bucket.lost * 1.4 + bucket.noBid;
+  const avgRoi = bucketAverage(bucket, "totalRoi");
+  const avgProfit = bucketAverage(bucket, "totalProfit");
+  const sampleBoost = Math.min(18, Math.log2(bucket.seen + 1) * 6);
+  return clamp(48 + positive * 9 - negative * 8 + sampleBoost + Math.min(14, avgRoi / 7) + Math.min(10, avgProfit / 120));
+}
+
+function modelConfidence() {
+  const model = state.learningModel;
+  const decisions = model.decisionLog.length;
+  const sources = Object.values(model.sourceStats).filter((item) => item.seen).length;
+  const categories = Object.values(model.categoryStats).filter((item) => item.seen).length;
+  const outcomes = Object.values(model.outcomeStats).reduce((sum, item) => sum + item.seen, 0);
+  return clamp(
+    Math.min(35, decisions * 2.5) +
+    Math.min(25, sources * 6) +
+    Math.min(20, categories * 5) +
+    Math.min(20, outcomes * 4)
+  );
+}
+
+function sourceLearningScore(source) {
+  return bucketConfidence(state.learningModel.sourceStats[learningKey(source, "Supplier TBC")]);
+}
+
+function routeLearningScore(tenderOrDemand) {
+  const tender = tenderOrDemand?.tender || tenderOrDemand || {};
+  const hits = startupRouteProfile(tender, tenderSettings()).routeHits || [];
+  if (!hits.length) return 58;
+  const scores = hits.map((route) => bucketConfidence(state.learningModel.routeStats[learningKey(route)]));
+  return scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 58;
+}
+
+function topLearningRows(map, emptyLabel) {
+  const rows = Object.entries(map || {})
+    .map(([name, bucket]) => ({ name, bucket, confidence: bucketConfidence(bucket) }))
+    .filter((item) => item.bucket.seen)
+    .sort((a, b) => b.confidence - a.confidence || b.bucket.seen - a.bucket.seen)
+    .slice(0, 6);
+  if (!rows.length) return `<p class="empty-state">${emptyLabel}</p>`;
+  return rows.map((item) => `
+    <div class="learning-row">
+      <strong>${escapeHtml(item.name)}</strong>
+      <span>${item.confidence}% confidence</span>
+      <em>${item.bucket.seen} signal(s) • ${item.bucket.approved} approved • ${item.bucket.won} won • ${item.bucket.rejected + item.bucket.lost + item.bucket.noBid} negative</em>
+    </div>
+  `).join("");
 }
 
 function stepFromHash(hash = window.location.hash) {
@@ -760,6 +892,16 @@ function logisticsScore(brief, candidate) {
   return clamp(score);
 }
 
+function sourceScore(candidate) {
+  let score = sourceLearningScore(candidate.supplier);
+  const supplier = normalise(candidate.supplier);
+  if (supplier.includes("john pye")) score += 6;
+  if (supplier.includes("trade")) score += 4;
+  if (supplier.includes("unknown") || !supplier) score -= 14;
+  if (normalise(candidate.notes).includes("verify auction fees")) score -= 4;
+  return clamp(score);
+}
+
 function scoreCandidateData(brief, candidate) {
   const dimensions = {
     demand: demandScore(brief),
@@ -770,6 +912,7 @@ function scoreCandidateData(brief, candidate) {
     urgency: urgencyScore(brief, candidate),
     logistics: logisticsScore(brief, candidate),
     availability: availabilityScore(brief, candidate),
+    source: sourceScore(candidate),
   };
   const totalWeight = Object.keys(dimensions).reduce((sum, key) => sum + (state.weights[key] || DEFAULT_WEIGHTS[key] || 0), 0);
   const score = Object.entries(dimensions).reduce((sum, [key, value]) => {
@@ -833,6 +976,7 @@ function renderScore(result) {
 function label(value) {
   if (value === "demand") return "Opportunity";
   if (value === "availability") return "Deadline fit";
+  if (value === "source") return "Source trust";
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
@@ -2195,7 +2339,8 @@ function updateDemandStatus(id, status) {
   if (!demand) return;
   demand.status = status;
   demand.updatedAt = new Date().toISOString();
-  if (status === "Submitted" || status === "Closed") {
+  trackDemandLearning(demand, status);
+  if (["Submitted", "Closed", "Won", "Lost", "No Bid"].includes(status)) {
     state.activeDemandId = state.activeDemandId === id ? "" : state.activeDemandId;
   }
   persist();
@@ -2226,9 +2371,58 @@ function updateStatus(id, status) {
     supplier: record.candidate.supplier,
     createdAt: record.reviewedAt,
   });
+  trackCandidateLearning(record, status);
   adjustWeights(record.result.dimensions, status);
   persist();
   render();
+}
+
+function trackCandidateLearning(record, status) {
+  const createdAt = new Date().toISOString();
+  const event = {
+    type: "stock_decision",
+    status,
+    createdAt,
+    score: record.result?.score,
+    roi: record.result?.financials?.roi,
+    profit: record.result?.financials?.profit,
+    source: sourceNameFor(record),
+    category: record.candidate?.category || record.brief?.item,
+    buyer: record.demandSnapshot?.tender?.authority || record.brief?.customer || "",
+  };
+  updateLearningBucket(learningBucket(state.learningModel.sourceStats, event.source), event);
+  updateLearningBucket(learningBucket(state.learningModel.categoryStats, event.category), event);
+  if (event.buyer) updateLearningBucket(learningBucket(state.learningModel.buyerStats, event.buyer), event);
+  updateLearningBucket(learningBucket(state.learningModel.outcomeStats, status), event);
+  state.learningModel.decisionLog.unshift(event);
+  state.learningModel.decisionLog = state.learningModel.decisionLog.slice(0, 250);
+  state.learningModel.updatedAt = createdAt;
+}
+
+function trackDemandLearning(demand, status) {
+  const createdAt = new Date().toISOString();
+  const tender = demand?.tender || {};
+  const coverage = stockCoverageForDemand(demand?.id);
+  const event = {
+    type: "opportunity_outcome",
+    status,
+    createdAt,
+    score: coverage.quantityAvailable ? Math.min(100, coverage.quantityAvailable * 18) : 0,
+    roi: coverage.lowestRoi,
+    profit: coverage.projectedProfit,
+    source: tender.source || demand?.brief?.source || "Opportunity source TBC",
+    category: demand?.brief?.item || tender.item,
+    buyer: tender.authority || demand?.brief?.customer || "",
+  };
+  updateLearningBucket(learningBucket(state.learningModel.categoryStats, event.category), event);
+  updateLearningBucket(learningBucket(state.learningModel.sourceStats, event.source), event);
+  if (event.buyer) updateLearningBucket(learningBucket(state.learningModel.buyerStats, event.buyer), event);
+  const routeHits = startupRouteProfile(tender, tenderSettings()).routeHits || [];
+  routeHits.forEach((route) => updateLearningBucket(learningBucket(state.learningModel.routeStats, route), event));
+  updateLearningBucket(learningBucket(state.learningModel.outcomeStats, status), event);
+  state.learningModel.decisionLog.unshift(event);
+  state.learningModel.decisionLog = state.learningModel.decisionLog.slice(0, 250);
+  state.learningModel.updatedAt = createdAt;
 }
 
 function adjustWeights(dimensions, status) {
@@ -2255,6 +2449,7 @@ function persist() {
   save("rentalready_sourcing_candidates", state.candidates);
   save("rentalready_sourcing_feedback", state.feedback);
   save("rentalready_sourcing_run_history", state.runHistory);
+  save("rentalready_sourcing_learning_model", state.learningModel);
   save("rentalready_sourcing_weights", state.weights);
 }
 
@@ -2315,6 +2510,9 @@ function renderDemandQueue() {
           <button class="button primary" type="button" data-demand-select="${item.id}">${isActive ? "Selected" : "Use for matching"}</button>
           <button class="button secondary" type="button" data-demand-status="Bid Pack" data-demand-id="${item.id}">Bid pack</button>
           <button class="button secondary" type="button" data-demand-status="Submitted" data-demand-id="${item.id}">Submitted</button>
+          <button class="button secondary" type="button" data-demand-status="Won" data-demand-id="${item.id}">Won</button>
+          <button class="button secondary" type="button" data-demand-status="Lost" data-demand-id="${item.id}">Lost</button>
+          <button class="button secondary" type="button" data-demand-status="No Bid" data-demand-id="${item.id}">No bid</button>
           <button class="button secondary danger" type="button" data-demand-status="Closed" data-demand-id="${item.id}">Close</button>
         </div>
       </article>
@@ -2368,12 +2566,37 @@ function renderLearning() {
   const approved = state.feedback.filter((item) => item.status === "Approved").length;
   const rejected = state.feedback.filter((item) => item.status === "Rejected").length;
   const liveDemand = state.demands.filter((item) => ["Live", "Tender", "Matched", "Bid Pack"].includes(item.status)).length;
+  const submitted = state.demands.filter((item) => item.status === "Submitted").length;
+  const won = state.demands.filter((item) => item.status === "Won").length;
+  const lost = state.demands.filter((item) => item.status === "Lost").length;
   const lastRun = state.runHistory[0];
+  const confidence = modelConfidence();
   memoryStats.innerHTML = `
     <strong>${state.feedback.length}</strong>
     <span>review decisions recorded</span>
-    <p>${approved} approved, ${rejected} rejected. ${liveDemand} live or matched contract/tender opportunities are available for stock-led fulfilment.${lastRun ? ` Last test-and-learn run: ${lastRun.status} with ${lastRun.stockLeadsFound} stock lead(s).` : ""}</p>
+    <p>${approved} approved, ${rejected} rejected. ${liveDemand} live or matched contract/tender opportunities are available for stock-led fulfilment. ${submitted} submitted, ${won} won, ${lost} lost.${lastRun ? ` Last test-and-learn run: ${lastRun.status} with ${lastRun.stockLeadsFound} stock lead(s).` : ""}</p>
   `;
+  if (modelHealth) {
+    modelHealth.innerHTML = `
+      <div><span>Model confidence</span><strong>${confidence}%</strong><em>${confidence >= 70 ? "Marketable training base forming" : confidence >= 40 ? "Useful but needs more outcomes" : "Needs more decisions and bid outcomes"}</em></div>
+      <div><span>Learning version</span><strong>${escapeHtml(state.learningModel.version.replace("20260608-", ""))}</strong><em>Updated ${state.learningModel.updatedAt ? new Date(state.learningModel.updatedAt).toLocaleDateString("en-GB") : "today"}</em></div>
+      <div><span>Run history</span><strong>${state.runHistory.length}</strong><em>Full test-and-learn cycles stored</em></div>
+      <div><span>Outcome signals</span><strong>${Object.values(state.learningModel.outcomeStats).reduce((sum, item) => sum + item.seen, 0)}</strong><em>Submitted, won, lost and no-bid memory</em></div>
+    `;
+  }
+  if (sourceLearning) {
+    sourceLearning.innerHTML = topLearningRows(state.learningModel.sourceStats, "No source decisions yet. Approve or reject stock to teach source reliability.");
+  }
+  if (routeLearning) {
+    const combined = {
+      ...state.learningModel.routeStats,
+      ...Object.fromEntries(Object.entries(state.learningModel.buyerStats).map(([key, value]) => [`Buyer: ${key}`, value])),
+    };
+    routeLearning.innerHTML = topLearningRows(combined, "No route or buyer outcomes yet. Mark bids as submitted, won, lost, or no-bid.");
+  }
+  if (outcomeLearning) {
+    outcomeLearning.innerHTML = topLearningRows(state.learningModel.outcomeStats, "No bid outcomes recorded yet.");
+  }
 }
 
 function syncAgentDefaults() {
@@ -2395,6 +2618,7 @@ function exportData() {
     candidates: state.candidates,
     feedback: state.feedback,
     runHistory: state.runHistory,
+    learningModel: state.learningModel,
     weights: state.weights,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -2404,6 +2628,33 @@ function exportData() {
   link.download = `rentalready-sourcing-feedback-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    try {
+      const payload = JSON.parse(reader.result);
+      state.brief = payload.brief || state.brief || {};
+      state.activeDemandId = payload.activeDemandId || state.activeDemandId || "";
+      state.demands = Array.isArray(payload.demands) ? payload.demands : state.demands;
+      state.candidates = Array.isArray(payload.candidates) ? payload.candidates : state.candidates;
+      state.feedback = Array.isArray(payload.feedback) ? payload.feedback : state.feedback;
+      state.runHistory = Array.isArray(payload.runHistory) ? payload.runHistory : state.runHistory;
+      state.learningModel = normaliseLearningModel(payload.learningModel || payload.model || state.learningModel);
+      state.weights = { ...DEFAULT_WEIGHTS, ...(payload.weights || state.weights) };
+      persist();
+      render();
+      scorePreview.textContent = "Learning data imported. The sourcing agent now has the imported memory available for future scoring.";
+    } catch (error) {
+      scorePreview.textContent = `Import failed: ${error.message}`;
+    } finally {
+      event.target.value = "";
+    }
+  });
+  reader.readAsText(file);
 }
 
 function exportActiveBidPack() {
@@ -2431,6 +2682,7 @@ function clearData() {
   state.candidates = [];
   state.feedback = [];
   state.runHistory = [];
+  state.learningModel = normaliseLearningModel({});
   state.weights = { ...DEFAULT_WEIGHTS };
   render();
 }
@@ -2502,6 +2754,7 @@ bidPack?.addEventListener("click", (event) => {
   if (event.target.closest("#exportBidPack")) exportActiveBidPack();
 });
 document.querySelector("#exportData")?.addEventListener("click", exportData);
+document.querySelector("#importData")?.addEventListener("change", importData);
 document.querySelector("#clearData")?.addEventListener("click", clearData);
 
 render();
