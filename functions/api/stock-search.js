@@ -6,7 +6,7 @@ const AUCTION_STOCK_SOURCES = [
   },
   {
     name: "John Pye trade auctions",
-    fetchable: true,
+    fetchable: false,
     urlFor: (term) => `https://www.johnpye.co.uk/trade-auctions/?s=${encodeURIComponent(term)}`,
   },
   {
@@ -92,10 +92,27 @@ function absolutiseUrl(href, base) {
 
 function stockTermHit(text, term) {
   const value = normalise(text);
+  const applianceTerms = [
+    "white goods",
+    "washing machine",
+    "washer",
+    "fridge",
+    "freezer",
+    "cooker",
+    "oven",
+    "hob",
+    "dryer",
+    "dishwasher",
+    "microwave",
+    "domestic appliance",
+    "freestanding",
+  ];
+  if (applianceTerms.some((item) => value.includes(item))) return true;
+  if (normalise(term) === "white goods") return false;
   return normalise(term)
     .split(/\s+/)
-    .filter((part) => part.length > 2 && !["and", "the", "for", "lot", "with"].includes(part))
-    .some((part) => value.includes(part));
+    .filter((part) => part.length > 2 && !["and", "the", "for", "lot", "with", "white", "goods", "machine"].includes(part))
+    .every((part) => value.includes(part));
 }
 
 function parseAuctionCandidates(html, source, sourceUrl, term) {
@@ -106,7 +123,8 @@ function parseAuctionCandidates(html, source, sourceUrl, term) {
     const href = absolutiseUrl(match[1], sourceUrl);
     const title = stripTags(match[2]);
     if (!href || title.length < 8 || title.length > 180) continue;
-    if (/login|account|privacy|terms|basket|register|calendar|contact|about|valuation|selling/i.test(title)) continue;
+    if (/login|account|privacy|terms|basket|register|calendar|contact|about|valuation|selling|all farm|all metalworking|consumer goods|plant & machinery|refine search|machine tools|attachments|drilling|doweling/i.test(title)) continue;
+    if (/\/for-sale\/|search-filter|\/Browse\/|RefineSearch=1/i.test(href) && !/lot|Event\/LotDetails/i.test(href)) continue;
     if (!stockTermHit(title, term)) continue;
     const context = stripTags(html.slice(Math.max(0, match.index - 700), Math.min(html.length, match.index + 1100)));
     const price = parseMoneyLoose(context);
