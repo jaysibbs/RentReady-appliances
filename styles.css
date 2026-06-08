@@ -2491,6 +2491,11 @@ section {
 
 .step-panel {
   grid-column: 1 / -1;
+  scroll-margin-top: 240px;
+}
+
+.dashboard-results {
+  scroll-margin-top: 240px;
 }
 
 .step-panel[hidden] {
@@ -2774,10 +2779,97 @@ section {
   font-size: 13px;
 }
 
+.agent-run-summary {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(100, 212, 156, .32);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--dash-muted);
+  background: rgba(100, 212, 156, .07);
+}
+
+.agent-run-summary:empty {
+  display: none;
+}
+
+.agent-run-summary p {
+  margin: 0;
+  color: var(--dash-muted);
+  font-size: 13px;
+}
+
+.agent-run-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.agent-run-grid div {
+  min-width: 0;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--dash-card-soft);
+}
+
+.agent-run-grid span,
+.source-route-card span {
+  display: block;
+  color: var(--dash-warning);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.agent-run-grid strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 4px;
+  color: var(--dash-text);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .agent-search-links,
 .agent-results {
   display: grid;
   gap: 12px;
+}
+
+.source-route-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.source-route-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--dash-card-soft);
+}
+
+.source-route-card.live {
+  border-color: rgba(100, 212, 156, .42);
+}
+
+.source-route-card.watchlist,
+.source-route-card.route {
+  border-color: rgba(255, 209, 102, .34);
+}
+
+.source-route-card strong {
+  color: var(--dash-text);
+}
+
+.source-route-card p {
+  margin: 0;
+  color: var(--dash-muted);
+  font-size: 13px;
 }
 
 .tender-opportunity-panel,
@@ -2871,7 +2963,8 @@ section {
 
 .decision-panel,
 .tender-details,
-.stock-coverage {
+.stock-coverage,
+.stock-evidence-panel {
   border: 1px solid var(--dash-border);
   border-radius: 8px;
   padding: 14px;
@@ -2914,7 +3007,8 @@ section {
   color: var(--dash-muted);
 }
 
-.tender-details summary {
+.tender-details summary,
+.stock-evidence-panel summary {
   cursor: pointer;
   color: var(--dash-warning);
   font-weight: 900;
@@ -2956,6 +3050,21 @@ section {
   margin: 10px 0 0;
   color: var(--dash-muted);
   white-space: pre-wrap;
+}
+
+.stock-evidence-panel {
+  display: block;
+}
+
+.stock-evidence-panel p {
+  margin: 10px 0;
+  color: var(--dash-muted);
+}
+
+.stock-evidence-panel a:not(.button) {
+  color: var(--dash-success);
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .stock-lines {
@@ -3533,6 +3642,8 @@ meter::-webkit-meter-optimum-value {
   .tender-fact-grid,
   .eligibility-grid,
   .source-coverage-grid,
+  .source-route-grid,
+  .agent-run-grid,
   .candidate-card dl,
   .roi-strip,
   .agent-kpis {

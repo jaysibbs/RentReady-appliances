@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0d141d">
     <link rel="icon" href="brand/rentalready_mark.svg" type="image/svg+xml">
     <script src="theme-init.js?v=20260526b"></script>
-    <link rel="stylesheet" href="styles.css?v=20260604d">
+    <link rel="stylesheet" href="styles.css?v=20260608a">
   </head>
   <body class="dashboard-body">
     <header class="site-header dashboard-header">
@@ -36,7 +36,7 @@
         <div>
           <p class="eyebrow">Internal sourcing assistant</p>
           <h1 id="dashboard-title">Match live contracts to stock you can actually fulfil.</h1>
-          <p>This dashboard finds Contracts Finder and Find a Tender opportunities, saves the contract/tender record, checks whether available stock can cover the full requirement before the submission deadline, protects a 45% ROI target, and learns from the lots you approve or reject.</p>
+          <p>This dashboard finds public-sector contract opportunities, saves the contract/tender record, checks whether auction and clearance stock can cover the full requirement before the submission deadline, protects a 45% ROI target, drafts the bid pack, and learns from the lots you approve or reject.</p>
         </div>
         <div class="dashboard-alert">
           <strong>Contract-first workflow</strong>
@@ -159,15 +159,16 @@
           <div class="panel-heading">
             <p class="eyebrow">Step 3</p>
             <h2 id="tender-title">Goods contract matcher</h2>
-            <p>Search Contracts Finder and Find a Tender for anchor contracts RentalReady can realistically win as a startup: housing, temporary accommodation, void-property, FM subcontract, and appliance supply opportunities.</p>
+            <p>Search government procurement routes for anchor contracts RentalReady can realistically win as a startup: housing, temporary accommodation, void-property, FM subcontract, and appliance/material supply opportunities.</p>
           </div>
 
           <label>
             Opportunity source
             <select id="opportunitySource">
-              <option value="all" selected>Goods contracts first</option>
+              <option value="all" selected>Government goods routes</option>
               <option value="contracts">Contracts Finder only</option>
               <option value="tenders">Find a Tender only</option>
+              <option value="regional">Regional portals watchlist</option>
             </select>
           </label>
           <label>
@@ -208,6 +209,7 @@ kitchen equipment supply</textarea>
           <div class="dashboard-actions span-2">
             <button class="button secondary" type="button" id="generateTenderSearches">Generate contract searches</button>
             <button class="button primary" type="button" id="fetchLiveTenders">Fetch live contracts</button>
+            <button class="button primary" type="button" id="runTestLearn">Run test-and-learn</button>
             <button class="button secondary" type="button" id="rankTenders">Rank manual fallback</button>
             <button class="button secondary" type="button" id="prepareBidPack">Prepare bid pack</button>
           </div>
@@ -219,6 +221,7 @@ kitchen equipment supply</textarea>
               <p>This board is for contracts and tenders the agent can action. It ranks opportunities by startup-fit route, goods fit, stock coverage, cost against contract value, and delivery schedule.</p>
             </div>
             <div class="live-tender-status" id="liveTenderStatus" aria-live="polite"></div>
+            <div class="agent-run-summary" id="agentRunSummary" aria-live="polite"></div>
             <div class="agent-search-links" id="tenderSearchLinks"></div>
             <div class="agent-results" id="tenderResults"></div>
           </section>
@@ -243,7 +246,7 @@ kitchen equipment supply</textarea>
           <div class="panel-heading">
             <p class="eyebrow">Step 4</p>
             <h2 id="agent-title">Stock fulfilment agent</h2>
-            <p>Match John Pye, BPI, BidSpotter, or similar lots to the selected contract/tender. The agent checks full quantity coverage, submission timing, and maximum safe bid before anything moves to purchase review.</p>
+            <p>Match John Pye general/trade auctions, BPI, BidSpotter, i-bidder, William George, Eddisons, NCM, or similar stock to the selected contract/tender. The agent checks full quantity coverage, submission timing, and maximum safe bid before anything moves to purchase review.</p>
           </div>
 
           <label>
@@ -283,7 +286,7 @@ kitchen equipment supply</textarea>
             <textarea id="lotImport" rows="8" placeholder="Paste John Pye lot text, one lot per line if possible. Example: Beko 8kg Washing Machine | Current bid £62 | Nottingham | Ends 2026-06-04 | https://..."></textarea>
           </label>
           <div class="dashboard-actions span-2">
-            <button class="button secondary" type="button" id="generateSearches">Generate John Pye searches</button>
+            <button class="button secondary" type="button" id="generateSearches">Generate stock searches</button>
             <button class="button primary" type="button" id="rankLots">Rank pasted lots</button>
           </div>
           <div class="agent-summary span-2" id="agentSummary" aria-live="polite">Save a contract/tender opportunity, then generate searches or paste auction lots to rank.</div>
@@ -418,6 +421,6 @@ kitchen equipment supply</textarea>
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260604d"></script>
+    <script src="sourcing-dashboard.js?v=20260608a"></script>
   </body>
 </html>

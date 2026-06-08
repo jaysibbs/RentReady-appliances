@@ -5,19 +5,30 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260604d/, "dashboard must load the acquisition-agent stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260604d/, "dashboard must load the acquisition-agent script version");
+assert.match(html, /styles\.css\?v=20260608a/, "dashboard must load the test-and-learn stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260608a/, "dashboard must load the test-and-learn script version");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
 assert.match(html, /Goods contract matcher/, "dashboard must use contract-first wording");
 assert.match(html, /Saved contract and tender opportunities/, "dashboard must save opportunities instead of buyer records");
 assert.match(html, /Stock fulfilment agent/, "dashboard must rank stock against selected opportunities");
 assert.match(html, /Most viable live opportunities/, "highlighted contract area must be the live opportunity board");
+assert.match(html, /Run test-and-learn/, "dashboard must expose the full test-and-learn control");
+assert.match(html, /Regional portals watchlist/, "dashboard must expose regional public-sector portal routes");
 assert.match(html, /Manual opportunity fallback/, "manual paste must be demoted to fallback workflow");
 assert.match(html, /temporary accommodation appliances/, "dashboard must target startup-fit anchor contract keywords");
 assert.match(html, /39700000/, "dashboard must include domestic appliance CPV targeting");
 
 assert.match(script, /CONTRACTS_FINDER_SEARCH_BASE/, "front end must generate Contracts Finder search links");
+assert.match(script, /PUBLIC_PROCUREMENT_SOURCES/, "front end must show government procurement source routes");
+assert.match(script, /Public Contracts Scotland/, "front end must include Scottish procurement watchlist routes");
+assert.match(script, /Sell2Wales/, "front end must include Welsh procurement watchlist routes");
+assert.match(script, /eTendersNI/, "front end must include Northern Ireland procurement watchlist routes");
+assert.match(script, /John Pye trade auctions/, "front end must separate John Pye trade auction searches");
+assert.match(script, /runTestLearn/, "front end must run the full test-and-learn cycle");
+assert.match(script, /fetchStockEvidenceForTender/, "front end must fetch stock evidence for selected opportunities");
+assert.match(script, /stockEvidenceRecordForTender/, "front end must fold auction evidence into opportunity projections");
+assert.match(script, /renderStockEvidencePanel/, "front end must display parsed stock evidence and warnings");
 assert.match(script, /GOODS_SIGNAL_TERMS/, "front end must score goods signals");
 assert.match(script, /SERVICE_RISK_TERMS/, "front end must score service-heavy risk");
 assert.match(script, /goodsScore/, "front end must show goods-fit scoring");
@@ -29,16 +40,26 @@ assert.match(script, /startupRouteProfile/, "front end must score startup acquis
 assert.match(script, /STARTUP_ANCHOR_MIN/, "front end must score anchor contract size");
 assert.match(script, /Acquisition fit/, "opportunity details must show acquisition fit");
 assert.match(script, /Stock available before submission/, "bid readiness must include deadline-based stock coverage");
+assert.match(script, /Draft response - executive summary/, "bid pack must draft the executive response");
+assert.match(script, /Likely buyer requirements to evidence/, "bid pack must spell out application evidence requirements");
 assert.doesNotMatch(script, /buyer request before purchase review/i, "dashboard must not instruct users to work from old saved-buyer wording");
 assert.ok(script.includes("source=${encodeURIComponent(settings.source)}"), "front end must pass the selected live source to the API");
 assert.ok(script.includes("valueCap=${encodeURIComponent(settings.valueCap)}"), "front end must pass the starter cap to the API");
 
 assert.match(worker, /CONTRACTS_FINDER_RESULTS_URL/, "manual-deploy worker must fetch Contracts Finder");
 assert.match(worker, /CONTRACTS_FINDER_API_URL/, "manual-deploy worker must use the official Contracts Finder JSON API");
+assert.match(worker, /AUCTION_STOCK_SOURCES/, "manual-deploy worker must expose auction stock source search routes");
+assert.match(worker, /handleStockSearch/, "manual-deploy worker must expose stock evidence search API");
+assert.match(worker, /John Pye trade auctions/, "manual-deploy worker must include John Pye trade stock route");
 assert.match(worker, /DEFAULT_ACQUISITION_KEYWORDS/, "worker must default to acquisition-focused procurement searches");
 assert.match(worker, /parseContractsFinderResults/, "manual-deploy worker must parse Contracts Finder results");
 assert.match(worker, /www\.contractsfinder\.service\.gov\.uk/, "detail loader must allow Contracts Finder notice URLs");
 assert.match(worker, /agent\.rentalreadyappliances\.com/, "worker must route the agent subdomain to the sourcing dashboard");
 assert.match(worker, /sourcing-dashboard\.html/, "agent subdomain root must serve the sourcing dashboard");
+
+const stockSearch = await readFile("dist/functions/api/stock-search.js", "utf8");
+assert.match(stockSearch, /AUCTION_STOCK_SOURCES/, "Pages function must include auction source matrix");
+assert.match(stockSearch, /parseAuctionCandidates/, "Pages function must parse stock candidate evidence");
+assert.match(stockSearch, /manual verification route/, "Pages function must distinguish manual verification routes");
 
 console.log("Sourcing contract dashboard verification passed.");

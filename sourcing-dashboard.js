@@ -16,18 +16,84 @@ const STARTUP_ANCHOR_MAX = 140000;
 const JOHN_PYE_SEARCH_BASE = "https://www.johnpye.co.uk/";
 const FIND_TENDER_SEARCH_BASE = "https://www.find-tender.service.gov.uk/Search/Results";
 const CONTRACTS_FINDER_SEARCH_BASE = "https://www.contractsfinder.service.gov.uk/Search/Results";
+const PUBLIC_PROCUREMENT_SOURCES = [
+  {
+    name: "Contracts Finder",
+    mode: "live",
+    remit: "UK central government and wider public-sector contract opportunities above the low-value threshold.",
+    urlFor: (term, settings) => contractsFinderSearchUrl(term, settings),
+  },
+  {
+    name: "Find a Tender",
+    mode: "live",
+    remit: "High-value UK public procurement notices and early engagement.",
+    urlFor: (term, settings) => findTenderSearchUrl(term, settings),
+  },
+  {
+    name: "Public Contracts Scotland",
+    mode: "watchlist",
+    remit: "Scottish public bodies and local-authority goods opportunities.",
+    urlFor: (term) => `https://www.publiccontractsscotland.gov.uk/Search/Search_MainPage.aspx?Keywords=${encodeURIComponent(term)}`,
+  },
+  {
+    name: "Sell2Wales",
+    mode: "watchlist",
+    remit: "Welsh public-sector contracts and supplier opportunities.",
+    urlFor: (term) => `https://www.sell2wales.gov.wales/Search/Search_MainPage.aspx?Keywords=${encodeURIComponent(term)}`,
+  },
+  {
+    name: "eTendersNI",
+    mode: "watchlist",
+    remit: "Northern Ireland public-sector procurement notices.",
+    urlFor: (term) => `https://etendersni.gov.uk/epps/cft/listContractDocuments.do?resourceId=&keyword=${encodeURIComponent(term)}`,
+  },
+  {
+    name: "Crown Commercial Service",
+    mode: "route",
+    remit: "Framework and supplier-route research for growth after first contract wins.",
+    urlFor: () => "https://www.crowncommercial.gov.uk/start-supplying",
+  },
+];
 const STOCK_SOURCES = [
   {
-    name: "John Pye",
+    name: "John Pye general auctions",
     urlFor: (term) => `https://www.johnpye.co.uk/?s=${encodeURIComponent(term)}`,
+    fetchable: true,
+  },
+  {
+    name: "John Pye trade auctions",
+    urlFor: (term) => `https://www.johnpye.co.uk/trade-auctions/?s=${encodeURIComponent(term)}`,
+    fetchable: true,
   },
   {
     name: "BPI Auctions",
     urlFor: (term) => `https://www.bpiauctions.com/?s=${encodeURIComponent(term)}`,
+    fetchable: true,
   },
   {
     name: "BidSpotter",
     urlFor: (term) => `https://www.bidspotter.co.uk/en-gb/search-results?searchTerm=${encodeURIComponent(term)}`,
+    fetchable: true,
+  },
+  {
+    name: "i-bidder",
+    urlFor: (term) => `https://www.i-bidder.com/en-gb/search-results?searchTerm=${encodeURIComponent(term)}`,
+    fetchable: false,
+  },
+  {
+    name: "William George",
+    urlFor: (term) => `https://www.williamgeorge.com/search?query=${encodeURIComponent(term)}`,
+    fetchable: false,
+  },
+  {
+    name: "Eddisons",
+    urlFor: (term) => `https://www.eddisons.com/auctions/search/?search=${encodeURIComponent(term)}`,
+    fetchable: false,
+  },
+  {
+    name: "NCM Auctions",
+    urlFor: (term) => `https://www.ncmauctions.co.uk/auction-search/?search=${encodeURIComponent(term)}`,
+    fetchable: false,
   },
 ];
 
@@ -132,6 +198,7 @@ const state = {
   activeDemandId: load("rentalready_sourcing_active_demand", ""),
   candidates: load("rentalready_sourcing_candidates", []),
   feedback: load("rentalready_sourcing_feedback", []),
+  runHistory: load("rentalready_sourcing_run_history", []),
   weights: load("rentalready_sourcing_weights", DEFAULT_WEIGHTS),
 };
 
@@ -151,6 +218,7 @@ const tenderSearchLinks = document.querySelector("#tenderSearchLinks");
 const tenderResults = document.querySelector("#tenderResults");
 const tenderWorkspace = document.querySelector("#tenderWorkspace");
 const liveTenderStatus = document.querySelector("#liveTenderStatus");
+const agentRunSummary = document.querySelector("#agentRunSummary");
 const bidPack = document.querySelector("#bidPack");
 const agentSummary = document.querySelector("#agentSummary");
 const agentSearchLinks = document.querySelector("#agentSearchLinks");
@@ -202,6 +270,13 @@ function showWorkflowStep(step, updateHash = true) {
   save("rentalready_sourcing_active_step", nextStep);
   if (updateHash && window.location.hash !== `#${nextStep}`) {
     history.replaceState(null, "", `#${nextStep}`);
+  }
+  const activePanel = workflowPanels.find((panel) => panel.dataset.stepPanel === nextStep);
+  if (activePanel && (updateHash || stepFromHash())) {
+    window.setTimeout(() => {
+      activePanel.scrollIntoView({ block: "start" });
+      window.scrollBy(0, -220);
+    }, 0);
   }
 }
 
@@ -287,6 +362,20 @@ function sourceNameFor(record) {
   return record?.candidate?.supplier || "Supplier TBC";
 }
 
+function procurementSourceLinks(terms, settings) {
+  const uniqueTerms = [...new Set(terms.filter(Boolean))].slice(0, 4);
+  return PUBLIC_PROCUREMENT_SOURCES.map((source) => `
+    <div class="source-route-card ${source.mode}">
+      <strong>${source.name}</strong>
+      <span>${source.mode === "live" ? "Live feed" : source.mode === "watchlist" ? "Watchlist route" : "Supplier route"}</span>
+      <p>${source.remit}</p>
+      <div>
+        ${uniqueTerms.map((term) => `<a class="button secondary" href="${source.urlFor(term, settings)}" target="_blank" rel="noopener">${term}</a>`).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
 function stockSourceSummary(coverage, requiredQuantity = 1) {
   const sources = new Map();
   coverage.viable.forEach((record) => {
@@ -363,6 +452,42 @@ function renderStockSourceSummary(summary, requiredQuantity) {
       </div>
       <div class="source-coverage-grid">${sourceCards}</div>
     </div>
+  `;
+}
+
+function renderStockEvidencePanel(tender) {
+  const evidence = tender?.stockEvidence;
+  if (!evidence) {
+    return `
+      <details class="stock-evidence-panel">
+        <summary>Auction evidence routes</summary>
+        <p>No live stock evidence has been attached to this opportunity yet. Run test-and-learn or open the stock source links, then add verified lots to the shortlist.</p>
+      </details>
+    `;
+  }
+  const leadRows = evidence.records.slice(0, 10).map((record) => `
+    <div class="stock-line">
+      <strong>${recordQuantity(record)} x ${escapeHtml(record.candidate.title || "Stock lead")}</strong>
+      <span>${escapeHtml(record.candidate.supplier)} • ${escapeHtml(record.candidate.location || "location TBC")} • ${record.result.financials?.passes ? "ROI/timing lead" : "needs verification"}</span>
+      <em>Bid ${money(record.result.financials?.bid)} • landed ${money(record.result.financials?.landed)} • ROI ${percent(record.result.financials?.roi)} • available ${escapeHtml(record.candidate.availableBy || "TBC")}</em>
+      ${record.candidate.url ? `<a href="${record.candidate.url}" target="_blank" rel="noopener">Open stock lead</a>` : ""}
+    </div>
+  `).join("") || `<p class="empty-state">No parsed stock leads were returned. Use the source URLs below to verify manually.</p>`;
+  const sourceLinks = evidence.sourceUrls.slice(0, 12).map((url) => `<a class="button secondary" href="${url}" target="_blank" rel="noopener">Source search</a>`).join("");
+  const warnings = evidence.warnings?.length ? `<p>${escapeHtml(evidence.warnings.join(" | "))}</p>` : "";
+
+  return `
+    <details class="stock-evidence-panel" open>
+      <summary>Auction evidence routes</summary>
+      <div class="agent-run-grid">
+        <div><span>Evidence terms</span><strong>${evidence.terms.length}</strong></div>
+        <div><span>Parsed leads</span><strong>${evidence.records.length}</strong></div>
+        <div><span>Fetched</span><strong>${new Date(evidence.fetchedAt).toLocaleString("en-GB")}</strong></div>
+      </div>
+      <div class="stock-lines">${leadRows}</div>
+      ${warnings}
+      <div class="dashboard-actions">${sourceLinks}</div>
+    </details>
   `;
 }
 
@@ -773,8 +898,9 @@ function contractsFinderSearchUrl(term, settings) {
 function sourceSearchLinks(terms) {
   const uniqueTerms = [...new Set(terms.filter(Boolean))].slice(0, 4);
   return STOCK_SOURCES.map((source) => `
-    <div>
+    <div class="source-route-card ${source.fetchable ? "live" : "watchlist"}">
       <strong>${source.name}</strong>
+      <span>${source.fetchable ? "Live evidence route" : "Manual verification route"}</span>
       ${uniqueTerms.map((term) => `<a class="button secondary" href="${source.urlFor(term)}" target="_blank" rel="noopener">${term}</a>`).join("")}
     </div>
   `).join("");
@@ -788,10 +914,10 @@ function renderTenderSummary() {
       <div><span>Region</span><strong>${settings.region}</strong></div>
       <div><span>Anchor cap</span><strong>${money(settings.valueCap)}</strong></div>
       <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong></div>
-      <div><span>Feed</span><strong>${settings.source === "contracts" ? "Contracts" : settings.source === "tenders" ? "Tenders" : "Both"}</strong></div>
-      <div><span>Mode</span><strong>Anchor fit</strong></div>
+      <div><span>Feed</span><strong>${settings.source === "contracts" ? "Contracts" : settings.source === "tenders" ? "Tenders" : settings.source === "regional" ? "Regional watch" : "Gov routes"}</strong></div>
+      <div><span>Mode</span><strong>Test and learn</strong></div>
     </div>
-    <p>Start with medium local/regional anchor contracts: temporary accommodation, void-property, housing association, student accommodation, and FM subcontract supply. Service-heavy opportunities are downgraded unless they clearly include appliance/material supply that stock can fulfil.</p>
+    <p>Start with medium local/regional anchor contracts: temporary accommodation, void-property, housing association, student accommodation, FM subcontract supply, and goods/material supply. The agent downgrades service-heavy notices unless the stock requirement can be fulfilled and priced before submission.</p>
   `;
 }
 
@@ -803,15 +929,14 @@ function generateTenderSearches() {
   tenderSearchLinks.innerHTML = `
     <strong>Live contract searches</strong>
     <div>
-      ${settings.source !== "tenders" ? terms.map((term) => `<a class="button secondary" href="${contractsFinderSearchUrl(term, settings)}" target="_blank" rel="noopener">Contracts Finder: ${term}</a>`).join("") : ""}
-      ${settings.source !== "contracts" ? terms.map((term) => `<a class="button secondary" href="${findTenderSearchUrl(term, settings)}" target="_blank" rel="noopener">Find a Tender: ${term}</a>`).join("") : ""}
       <a class="button secondary" href="https://www.contractsfinder.service.gov.uk/Search" target="_blank" rel="noopener">Contracts Finder advanced</a>
       <a class="button secondary" href="https://www.find-tender.service.gov.uk/Search" target="_blank" rel="noopener">Find a Tender advanced</a>
       <a class="button secondary" href="https://www.contractsfinder.service.gov.uk/Search/Results?planning=1&speculative=1&tender=1&awarded=0" target="_blank" rel="noopener">Pipeline and early engagement</a>
       <a class="button secondary" href="https://www.crowncommercial.gov.uk/start-supplying" target="_blank" rel="noopener">CCS supplier routes</a>
     </div>
+    <div class="source-route-grid">${procurementSourceLinks(terms, settings)}</div>
     <strong>Stock source searches</strong>
-    ${sourceSearchLinks(terms)}
+    <div class="source-route-grid">${sourceSearchLinks(terms)}</div>
   `;
 }
 
@@ -821,9 +946,212 @@ function tenderKeywordsQuery(settings) {
     : "white goods supply OR domestic appliances 39700000 OR electrical domestic appliances 39710000 OR temporary accommodation appliances OR void property appliances OR housing association white goods";
 }
 
+function stockSearchKeywordsForTender(tender) {
+  return [...new Set([
+    ...tenderSearchTerms(tender),
+    normalise(tender.item).includes("portfolio") ? "white goods job lot" : "",
+    normalise(tender.item).includes("portfolio") ? "appliance bundle" : "",
+    "graded appliances",
+    "domestic appliance auction",
+  ].filter(Boolean))].slice(0, 6);
+}
+
+function stockEvidenceRecordForTender(item, tender, settings) {
+  const unitValue = opportunityUnitValue(tender);
+  const candidate = {
+    supplier: item.source || "Auction source",
+    url: item.url || "",
+    title: item.title || item.term || "Auction stock evidence",
+    category: inferCategory(`${item.title || ""} ${item.term || ""}`, tender.item),
+    brand: inferBrand(item.title || ""),
+    price: number(item.price),
+    quantityAvailable: number(item.quantityAvailable) || 1,
+    fees: "",
+    targetSale: unitValue || "",
+    targetRoi: String(settings.roi || DEFAULT_ROI_TARGET),
+    location: item.location || "",
+    condition: inferCondition(`${item.title || ""} ${item.description || ""}`),
+    availableBy: item.availableBy || "",
+    visual: "Good",
+    notes: [
+      item.description || "",
+      item.searchUrl ? `Source search: ${item.searchUrl}` : "",
+      item.confidence ? `Evidence confidence: ${item.confidence}` : "",
+      "Verify auction fees, lot condition, VAT, collection window, and quantity before approval.",
+    ].filter(Boolean).join(" "),
+  };
+  const baseSettings = currentAgentSettings();
+  const financialSettings = {
+    ...baseSettings,
+    targetSale: unitValue || baseSettings.targetSale,
+    targetRoi: settings.roi || baseSettings.targetRoi || DEFAULT_ROI_TARGET,
+  };
+  const bid = number(candidate.price);
+  const landed = bid ? landedCostFromBid(bid, financialSettings) : 0;
+  const profit = unitValue && landed ? unitValue - landed : 0;
+  const roi = roiPercent(unitValue, landed);
+  const maxBid = maxSafeBid(financialSettings);
+  const timingOk = recordMeetsDeadline({ candidate }, tender.deadline);
+  const passes = Boolean(unitValue && landed && roi >= financialSettings.targetRoi && profit > 0 && timingOk);
+
+  return {
+    id: `evidence-${item.source || "source"}-${item.url || item.title || Math.random()}`,
+    createdAt: new Date().toISOString(),
+    demandId: "",
+    demandSnapshot: null,
+    brief: tenderBrief(tender, settings),
+    candidate,
+    result: {
+      score: passes ? 82 : roi >= financialSettings.targetRoi ? 68 : 42,
+      dimensions: {
+        demand: 86,
+        category: candidateMatchesTender(candidate, tender) ? 90 : 48,
+        roi: roi >= financialSettings.targetRoi ? 88 : 38,
+        budget: unitValue && landed <= unitValue ? 84 : 34,
+        quality: qualityScore(tenderBrief(tender, settings), candidate),
+        urgency: availabilityScore(tenderBrief(tender, settings), candidate),
+        logistics: logisticsScore(tenderBrief(tender, settings), candidate),
+        availability: timingOk ? 86 : 30,
+      },
+      financials: {
+        settings: financialSettings,
+        bid,
+        sale: unitValue,
+        landed,
+        profit,
+        roi,
+        maxBid,
+        marginGap: bid && maxBid ? maxBid - bid : 0,
+        passes,
+      },
+      recommendation: passes
+        ? "Evidence match - verify auction details, then add to shortlist if the lot is real and reserveable."
+        : "Evidence lead - keep searching or manually verify before adding to the bid plan.",
+    },
+    status: "Evidence",
+  };
+}
+
+async function fetchStockEvidenceForTender(tender, settings) {
+  const terms = stockSearchKeywordsForTender(tender);
+  const response = await fetch(`/api/stock-search?terms=${encodeURIComponent(terms.join("|"))}&targetSale=${encodeURIComponent(opportunityUnitValue(tender))}&roi=${encodeURIComponent(settings.roi)}&deadline=${encodeURIComponent(tender.deadline || "")}`);
+  const payload = await response.json();
+  if (!response.ok || !payload.ok) throw new Error(payload.error || "Stock evidence search failed.");
+  const records = (payload.results || [])
+    .map((item) => stockEvidenceRecordForTender(item, tender, settings))
+    .filter((record) => candidateMatchesTender(record.candidate, tender));
+  return {
+    terms,
+    records,
+    sourceUrls: payload.sourceUrls || [],
+    warnings: payload.warnings || [],
+    fetchedAt: payload.fetchedAt || new Date().toISOString(),
+  };
+}
+
+function renderRunSummary(run) {
+  if (!agentRunSummary) return;
+  if (!run) {
+    agentRunSummary.innerHTML = "";
+    return;
+  }
+  const warningText = run.warnings.length ? `<p>${escapeHtml(run.warnings.slice(0, 4).join(" | "))}</p>` : "";
+  agentRunSummary.innerHTML = `
+    <div class="agent-run-grid">
+      <div><span>Run status</span><strong>${escapeHtml(run.status)}</strong></div>
+      <div><span>Opportunities tested</span><strong>${run.opportunitiesTested}</strong></div>
+      <div><span>Stock leads found</span><strong>${run.stockLeadsFound}</strong></div>
+      <div><span>Bid-ready candidates</span><strong>${run.bidReady}</strong></div>
+      <div><span>Last run</span><strong>${new Date(run.createdAt).toLocaleString("en-GB")}</strong></div>
+    </div>
+    ${warningText}
+  `;
+}
+
+async function runTestLearn() {
+  renderTenderSummary();
+  renderRunSummary({
+    status: "Running",
+    opportunitiesTested: 0,
+    stockLeadsFound: 0,
+    bidReady: 0,
+    warnings: [],
+    createdAt: new Date().toISOString(),
+  });
+  if (liveTenderStatus) {
+    liveTenderStatus.innerHTML = `<strong>Running full test-and-learn cycle...</strong><span>Fetching government opportunities, ranking goods-led contracts, then checking stock evidence across auction routes.</span>`;
+  }
+
+  const settings = tenderSettings();
+  const tenders = await fetchLiveTenders();
+  const ranked = (state.lastTenderRun || [])
+    .slice()
+    .sort((a, b) => b.boardScore - a.boardScore)
+    .slice(0, 6);
+  if (!ranked.length && !tenders.length) {
+    const run = {
+      id: crypto.randomUUID(),
+      status: "No live opportunities returned",
+      opportunitiesTested: 0,
+      stockLeadsFound: 0,
+      bidReady: 0,
+      warnings: ["Broaden keywords or use regional watchlist routes."],
+      createdAt: new Date().toISOString(),
+    };
+    state.runHistory.unshift(run);
+    persist();
+    renderRunSummary(run);
+    return;
+  }
+
+  const warnings = [];
+  const enriched = await Promise.all(ranked.map(async (item) => {
+    try {
+      const stockEvidence = await fetchStockEvidenceForTender(item.tender, settings);
+      const tender = { ...item.tender, stockEvidence };
+      const result = tenderScore(tender, settings);
+      const projection = stockProjectionForTender(tender, settings);
+      return { tender, result, projection, boardScore: opportunityBoardScore(result, projection) };
+    } catch (error) {
+      warnings.push(`${item.tender.title}: ${error.message}`);
+      return item;
+    }
+  }));
+
+  const stockLeadsFound = enriched.reduce((sum, item) => sum + (item.tender.stockEvidence?.records?.length || 0), 0);
+  const bidReady = enriched.filter((item) => item.projection.coveragePercent >= 100 && item.projection.lowestRoi >= settings.roi).length;
+  const run = {
+    id: crypto.randomUUID(),
+    status: bidReady ? "Bid-pack candidates found" : stockLeadsFound ? "Stock leads found, approval needed" : "No stock coverage yet",
+    opportunitiesTested: enriched.length,
+    stockLeadsFound,
+    bidReady,
+    warnings,
+    createdAt: new Date().toISOString(),
+  };
+  state.runHistory.unshift(run);
+  state.runHistory = state.runHistory.slice(0, 20);
+  persist();
+  renderTenderMatches(enriched.map((item) => item.tender), settings, `Full test-and-learn run completed. ${stockLeadsFound} stock lead(s) checked across John Pye general/trade and comparable auction routes.`);
+  renderRunSummary(run);
+  if (liveTenderStatus) {
+    liveTenderStatus.innerHTML = `<strong>${escapeHtml(run.status)}.</strong><span>${enriched.length} opportunity/opportunities tested. ${stockLeadsFound} stock lead(s) found. Save a viable opportunity, verify stock, then export the bid pack.</span>`;
+  }
+}
+
 async function fetchLiveTenders() {
   renderTenderSummary();
   const settings = tenderSettings();
+  if (settings.source === "regional") {
+    generateTenderSearches();
+    if (liveTenderStatus) {
+      liveTenderStatus.innerHTML = `<strong>Regional government watchlist generated.</strong><span>Scotland, Wales, Northern Ireland, CCS and local portal routes need portal-side verification before they can be treated as live fetched results. Run test-and-learn with Government goods routes for automatic Contracts Finder and Find a Tender consolidation.</span>`;
+    }
+    tenderResults.innerHTML = `<p class="empty-state">Regional portal links are ready above. Use them for manual source checking, then paste any relevant notice into the fallback if a portal does not expose a stable live feed.</p>`;
+    activeTenderReview = null;
+    renderTenderWorkspace(null);
+    return [];
+  }
   if (liveTenderStatus) {
     liveTenderStatus.innerHTML = `<strong>Fetching live contract opportunities...</strong><span>Searching ${escapeHtml(tenderKeywordsQuery(settings))} in ${escapeHtml(settings.region)} with ${escapeHtml(settings.source === "all" ? "Contracts Finder + Find a Tender" : settings.source)}.</span>`;
   }
@@ -839,7 +1167,7 @@ async function fetchLiveTenders() {
       tenderResults.innerHTML = "";
       activeTenderReview = null;
       renderTenderWorkspace(null);
-      return;
+      return [];
     }
 
     const warning = payload.warnings?.length ? ` Partial feed warning: ${payload.warnings.join(" | ")}` : "";
@@ -847,10 +1175,12 @@ async function fetchLiveTenders() {
     if (liveTenderStatus) {
       liveTenderStatus.innerHTML = `<strong>${tenders.length} live contract result(s) loaded.</strong><span>Goods-based opportunities are ranked ahead of service-heavy notices. Review stock coverage before starting a bid pack.</span>`;
     }
+    return tenders;
   } catch (error) {
     if (liveTenderStatus) {
       liveTenderStatus.innerHTML = `<strong>Live contract fetch unavailable.</strong><span>${escapeHtml(error.message)} Use the generated Contracts Finder / Find a Tender links, then paste relevant results into the matcher.</span>`;
     }
+    return [];
   }
 }
 
@@ -1139,9 +1469,11 @@ function projectedRecordForTender(record, tender, settings) {
 function stockProjectionForTender(tender, settings) {
   const required = number(tender.quantity) || 1;
   const unitValue = opportunityUnitValue(tender);
+  const evidenceRecords = (tender.stockEvidence?.records || []).filter((record) => candidateMatchesTender(record.candidate, tender));
   const matchingRecords = state.candidates
     .filter((record) => record.status !== "Rejected" && candidateMatchesTender(record.candidate, tender))
-    .map((record) => projectedRecordForTender(record, tender, settings));
+    .map((record) => projectedRecordForTender(record, tender, settings))
+    .concat(evidenceRecords);
   const viable = matchingRecords.filter((record) => record.result?.financials?.passes);
   const approved = viable.filter((record) => record.status === "Approved");
   const quantityAvailable = viable.reduce((sum, record) => sum + recordQuantity(record), 0);
@@ -1323,6 +1655,11 @@ function bidPackText(demand, readiness) {
   const stockLines = coverage.viable.map((record) => {
     return `- ${recordQuantity(record)} x ${record.candidate.title || record.candidate.category || "matched stock"} | ${record.candidate.supplier || "supplier TBC"} | available ${record.candidate.availableBy || "TBC"} | before deadline ${recordMeetsDeadline(record, tender.deadline) ? "yes" : "no/unknown"} | landed ${money(record.result?.financials?.landed)} | ROI ${percent(record.result?.financials?.roi)} | status ${record.status}`;
   }).join("\n") || "- No viable stock attached yet.";
+  const evidenceLines = (tender.stockEvidence?.records || []).map((record) => {
+    return `- ${recordQuantity(record)} x ${record.candidate.title || "stock lead"} | ${record.candidate.supplier || "source TBC"} | link ${record.candidate.url || "TBC"} | landed ${money(record.result?.financials?.landed)} | ROI ${percent(record.result?.financials?.roi)} | ${record.result?.financials?.passes ? "financially viable lead" : "verify before use"}`;
+  }).join("\n") || "- No live auction evidence attached to this opportunity yet.";
+  const sourceSummary = stockSourceSummary(coverage, readiness.requiredQuantity);
+  const missingItems = readiness.checks.filter((item) => !item.pass);
 
   return [
     `RentalReady Appliances - Contract application pack`,
@@ -1345,18 +1682,52 @@ function bidPackText(demand, readiness) {
     `Approved before deadline: ${readiness.timedApprovedQuantity}`,
     `Lowest matched ROI: ${coverage.lowestRoi ? percent(coverage.lowestRoi) : "TBC"}`,
     `Projected profit from matched stock: ${money(coverage.projectedProfit)}`,
+    `Stock source plan: ${sourceSummary.decision} - ${sourceSummary.message}`,
     ``,
     `Matched stock evidence`,
     stockLines,
     ``,
-    `Suggested response points`,
-    `- RentalReady Appliances can source and supply the requested goods, appliance, material, or equipment requirement using reviewed stock matched to the specification.`,
-    `- Stock is only committed after final condition, collection, delivery, and compliance checks are complete.`,
-    `- Delivery planning should confirm postcode, access, timing, and any old-appliance removal or installation exclusions.`,
-    `- The bid should state any assumptions around refurbished/graded condition, warranties, replacement route, and lead times.`,
+    `Live auction evidence leads`,
+    evidenceLines,
+    ``,
+    `Draft response - executive summary`,
+    `RentalReady Appliances proposes to fulfil the authority's appliance, material, or equipment requirement using stock-led procurement matched to the published specification, delivery window, and commercial value. The offer is built around rapid sourcing, manual lot verification, transparent cost control, and replacement planning so the buyer receives compliant goods without overpaying for unnecessary service scope.`,
+    ``,
+    `Draft response - fulfilment method`,
+    `1. Confirm specification, required quantities, delivery locations, access constraints, packaging, warranty expectations, and any installation or removal exclusions.`,
+    `2. Reserve only stock that passes condition, fee, VAT, collection, lead-time, and ROI checks.`,
+    `3. Build the fulfilment schedule against the submission deadline and buyer delivery dates, including buffer for collection, test, clean, and re-delivery.`,
+    `4. Keep a documented substitution route if any auction lot becomes unavailable before award or purchase approval.`,
+    `5. Provide final delivery notes, serial/model references where available, and invoice/VAT status on completion.`,
+    ``,
+    `Draft response - commercial offer`,
+    `- Price should be submitted only after stock coverage is approved for the full requirement.`,
+    `- Maintain a minimum ${percent(DEFAULT_ROI_TARGET)} sourcing ROI after buyer premium, VAT on fees, logistics, testing/refurb buffer, and contingency.`,
+    `- If the contract allows partial lots, price each category separately. If it requires full fulfilment, do not submit until approved stock covers ${readiness.requiredQuantity}/${readiness.requiredQuantity} units.`,
+    `- State that equivalent brands/models may be supplied where the specification permits equivalent or better quality.`,
+    ``,
+    `Draft response - quality and risk controls`,
+    `- Goods will be checked for visible condition, working order evidence, missing parts, delivery suitability, and specification fit before purchase.`,
+    `- Risk items with unclear damage, no power-test evidence, missing dimensions, or collection restrictions should be excluded from the final bid.`,
+    `- Stock availability is time-sensitive; final commitment depends on the auction source still holding the goods at award/purchase point.`,
+    ``,
+    `Likely buyer requirements to evidence`,
+    `- Company registration and trading details.`,
+    `- Public/product liability insurance level required by the notice.`,
+    `- Bank account and refund process for unavailable goods or failed sourcing.`,
+    `- VAT status wording on invoice as applicable.`,
+    `- Delivery method, lead times, returns/replacement terms, and named contact.`,
+    `- Any portal-specific supplier questionnaire, declarations, modern slavery statement if requested, and conflict-of-interest declarations.`,
     ``,
     `Missing items to confirm before submission`,
-    ...readiness.checks.filter((item) => !item.pass).map((item) => `- ${item.label}: ${item.advice}`),
+    ...(missingItems.length ? missingItems.map((item) => `- ${item.label}: ${item.advice}`) : ["- No readiness gaps detected, but manually verify the notice and portal before submission."]),
+    ``,
+    `Clarification questions to ask the buyer if not stated`,
+    `- Are equivalent brands/models acceptable if performance and condition match the specification?`,
+    `- Is graded/refurbished stock acceptable, or must every item be new?`,
+    `- Are deliveries required in one drop or phased drops?`,
+    `- Are installation, old-appliance removal, PAT testing, or disposal included or excluded?`,
+    `- What evidence is required at delivery: photos, serial numbers, delivery note, warranty statement, or invoice?`,
     ``,
     `Contract detail notes`,
     readiness.details || "No tender detail notes pasted yet.",
@@ -1540,6 +1911,7 @@ function renderTenderMatches(tenders, settings, sourceNote = "") {
     .sort((a, b) => b.boardScore - a.boardScore || b.result.score - a.result.score);
 
   activeTenderReview = ranked[0] ? { ...ranked[0], index: 0, settings } : null;
+  state.lastTenderRun = ranked;
   tenderResults.innerHTML = `
     ${sourceNote ? `<div class="live-tender-source">${escapeHtml(sourceNote)}</div>` : ""}
     <div class="tender-result-list">
@@ -1645,6 +2017,8 @@ function renderTenderWorkspace(review) {
       ${renderStockSourceSummary(projection.sourceSummary, required)}
       ${sourceSearchLinks(terms)}
     </div>
+
+    ${renderStockEvidencePanel(tender)}
 
     <details class="tender-details tender-result-details" open>
       <summary>Full contract / tender information</summary>
@@ -1880,6 +2254,7 @@ function persist() {
   save("rentalready_sourcing_active_demand", state.activeDemandId);
   save("rentalready_sourcing_candidates", state.candidates);
   save("rentalready_sourcing_feedback", state.feedback);
+  save("rentalready_sourcing_run_history", state.runHistory);
   save("rentalready_sourcing_weights", state.weights);
 }
 
@@ -1993,10 +2368,11 @@ function renderLearning() {
   const approved = state.feedback.filter((item) => item.status === "Approved").length;
   const rejected = state.feedback.filter((item) => item.status === "Rejected").length;
   const liveDemand = state.demands.filter((item) => ["Live", "Tender", "Matched", "Bid Pack"].includes(item.status)).length;
+  const lastRun = state.runHistory[0];
   memoryStats.innerHTML = `
     <strong>${state.feedback.length}</strong>
     <span>review decisions recorded</span>
-    <p>${approved} approved, ${rejected} rejected. ${liveDemand} live or matched contract/tender opportunities are available for stock-led fulfilment.</p>
+    <p>${approved} approved, ${rejected} rejected. ${liveDemand} live or matched contract/tender opportunities are available for stock-led fulfilment.${lastRun ? ` Last test-and-learn run: ${lastRun.status} with ${lastRun.stockLeadsFound} stock lead(s).` : ""}</p>
   `;
 }
 
@@ -2018,6 +2394,7 @@ function exportData() {
     demands: state.demands,
     candidates: state.candidates,
     feedback: state.feedback,
+    runHistory: state.runHistory,
     weights: state.weights,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -2053,6 +2430,7 @@ function clearData() {
   state.activeDemandId = "";
   state.candidates = [];
   state.feedback = [];
+  state.runHistory = [];
   state.weights = { ...DEFAULT_WEIGHTS };
   render();
 }
@@ -2064,6 +2442,7 @@ document.querySelector("#generateSearches")?.addEventListener("click", generateS
 document.querySelector("#rankLots")?.addEventListener("click", rankLots);
 document.querySelector("#generateTenderSearches")?.addEventListener("click", generateTenderSearches);
 document.querySelector("#fetchLiveTenders")?.addEventListener("click", fetchLiveTenders);
+document.querySelector("#runTestLearn")?.addEventListener("click", runTestLearn);
 document.querySelector("#rankTenders")?.addEventListener("click", rankTenders);
 document.querySelector("#prepareBidPack")?.addEventListener("click", renderBidPack);
 workflowTabs.forEach((tab) => {
