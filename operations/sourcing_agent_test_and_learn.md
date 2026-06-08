@@ -9,7 +9,8 @@ The sourcing agent is built to find public-sector goods opportunities first, the
 1. Open `agent.rentalreadyappliances.com`.
 2. Go to `Step 3 - Contracts`.
 3. Keep `Opportunity source` on `Government goods routes` for the main run.
-4. Use focused goods keywords:
+4. Keep `Search area` on `Whole UK` for the main run so the agent can find achievable contracts nationally. Only narrow to a region when delivery, collection, or buyer eligibility makes distance a hard constraint.
+5. Use focused goods keywords:
    - `white goods supply`
    - `domestic appliances 39700000`
    - `electrical domestic appliances 39710000`
@@ -18,9 +19,9 @@ The sourcing agent is built to find public-sector goods opportunities first, the
    - `housing association white goods`
    - `student accommodation appliances`
    - `kitchen equipment supply`
-5. Set the anchor cap to the largest contract you can realistically finance, fulfil, and evidence.
-6. Click `Run test-and-learn`.
-7. Review the selected opportunity panel, not just the headline list.
+6. Set the anchor cap to the largest contract you can realistically finance, fulfil, and evidence.
+7. Click `Run test-and-learn`.
+8. Review the selected opportunity panel, not just the headline list.
 
 ## Government Source Coverage
 
@@ -65,6 +66,7 @@ Proceed to bid-pack preparation only when:
 - The value is within the current startup anchor range.
 - Required quantity is clear.
 - Full stock coverage is possible from one source or a controlled multi-source plan.
+- UK-wide delivery is realistic after stock location, pallet/courier route, delivery deadline, and buyer delivery location are checked.
 - Stock is available before submission and before the contract delivery schedule.
 - The lowest viable lot still protects at least 45% ROI after buyer premium, VAT on fees, logistics, and testing/refurb buffer.
 - Contract detail notes include the specification, deadline, delivery expectations, application route, and buyer requirements.

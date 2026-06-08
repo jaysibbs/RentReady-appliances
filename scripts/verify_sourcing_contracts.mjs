@@ -5,8 +5,9 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260608c/, "dashboard must load the John Pye Trade stock-source stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260608c/, "dashboard must load the John Pye Trade stock-source script version");
+assert.match(html, /styles\.css\?v=20260608d/, "dashboard must load the UK-wide opportunity search stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260608d/, "dashboard must load the UK-wide opportunity search script version");
+assert.match(html, /<option selected>Whole UK<\/option>/, "dashboard must default contract search area to Whole UK");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
 assert.match(html, /Goods contract matcher/, "dashboard must use contract-first wording");
@@ -27,6 +28,8 @@ assert.match(html, /39700000/, "dashboard must include domestic appliance CPV ta
 
 assert.match(script, /CONTRACTS_FINDER_SEARCH_BASE/, "front end must generate Contracts Finder search links");
 assert.match(script, /PUBLIC_PROCUREMENT_SOURCES/, "front end must show government procurement source routes");
+assert.match(script, /isUkWideRegion/, "front end must normalise UK-wide searches");
+assert.match(script, /tenderQueryRegion/, "front end must avoid applying a local region filter to UK-wide searches");
 assert.match(script, /Public Contracts Scotland/, "front end must include Scottish procurement watchlist routes");
 assert.match(script, /Sell2Wales/, "front end must include Welsh procurement watchlist routes");
 assert.match(script, /eTendersNI/, "front end must include Northern Ireland procurement watchlist routes");
@@ -65,6 +68,7 @@ assert.match(worker, /AUCTION_STOCK_SOURCES/, "manual-deploy worker must expose 
 assert.match(worker, /handleStockSearch/, "manual-deploy worker must expose stock evidence search API");
 assert.match(worker, /John Pye trade auctions/, "manual-deploy worker must include John Pye trade stock route");
 assert.match(worker, /John Pye Trade latest stock/, "manual-deploy worker must include John Pye Trade latest-stock route");
+assert.match(worker, /procurementRegion/, "manual-deploy worker must normalise UK-wide procurement searches");
 assert.match(worker, /johnpyetrade\.co\.uk\/product-category\/uncategorized/, "manual-deploy worker must use the John Pye Trade latest-stock category");
 assert.match(worker, /parseJohnPyeTradeCandidates/, "manual-deploy worker must parse John Pye Trade product cards");
 assert.match(worker, /trade-price-plus-buyer-premium/, "manual-deploy worker must expose trade price plus buyer premium confidence");
@@ -75,10 +79,12 @@ assert.match(worker, /agent\.rentalreadyappliances\.com/, "worker must route the
 assert.match(worker, /sourcing-dashboard\.html/, "agent subdomain root must serve the sourcing dashboard");
 
 const stockSearch = await readFile("dist/functions/api/stock-search.js", "utf8");
+const tenderSearch = await readFile("dist/functions/api/tenders.js", "utf8");
 assert.match(stockSearch, /AUCTION_STOCK_SOURCES/, "Pages function must include auction source matrix");
 assert.match(stockSearch, /parseAuctionCandidates/, "Pages function must parse stock candidate evidence");
 assert.match(stockSearch, /John Pye Trade latest stock/, "Pages function must include John Pye Trade latest-stock route");
 assert.match(stockSearch, /parseJohnPyeTradeCandidates/, "Pages function must parse John Pye Trade product cards");
 assert.match(stockSearch, /manual verification route/, "Pages function must distinguish manual verification routes");
+assert.match(tenderSearch, /procurementRegion/, "Pages tender function must normalise UK-wide procurement searches");
 
 console.log("Sourcing contract dashboard verification passed.");

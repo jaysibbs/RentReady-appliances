@@ -1016,7 +1016,7 @@ function johnPyeSearchUrl(term) {
 function tenderSettings() {
   return {
     source: document.querySelector("#opportunitySource")?.value || "all",
-    region: document.querySelector("#tenderRegion")?.value || "East Midlands",
+    region: document.querySelector("#tenderRegion")?.value || "Whole UK",
     valueCap: number(document.querySelector("#tenderValueCap")?.value) || 120000,
     roi: number(document.querySelector("#tenderRoi")?.value) || DEFAULT_ROI_TARGET,
     postcode: document.querySelector("#tenderPostcode")?.value || state.brief.postcode || "",
@@ -1027,20 +1027,28 @@ function tenderSettings() {
   };
 }
 
+function isUkWideRegion(region = "") {
+  return /^(whole uk|uk-wide|united kingdom|national small lots)$/i.test(String(region).trim());
+}
+
+function tenderQueryRegion(settings) {
+  return isUkWideRegion(settings.region) ? "" : settings.region;
+}
+
 function findTenderSearchUrl(term, settings) {
-  const query = [term, settings.region].filter(Boolean).join(" ");
+  const query = [term, tenderQueryRegion(settings)].filter(Boolean).join(" ");
   return `${FIND_TENDER_SEARCH_BASE}?keywords=${encodeURIComponent(query)}`;
 }
 
 function contractsFinderSearchUrl(term, settings) {
-  const query = [term, settings.region].filter(Boolean).join(" ");
+  const query = [term, tenderQueryRegion(settings)].filter(Boolean).join(" ");
   const search = new URL(CONTRACTS_FINDER_SEARCH_BASE);
   search.searchParams.set("keywords", query);
   search.searchParams.set("tender", "1");
   search.searchParams.set("planning", "1");
   search.searchParams.set("speculative", "1");
   search.searchParams.set("awarded", "0");
-  if (settings.postcode) search.searchParams.set("postcode", settings.postcode);
+  if (settings.postcode && !isUkWideRegion(settings.region)) search.searchParams.set("postcode", settings.postcode);
   return search.toString();
 }
 
@@ -1066,7 +1074,7 @@ function renderTenderSummary() {
       <div><span>Feed</span><strong>${settings.source === "contracts" ? "Contracts" : settings.source === "tenders" ? "Tenders" : settings.source === "regional" ? "Regional watch" : "Gov routes"}</strong></div>
       <div><span>Mode</span><strong>Test and learn</strong></div>
     </div>
-    <p>Start with medium local/regional anchor contracts: temporary accommodation, void-property, housing association, student accommodation, FM subcontract supply, and goods/material supply. The agent downgrades service-heavy notices unless the stock requirement can be fulfilled and priced before submission.</p>
+    <p>Start UK-wide but stay practical: temporary accommodation, void-property, housing association, student accommodation, FM subcontract supply, and goods/material supply. The agent downgrades service-heavy notices unless the stock requirement can be fulfilled, priced, and delivered before submission and contract delivery dates.</p>
   `;
 }
 
@@ -1302,11 +1310,13 @@ async function fetchLiveTenders() {
     return [];
   }
   if (liveTenderStatus) {
-    liveTenderStatus.innerHTML = `<strong>Fetching live contract opportunities...</strong><span>Searching ${escapeHtml(tenderKeywordsQuery(settings))} in ${escapeHtml(settings.region)} with ${escapeHtml(settings.source === "all" ? "Contracts Finder + Find a Tender" : settings.source)}.</span>`;
+    liveTenderStatus.innerHTML = `<strong>Fetching live contract opportunities...</strong><span>Searching ${escapeHtml(tenderKeywordsQuery(settings))} across ${escapeHtml(settings.region)} with ${escapeHtml(settings.source === "all" ? "Contracts Finder + Find a Tender" : settings.source)}.</span>`;
   }
 
   try {
-    const response = await fetch(`/api/tenders?keywords=${encodeURIComponent(tenderKeywordsQuery(settings))}&region=${encodeURIComponent(settings.region)}&postcode=${encodeURIComponent(settings.postcode)}&source=${encodeURIComponent(settings.source)}&valueCap=${encodeURIComponent(settings.valueCap)}`);
+    const apiRegion = tenderQueryRegion(settings);
+    const apiPostcode = apiRegion ? settings.postcode : "";
+    const response = await fetch(`/api/tenders?keywords=${encodeURIComponent(tenderKeywordsQuery(settings))}&region=${encodeURIComponent(apiRegion)}&postcode=${encodeURIComponent(apiPostcode)}&source=${encodeURIComponent(settings.source)}&valueCap=${encodeURIComponent(settings.valueCap)}`);
     const payload = await response.json();
     if (!response.ok || !payload.ok) throw new Error(payload.error || "Live tender search failed.");
 
@@ -1687,10 +1697,11 @@ function opportunityBoardScore(tenderResult, projection) {
 function tenderScore(tender, settings) {
   const value = number(tender.value);
   const deadlineDays = daysUntil(tender.deadline);
-  const regionMatch = normalise(tender.region).includes(normalise(settings.region)) || normalise(settings.region).includes(normalise(tender.region));
+  const ukWide = isUkWideRegion(settings.region);
+  const regionMatch = ukWide || normalise(tender.region).includes(normalise(settings.region)) || normalise(settings.region).includes(normalise(tender.region));
   const profile = opportunityProfile(tender);
   const startupProfile = startupRouteProfile(tender, settings);
-  const localMatch = regionMatch || ["leicester", "nottingham", "derby", "birmingham", "midlands"].some((place) => opportunityText(tender).includes(place));
+  const localMatch = ukWide || regionMatch || ["leicester", "nottingham", "derby", "birmingham", "midlands"].some((place) => opportunityText(tender).includes(place));
   const keywordHit = tenderSearchTerms(tender).some((term) => opportunityText(tender).includes(normalise(term)));
   const valueOk = !value || value <= settings.valueCap;
   const valueWatch = value && value > settings.valueCap && value <= settings.valueCap * 1.5;
@@ -1702,7 +1713,7 @@ function tenderScore(tender, settings) {
   if (value && valueOk) score += 24;
   if (valueWatch) score += 8;
   if (contractsFinder) score += 8;
-  if (localMatch) score += 18;
+  if (localMatch) score += ukWide ? 10 : 18;
   if (keywordHit) score += 14;
   if (profile.supplyLed) score += 18;
   if (profile.serviceHeavy) score -= 28;
@@ -1723,7 +1734,13 @@ function tenderScore(tender, settings) {
   const decision = viable && startupProfile.anchorValue ? "Anchor contract target" : viable ? "Worth checking stock" : score >= 58 ? "Needs goods review" : "Poor fit";
   const tone = viable ? "pass" : score >= 58 ? "prepare" : "hold";
   const checks = [
-    { label: "Local/regional fit", pass: localMatch, detail: localMatch ? "Matches your region focus." : "Buyer/location needs manual checking." },
+    {
+      label: ukWide ? "UK delivery feasibility" : "Local/regional fit",
+      pass: localMatch,
+      detail: ukWide
+        ? "Included in UK-wide search. Check stock location, collection route, courier/pallet delivery, and delivery-date buffer before bidding."
+        : localMatch ? "Matches your region focus." : "Buyer/location needs manual checking.",
+    },
     { label: "Startup acquisition route", pass: startupProfile.score >= 58, detail: startupProfile.routeHits.length ? `Route signals: ${startupProfile.routeHits.slice(0, 4).join(", ")}.` : "No housing, temporary accommodation, FM, or void-property route signal found." },
     { label: "Anchor contract size", pass: !value || startupProfile.anchorValue || startupProfile.sweetValue, detail: value ? `${money(value)} target range: ${money(STARTUP_ANCHOR_MIN)}-${money(Math.min(settings.valueCap || STARTUP_ANCHOR_MAX, STARTUP_ANCHOR_MAX))}.` : "Value not published." },
     { label: "Goods supply fit", pass: profile.goodsScore >= 58, detail: profile.goodsHits.length ? `Goods signals: ${profile.goodsHits.slice(0, 4).join(", ")}.` : "No clear goods/appliance/material signals found." },

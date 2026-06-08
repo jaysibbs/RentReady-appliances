@@ -19,6 +19,11 @@ function stripTags(value = "") {
     .trim();
 }
 
+function procurementRegion(value = "") {
+  const region = String(value || "").trim();
+  return /^(whole uk|uk-wide|united kingdom|national small lots)$/i.test(region) ? "" : region;
+}
+
 function fieldFromBlock(block, label) {
   const dtPattern = new RegExp(`<dt[^>]*>\\s*<strong>\\s*${label}\\s*<\\/strong>\\s*<\\/dt>\\s*<dd[^>]*>([\\s\\S]*?)<\\/dd>`, "i");
   const entryPattern = new RegExp(`<div[^>]*class="[^"]*search-result-entry[^"]*"[^>]*>\\s*<strong>\\s*${label}\\s*<\\/strong>\\s*([\\s\\S]*?)<\\/div>`, "i");
@@ -88,6 +93,7 @@ function parseContractsFinderResults(payload) {
 }
 
 async function fetchFindTenderResults(keywords, region) {
+  region = procurementRegion(region);
   const search = new URL(FIND_TENDER_RESULTS_URL);
   search.searchParams.set("keywords", [keywords, region].filter(Boolean).join(" "));
   search.searchParams.set("sort", "unix_published_date:DESC");
@@ -110,6 +116,8 @@ async function fetchFindTenderResults(keywords, region) {
 }
 
 async function fetchContractsFinderResults(keywords, region, postcode, valueCap, widened = false) {
+  region = procurementRegion(region);
+  if (!region) postcode = "";
   const sourceUrl = new URL(CONTRACTS_FINDER_RESULTS_URL);
   sourceUrl.searchParams.set("keywords", [keywords, region].filter(Boolean).join(" "));
   sourceUrl.searchParams.set("tender", "1");
@@ -165,21 +173,22 @@ export async function onRequestGet({ request }) {
   const url = new URL(request.url);
   const keywords = url.searchParams.get("keywords") || DEFAULT_ACQUISITION_KEYWORDS;
   const region = url.searchParams.get("region") || "";
-  const postcode = url.searchParams.get("postcode") || "";
+  const apiRegion = procurementRegion(region);
+  const postcode = apiRegion ? url.searchParams.get("postcode") || "" : "";
   const source = url.searchParams.get("source") || "all";
   const valueCap = Number(url.searchParams.get("valueCap")) || 0;
 
   try {
     const fetches = [];
     if (source === "all" || source === "contracts") {
-      fetches.push(fetchContractsFinderResults(keywords, region, postcode, valueCap).then(async (result) => {
-        if (!result.results.length && (region || postcode)) {
+      fetches.push(fetchContractsFinderResults(keywords, apiRegion, postcode, valueCap).then(async (result) => {
+        if (!result.results.length && (apiRegion || postcode)) {
           return fetchContractsFinderResults(keywords, "", "", valueCap, true);
         }
         return result;
       }));
     }
-    if (source === "all" || source === "tenders") fetches.push(fetchFindTenderResults(keywords, region));
+    if (source === "all" || source === "tenders") fetches.push(fetchFindTenderResults(keywords, apiRegion));
     const settled = await Promise.allSettled(fetches);
     const results = uniqueResults(settled.flatMap((item) => item.status === "fulfilled" ? item.value.results : [])).slice(0, 18);
     const sourceUrls = settled
@@ -191,7 +200,7 @@ export async function onRequestGet({ request }) {
 
     if (!results.length && errors.length) {
       return Response.json(
-        { ok: false, error: errors.join(" | "), sourceUrls, keywords, region, source, results: [] },
+        { ok: false, error: errors.join(" | "), sourceUrls, keywords, region: region || "Whole UK", source, results: [] },
         { status: 502 },
       );
     }
@@ -202,13 +211,13 @@ export async function onRequestGet({ request }) {
       sourceUrls,
       source,
       keywords,
-      region,
+      region: region || "Whole UK",
       results,
       warnings: errors,
     });
   } catch (error) {
     return Response.json(
-      { ok: false, error: error.message, keywords, region, source, results: [] },
+      { ok: false, error: error.message, keywords, region: region || "Whole UK", source, results: [] },
       { status: 502 },
     );
   }
