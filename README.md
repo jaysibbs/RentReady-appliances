@@ -10,6 +10,22 @@ node scripts/build_site.mjs
 
 The build writes the deployable website into `dist/`.
 
+## Split Deployment Files
+
+The combined Cloudflare package in `dist/` still supports the current single-project setup. When the public website and sourcing agent need to be handled as distinct files, run:
+
+```bash
+node scripts/build_site.mjs
+node scripts/build_split_deploys.mjs 20260608d
+```
+
+This creates two separate upload files in `outputs/`:
+
+- `rentalready_public_website_20260608d_cloudflare.zip` for the public website.
+- `rentalready_ai_agent_20260608d_cloudflare.zip` for the sourcing agent dashboard and API routes.
+
+Use the public website zip for `rentalreadyappliances.com`. Use the agent zip only for an agent-specific Cloudflare Pages project/domain such as `agent.rentalreadyappliances.com`.
+
 ## Cloudflare Pages
 
 Use these settings when connecting the GitHub repository to Cloudflare Pages:
