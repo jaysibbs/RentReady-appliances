@@ -127,7 +127,7 @@ function parseAuctionCandidates(html, source, sourceUrl, term) {
     const href = absolutiseUrl(match[1], sourceUrl);
     const title = stripTags(match[2]);
     if (!href || title.length < 8 || title.length > 180) continue;
-    if (/login|account|privacy|terms|basket|register|calendar|contact|about|valuation|selling|all farm|all metalworking|consumer goods|plant & machinery|refine search|machine tools|attachments|drilling|doweling/i.test(title)) continue;
+    if (/login|account|privacy|terms|basket|register|calendar|contact|about|valuation|selling|all farm|all metalworking|consumer goods|plant & machinery|refine search|machine tools|attachments|drilling|doweling|van|sprinter|mercedes|daf|diesel|tractor|vehicle|chassis|cab/i.test(title)) continue;
     if (/\/for-sale\/|search-filter|\/Browse\/|RefineSearch=1/i.test(href) && !/lot|Event\/LotDetails/i.test(href)) continue;
     if (!stockTermHit(title, term)) continue;
     const context = stripTags(html.slice(Math.max(0, match.index - 700), Math.min(html.length, match.index + 1100)));
