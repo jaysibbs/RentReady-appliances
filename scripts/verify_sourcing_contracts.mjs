@@ -5,8 +5,8 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260608b/, "dashboard must load the continuous-learning stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260608b/, "dashboard must load the continuous-learning script version");
+assert.match(html, /styles\.css\?v=20260608c/, "dashboard must load the John Pye Trade stock-source stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260608c/, "dashboard must load the John Pye Trade stock-source script version");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
 assert.match(html, /Goods contract matcher/, "dashboard must use contract-first wording");
@@ -64,6 +64,10 @@ assert.match(worker, /CONTRACTS_FINDER_API_URL/, "manual-deploy worker must use 
 assert.match(worker, /AUCTION_STOCK_SOURCES/, "manual-deploy worker must expose auction stock source search routes");
 assert.match(worker, /handleStockSearch/, "manual-deploy worker must expose stock evidence search API");
 assert.match(worker, /John Pye trade auctions/, "manual-deploy worker must include John Pye trade stock route");
+assert.match(worker, /John Pye Trade latest stock/, "manual-deploy worker must include John Pye Trade latest-stock route");
+assert.match(worker, /johnpyetrade\.co\.uk\/product-category\/uncategorized/, "manual-deploy worker must use the John Pye Trade latest-stock category");
+assert.match(worker, /parseJohnPyeTradeCandidates/, "manual-deploy worker must parse John Pye Trade product cards");
+assert.match(worker, /trade-price-plus-buyer-premium/, "manual-deploy worker must expose trade price plus buyer premium confidence");
 assert.match(worker, /DEFAULT_ACQUISITION_KEYWORDS/, "worker must default to acquisition-focused procurement searches");
 assert.match(worker, /parseContractsFinderResults/, "manual-deploy worker must parse Contracts Finder results");
 assert.match(worker, /www\.contractsfinder\.service\.gov\.uk/, "detail loader must allow Contracts Finder notice URLs");
@@ -73,6 +77,8 @@ assert.match(worker, /sourcing-dashboard\.html/, "agent subdomain root must serv
 const stockSearch = await readFile("dist/functions/api/stock-search.js", "utf8");
 assert.match(stockSearch, /AUCTION_STOCK_SOURCES/, "Pages function must include auction source matrix");
 assert.match(stockSearch, /parseAuctionCandidates/, "Pages function must parse stock candidate evidence");
+assert.match(stockSearch, /John Pye Trade latest stock/, "Pages function must include John Pye Trade latest-stock route");
+assert.match(stockSearch, /parseJohnPyeTradeCandidates/, "Pages function must parse John Pye Trade product cards");
 assert.match(stockSearch, /manual verification route/, "Pages function must distinguish manual verification routes");
 
 console.log("Sourcing contract dashboard verification passed.");

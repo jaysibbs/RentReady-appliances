@@ -78,6 +78,11 @@ const STOCK_SOURCES = [
     fetchable: true,
   },
   {
+    name: "John Pye Trade latest stock",
+    urlFor: () => "https://www.johnpyetrade.co.uk/product-category/uncategorized/",
+    fetchable: true,
+  },
+  {
     name: "BPI Auctions",
     urlFor: (term) => `https://www.bpiauctions.com/?s=${encodeURIComponent(term)}`,
     fetchable: true,
@@ -1276,7 +1281,7 @@ async function runTestLearn() {
   state.runHistory.unshift(run);
   state.runHistory = state.runHistory.slice(0, 20);
   persist();
-  renderTenderMatches(enriched.map((item) => item.tender), settings, `Full test-and-learn run completed. ${stockLeadsFound} stock lead(s) checked across John Pye general/trade and comparable auction routes.`);
+  renderTenderMatches(enriched.map((item) => item.tender), settings, `Full test-and-learn run completed. ${stockLeadsFound} stock lead(s) checked across John Pye general, John Pye Trade latest stock, and comparable auction routes.`);
   renderRunSummary(run);
   if (liveTenderStatus) {
     liveTenderStatus.innerHTML = `<strong>${escapeHtml(run.status)}.</strong><span>${enriched.length} opportunity/opportunities tested. ${stockLeadsFound} stock lead(s) found. Save a viable opportunity, verify stock, then export the bid pack.</span>`;

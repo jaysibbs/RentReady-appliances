@@ -14,6 +14,12 @@ const AUCTION_STOCK_SOURCES = [
     urlFor: (term) => `https://www.johnpye.co.uk/trade-auctions/?s=${encodeURIComponent(term)}`,
   },
   {
+    name: "John Pye Trade latest stock",
+    fetchable: true,
+    parser: "johnPyeTrade",
+    urlFor: () => "https://www.johnpyetrade.co.uk/product-category/uncategorized/",
+  },
+  {
     name: "BPI Auctions",
     fetchable: true,
     urlFor: (term) => `https://www.bpiauctions.com/?s=${encodeURIComponent(term)}`,
@@ -48,6 +54,7 @@ const AUCTION_STOCK_SOURCES = [
 function decodeEntities(value = "") {
   return String(value)
     .replace(/&nbsp;/g, " ")
+    .replace(/&pound;|&#163;/g, "£")
     .replace(/&#039;/g, "'")
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
@@ -86,6 +93,24 @@ function parseIsoDateLoose(value) {
   return "";
 }
 
+function parseCurrentPriceLoose(value) {
+  const text = String(value || "");
+  const current = text.match(/Current price is:\s*£\s?([0-9]+(?:,[0-9]{3})*(?:\.\d{1,2})?)/i);
+  if (current) return number(current[1]);
+  return parseMoneyLoose(text);
+}
+
+function parseQuantityLoose(value) {
+  const text = String(value || "");
+  const units = text.match(/\b(?:approx\.?\s*)?([0-9]+(?:,[0-9]{3})?)\s*(?:x\s*)?units?\b/i);
+  if (units) return Math.max(1, Math.round(number(units[1])));
+  const leading = text.match(/\b([0-9]+)\s*x\s+(?:pallet|pallets|truckload|truckloads|box|boxes)\b/i);
+  if (leading) return Math.max(1, Math.round(number(leading[1])));
+  const pallets = text.match(/\b([0-9]+)\s+pallets?\b/i);
+  if (pallets) return Math.max(1, Math.round(number(pallets[1])));
+  return 1;
+}
+
 function absolutiseUrl(href, base) {
   try {
     return new URL(decodeEntities(href), base).toString();
@@ -96,6 +121,7 @@ function absolutiseUrl(href, base) {
 
 function stockTermHit(text, term) {
   const value = normalise(text);
+  const query = normalise(term);
   const applianceTerms = [
     "white goods",
     "washing machine",
@@ -111,12 +137,13 @@ function stockTermHit(text, term) {
     "domestic appliance",
     "freestanding",
   ];
-  if (applianceTerms.some((item) => value.includes(item))) return true;
-  if (normalise(term) === "white goods") return false;
-  return normalise(term)
+  const applianceQuery = query.includes("white goods") || query.includes("domestic appliance") || query.includes("appliance") || query.includes("397");
+  if (applianceQuery && applianceTerms.some((item) => value.includes(item))) return true;
+  if (query === "white goods") return false;
+  const parts = query
     .split(/\s+/)
-    .filter((part) => part.length > 2 && !["and", "the", "for", "lot", "with", "white", "goods", "machine"].includes(part))
-    .every((part) => value.includes(part));
+    .filter((part) => part.length > 2 && !["and", "the", "for", "lot", "with", "white", "goods", "machine"].includes(part));
+  return parts.length ? parts.every((part) => value.includes(part)) : false;
 }
 
 function parseAuctionCandidates(html, source, sourceUrl, term) {
@@ -150,6 +177,39 @@ function parseAuctionCandidates(html, source, sourceUrl, term) {
   return results;
 }
 
+function parseJohnPyeTradeCandidates(html, source, sourceUrl, term) {
+  return String(html)
+    .split(/<div class="product-small col has-hover/i)
+    .slice(1)
+    .map((block) => `<div class="product-small col has-hover${block}`)
+    .filter((block) => !/outofstock|out-of-stock-label|>\s*SOLD\s*</i.test(block))
+    .map((block) => {
+      const titleMatch = block.match(/<p[^>]*class="[^"]*woocommerce-loop-product__title[^"]*"[^>]*>\s*<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/i);
+      const href = absolutiseUrl(titleMatch?.[1] || "", sourceUrl);
+      const title = stripTags(titleMatch?.[2] || "");
+      if (!href || !title || !stockTermHit(title, term)) return null;
+      const context = stripTags(block);
+      const currentPrice = parseCurrentPriceLoose(context);
+      const buyerPremiumRate = /\bBuyers Premium\s*\(20%\)/i.test(context) ? 0.2 : 0;
+      const acquisitionPrice = currentPrice ? Math.round(currentPrice * (1 + buyerPremiumRate) * 100) / 100 : 0;
+      return {
+        source: source.name,
+        title,
+        url: href,
+        price: acquisitionPrice,
+        quantityAvailable: parseQuantityLoose(title),
+        location: "John Pye Trade",
+        availableBy: "",
+        term,
+        searchUrl: sourceUrl,
+        confidence: acquisitionPrice ? "trade-price-plus-buyer-premium" : "title-match",
+        description: `${context.slice(0, 360)}${buyerPremiumRate ? " Acquisition estimate includes 20% buyer premium before VAT/logistics checks." : ""}`,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 10);
+}
+
 async function fetchStockSource(source, term) {
   const sourceUrl = source.urlFor(term);
   if (!source.fetchable) {
@@ -166,7 +226,9 @@ async function fetchStockSource(source, term) {
   }
   return {
     sourceUrl,
-    results: parseAuctionCandidates(await response.text(), source, sourceUrl, term),
+    results: source.parser === "johnPyeTrade"
+      ? parseJohnPyeTradeCandidates(await response.text(), source, sourceUrl, term)
+      : parseAuctionCandidates(await response.text(), source, sourceUrl, term),
     warning: "",
   };
 }

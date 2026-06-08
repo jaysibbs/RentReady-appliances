@@ -44,6 +44,7 @@ The stock evidence route attempts live page searches for:
 
 - John Pye general auctions
 - John Pye trade auctions
+- John Pye Trade latest stock (`https://www.johnpyetrade.co.uk/product-category/uncategorized/`)
 - BPI Auctions
 - BidSpotter
 
@@ -54,7 +55,7 @@ It also provides manual verification routes for:
 - Eddisons
 - NCM Auctions
 
-Parsed stock is evidence only. It is not approved stock. Each lot must still be opened and checked for fees, VAT, lot condition, collection window, quantity, location, and whether the item can be reserved before the bid is submitted.
+Parsed stock is evidence only. It is not approved stock. Each lot must still be opened and checked for fees, VAT, lot condition, collection window, quantity, location, and whether the item can be reserved before the bid is submitted. John Pye Trade latest-stock records use the current trade price plus the visible 20% buyer premium as the purchase-value estimate before VAT and logistics checks, so contract value comparisons remain conservative.
 
 ## Bid / No-Bid Gates
 
