@@ -59,25 +59,25 @@ const PUBLIC_PROCUREMENT_SOURCES = [
     name: "Leicester City Council procurement",
     mode: "watchlist",
     remit: "City council supplier route for local contract opportunities, procurement guidance, and registration instructions.",
-    urlFor: () => "https://www.leicester.gov.uk/business/procurement-and-tendering/",
+    urlFor: () => "https://www.leicester.gov.uk/search?query=procurement",
   },
   {
     name: "Leicestershire County Council procurement",
     mode: "watchlist",
-    remit: "County council route for supplier registration, active opportunities, and procurement rules.",
-    urlFor: () => "https://www.leicestershire.gov.uk/business-and-consumers/selling-to-the-council",
+    remit: "County council buyer route checked through East Midlands Tenders and the local authority sweep.",
+    urlFor: () => "https://www.eastmidstenders.org/",
   },
   {
     name: "Blaby District Council procurement",
     mode: "watchlist",
     remit: "Local borough route for smaller district-level supply contracts and procurement notices.",
-    urlFor: () => "https://www.blaby.gov.uk/business-licensing-and-investment/doing-business-with-the-council/contracts-and-procurement/",
+    urlFor: () => "https://www.blaby.gov.uk/business-licensing-and-investment/",
   },
   {
     name: "Harborough District Council procurement",
     mode: "watchlist",
     remit: "District procurement route for local supply, facilities, housing, and operational contract notices.",
-    urlFor: () => "https://www.harborough.gov.uk/info/20005/business/90/procurement",
+    urlFor: () => "https://www.harborough.gov.uk/site_search/results/?q=procurement",
   },
   {
     name: "Hinckley and Bosworth procurement",
@@ -88,14 +88,14 @@ const PUBLIC_PROCUREMENT_SOURCES = [
   {
     name: "Melton Borough Council procurement",
     mode: "watchlist",
-    remit: "Borough procurement route for local supplier opportunities and tender notices.",
-    urlFor: () => "https://www.melton.gov.uk/business-licensing-and-investment/business/contracts-and-tenders/",
+    remit: "Borough buyer route checked through East Midlands Tenders and the local authority sweep.",
+    urlFor: () => "https://www.eastmidstenders.org/",
   },
   {
     name: "Rutland County Council procurement",
     mode: "watchlist",
     remit: "Neighbouring county procurement route for goods and operational contracts within reachable delivery distance.",
-    urlFor: () => "https://www.rutland.gov.uk/business-licensing/procurement",
+    urlFor: () => "https://www.rutland.gov.uk/search?query=procurement",
   },
   {
     name: "Public Contracts Scotland",
