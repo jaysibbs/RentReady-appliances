@@ -2669,11 +2669,13 @@ section {
   margin-bottom: 4px;
 }
 
-.demand-card h3 {
+.demand-card h3,
+.opportunity-record-card h3 {
   margin-bottom: 12px;
 }
 
-.demand-card dl {
+.demand-card dl,
+.opportunity-record-card dl {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
@@ -2688,6 +2690,7 @@ section {
 }
 
 .demand-card dl div,
+.opportunity-record-card dl div,
 .candidate-card dl div {
   border: 1px solid var(--dash-border);
   border-radius: 8px;
@@ -2696,6 +2699,7 @@ section {
 }
 
 .demand-card dt,
+.opportunity-record-card dt,
 .candidate-card dt {
   color: var(--dash-warning);
   font-size: 12px;
@@ -2704,9 +2708,57 @@ section {
 }
 
 .demand-card dd,
+.opportunity-record-card dd,
 .candidate-card dd {
   margin: 4px 0 0;
   color: var(--dash-text);
+  font-weight: 800;
+}
+
+.opportunity-ledger {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.opportunity-record-list {
+  display: grid;
+  gap: 12px;
+}
+
+.opportunity-record-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--dash-card);
+}
+
+.opportunity-record-card.pass {
+  border-color: rgba(100, 212, 156, .45);
+}
+
+.opportunity-record-card.prepare {
+  border-color: rgba(98, 169, 255, .45);
+}
+
+.opportunity-record-card.hold {
+  border-color: rgba(255, 207, 107, .4);
+}
+
+.opportunity-record-card p {
+  margin: 0;
+  color: var(--dash-muted);
+}
+
+.record-progress {
+  display: grid;
+  grid-template-columns: max-content minmax(80px, 1fr);
+  gap: 8px 12px;
+  align-items: center;
+  color: var(--dash-muted);
+  font-size: 12px;
   font-weight: 800;
 }
 

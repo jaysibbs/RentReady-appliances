@@ -10,6 +10,16 @@ node scripts/build_site.mjs
 
 The build writes the deployable website into `dist/`.
 
+## Project Structure
+
+The project is now split into distinct source lanes:
+
+- `website/` contains the public RentalReady website and customer-facing assets.
+- `agent/` contains the AI sourcing dashboard, procurement APIs, stock APIs, and opportunity-learning logic.
+- `shared/` contains shared Cloudflare runtime files used when a combined/manual deployment is needed.
+
+This keeps the website stable while the sourcing agent can evolve quickly as the operational decision engine.
+
 ## Split Deployment Files
 
 The combined Cloudflare package in `dist/` still supports the current single-project setup. When the public website and sourcing agent need to be handled as distinct files, run:
@@ -51,6 +61,8 @@ Recommended Cloudflare settings:
 - Suggested custom domain: `agent.rentalreadyappliances.com`
 
 The standalone agent build writes only the sourcing dashboard, API functions, worker route, shared styles, and brand files into `dist-agent/`. The public website continues to use `node scripts/build_site.mjs` and `dist/`.
+
+The agent now stores saved contracts and tenders as structured opportunity records in browser storage under `rentalready_sourcing_opportunity_records`. Those records include requirement, value, stock coverage, ROI, bid status, and source-plan details.
 
 If Git deployment is not available, use the latest `outputs/rentalready_ai_agent_*_cloudflare.zip` file as a manual direct-upload fallback for the agent project only.
 

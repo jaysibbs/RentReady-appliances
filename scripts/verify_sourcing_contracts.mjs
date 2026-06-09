@@ -92,6 +92,7 @@ assert.match(worker, /DEFAULT_ACQUISITION_KEYWORDS/, "worker must default to acq
 assert.match(worker, /parseContractsFinderResults/, "manual-deploy worker must parse Contracts Finder results");
 assert.match(worker, /www\.contractsfinder\.service\.gov\.uk/, "detail loader must allow Contracts Finder notice URLs");
 assert.match(worker, /agent\.rentalreadyappliances\.com/, "worker must route the agent subdomain to the sourcing dashboard");
+assert.match(worker, /sourcing\.rentalreadyappliances\.com/, "worker must route the standalone sourcing subdomain to the sourcing dashboard");
 assert.match(worker, /sourcing-dashboard\.html/, "agent subdomain root must serve the sourcing dashboard");
 
 const stockSearch = await readFile("dist/functions/api/stock-search.js", "utf8");
@@ -102,5 +103,12 @@ assert.match(stockSearch, /John Pye Trade latest stock/, "Pages function must in
 assert.match(stockSearch, /parseJohnPyeTradeCandidates/, "Pages function must parse John Pye Trade product cards");
 assert.match(stockSearch, /manual verification route/, "Pages function must distinguish manual verification routes");
 assert.match(tenderSearch, /procurementRegion/, "Pages tender function must normalise UK-wide procurement searches");
+
+const agentSource = await readFile("agent/sourcing-dashboard.js", "utf8");
+assert.match(agentSource, /opportunityRecords/, "agent source must maintain saved opportunity records");
+assert.match(agentSource, /syncOpportunityRecords/, "agent source must sync saved opportunity records from demand and stock state");
+
+await readFile("website/index.html", "utf8");
+await readFile("shared/cloudflare/_worker.js", "utf8");
 
 console.log("Sourcing contract dashboard verification passed.");

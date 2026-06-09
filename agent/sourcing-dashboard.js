@@ -20,6 +20,7 @@ const DEFAULT_LEARNING_MODEL = {
   outcomeStats: {},
   decisionLog: [],
 };
+const OPPORTUNITY_RECORD_SCHEMA = "20260609-opportunity-record-v1";
 
 const DEFAULT_ROI_TARGET = 45;
 const STARTUP_ANCHOR_MIN = 15000;
@@ -367,6 +368,7 @@ const state = {
   candidates: load("rentalready_sourcing_candidates", []),
   feedback: load("rentalready_sourcing_feedback", []),
   runHistory: load("rentalready_sourcing_run_history", []),
+  opportunityRecords: load("rentalready_sourcing_opportunity_records", []),
   learningModel: load("rentalready_sourcing_learning_model", DEFAULT_LEARNING_MODEL),
   weights: load("rentalready_sourcing_weights", DEFAULT_WEIGHTS),
 };
@@ -387,6 +389,7 @@ const routeLearning = document.querySelector("#routeLearning");
 const outcomeLearning = document.querySelector("#outcomeLearning");
 const activeDemand = document.querySelector("#activeDemand");
 const demandList = document.querySelector("#demandList");
+const opportunityRecordList = document.querySelector("#opportunityRecordList");
 const tenderSummary = document.querySelector("#tenderSummary");
 const tenderSearchLinks = document.querySelector("#tenderSearchLinks");
 const tenderResults = document.querySelector("#tenderResults");
@@ -588,6 +591,91 @@ function demandLabel(demand) {
   const authority = brief.customer || tender.authority || "Contract authority TBC";
   const item = brief.item || tender.item || "goods";
   return `${authority} - ${quantity} x ${item}`;
+}
+
+function canonicalOpportunityId(demand) {
+  return demand?.opportunityId || `opp-${demand?.id || crypto.randomUUID()}`;
+}
+
+function opportunityRecordForDemand(demand) {
+  const tender = demand?.tender || {};
+  const brief = demand?.brief || {};
+  const requiredQuantity = number(brief.quantity) || number(tender.quantity) || 1;
+  const totalValue = number(tender.value) || demandValue(brief);
+  const unitValue = totalValue && requiredQuantity ? Math.round(totalValue / requiredQuantity) : number(brief.budget);
+  const coverage = stockCoverageForDemand(demand.id);
+  const sourceSummary = stockSourceSummary(coverage, requiredQuantity);
+  const coveragePercent = requiredQuantity ? clamp((coverage.quantityAvailable / requiredQuantity) * 100) : 0;
+  const approvedCoveragePercent = requiredQuantity ? clamp((coverage.approvedQuantity / requiredQuantity) * 100) : 0;
+  const deadline = tender.deadline || brief.deadline || parseDateFromText(brief.notes || tender.notes || "") || "";
+  const existing = state.opportunityRecords.find((record) => record.demandId === demand.id || record.id === demand.opportunityId) || {};
+
+  return {
+    ...existing,
+    id: canonicalOpportunityId(demand),
+    schema: OPPORTUNITY_RECORD_SCHEMA,
+    demandId: demand.id,
+    createdAt: existing.createdAt || demand.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    status: demand.status || "Live",
+    source: tender.source || brief.source || "Manual opportunity",
+    platform: tender.opportunityType || tender.noticeType || "Contract / tender",
+    title: tender.title || brief.notes?.split("\n")[0] || demandLabel(demand),
+    authority: tender.authority || brief.customer || "Authority TBC",
+    url: tender.url || "",
+    requirement: {
+      category: brief.item || tender.item || "Goods TBC",
+      quantity: requiredQuantity,
+      postcode: brief.postcode || tender.postcode || "",
+      region: tender.region || "",
+      deadline,
+      totalValue,
+      unitValue,
+      quality: brief.quality || "Standard",
+      notes: tender.notes || brief.notes || "",
+    },
+    stock: {
+      matchedQuantity: coverage.quantityAvailable,
+      approvedQuantity: coverage.approvedQuantity,
+      matchedCoveragePercent: coveragePercent,
+      approvedCoveragePercent,
+      sourcePlan: sourceSummary.decision,
+      sourcePlanTone: sourceSummary.tone,
+      sourcePlanMessage: sourceSummary.message,
+      sources: sourceSummary.sourceList.map((source) => ({
+        name: source.source,
+        quantity: source.quantity,
+        approvedQuantity: source.approvedQuantity,
+        lowestRoi: source.lowestRoi,
+        projectedProfit: source.projectedProfit,
+      })),
+      records: coverage.records.map((record) => record.id),
+    },
+    economics: {
+      roiTarget: number(document.querySelector("#targetRoi")?.value) || number(document.querySelector("#tenderRoi")?.value) || DEFAULT_ROI_TARGET,
+      lowestRoi: coverage.lowestRoi,
+      landedCost: coverage.landedCost,
+      projectedRevenue: coverage.targetSale || totalValue,
+      projectedProfit: coverage.projectedProfit,
+      viable: coverage.quantityAvailable >= requiredQuantity && coverage.lowestRoi >= DEFAULT_ROI_TARGET,
+    },
+    bid: {
+      readiness: coverage.approvedQuantity >= requiredQuantity ? "Ready for bid pack" : coverage.quantityAvailable >= requiredQuantity ? "Stock review required" : "Stock gap",
+      decision: demand.status || existing.bid?.decision || "Review",
+      lastOutcomeAt: demand.updatedAt || existing.bid?.lastOutcomeAt || "",
+      notes: existing.bid?.notes || "",
+    },
+  };
+}
+
+function syncOpportunityRecords() {
+  const records = state.demands.map((demand) => {
+    demand.opportunityId = canonicalOpportunityId(demand);
+    return opportunityRecordForDemand(demand);
+  });
+  state.opportunityRecords = records
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+    .slice(0, 250);
 }
 
 function demandValue(brief) {
@@ -2363,14 +2451,17 @@ function addTenderDemand(encodedTender) {
   const tender = JSON.parse(decodeURIComponent(encodedTender));
   const settings = tenderSettings();
   const brief = tenderBrief(tender, settings);
+  const now = new Date().toISOString();
   const demand = {
     id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    opportunityId: "",
+    createdAt: now,
+    updatedAt: now,
     status: "Tender",
     tender,
     brief,
   };
+  demand.opportunityId = canonicalOpportunityId(demand);
   state.demands.unshift(demand);
   state.activeDemandId = demand.id;
   state.brief = brief;
@@ -2459,11 +2550,13 @@ function saveDemand() {
 
   const demand = {
     id: crypto.randomUUID(),
+    opportunityId: "",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     status: "Live",
     brief,
   };
+  demand.opportunityId = canonicalOpportunityId(demand);
 
   state.demands.unshift(demand);
   state.activeDemandId = demand.id;
@@ -2619,24 +2712,66 @@ function adjustWeights(dimensions, status) {
 }
 
 function persist() {
+  syncOpportunityRecords();
   save("rentalready_sourcing_brief", state.brief);
   save("rentalready_sourcing_demands", state.demands);
   save("rentalready_sourcing_active_demand", state.activeDemandId);
   save("rentalready_sourcing_candidates", state.candidates);
   save("rentalready_sourcing_feedback", state.feedback);
   save("rentalready_sourcing_run_history", state.runHistory);
+  save("rentalready_sourcing_opportunity_records", state.opportunityRecords);
   save("rentalready_sourcing_learning_model", state.learningModel);
   save("rentalready_sourcing_weights", state.weights);
 }
 
 function render() {
+  syncOpportunityRecords();
   fillForm(briefForm, state.brief);
   renderDemandQueue();
+  renderOpportunityRecords();
   renderCandidates();
   renderLearning();
   renderTenderSummary();
   renderBidPack();
   syncAgentDefaults();
+}
+
+function renderOpportunityRecords() {
+  if (!opportunityRecordList) return;
+  if (!state.opportunityRecords.length) {
+    opportunityRecordList.innerHTML = `<p class="empty-state">No structured opportunity records yet. Save a live contract, tender, or manual opportunity to create the first record.</p>`;
+    return;
+  }
+
+  opportunityRecordList.innerHTML = state.opportunityRecords.map((record) => `
+    <article class="opportunity-record-card ${record.stock.sourcePlanTone}">
+      <div class="candidate-topline">
+        <span>${escapeHtml(record.status)}</span>
+        <strong>${Math.round(record.stock.matchedCoveragePercent)}% matched</strong>
+      </div>
+      <h3>${escapeHtml(record.title)}</h3>
+      <p>${escapeHtml(record.authority)} • ${escapeHtml(record.source)} • ${escapeHtml(record.requirement.region || "UK route")}</p>
+      <dl>
+        <div><dt>Record ID</dt><dd>${escapeHtml(record.id)}</dd></div>
+        <div><dt>Requirement</dt><dd>${record.requirement.quantity} x ${escapeHtml(record.requirement.category)}</dd></div>
+        <div><dt>Value</dt><dd>${record.requirement.totalValue ? money(record.requirement.totalValue) : "TBC"} total / ${record.requirement.unitValue ? money(record.requirement.unitValue) : "TBC"} unit</dd></div>
+        <div><dt>Deadline</dt><dd>${escapeHtml(record.requirement.deadline || "TBC")}</dd></div>
+        <div><dt>Stock plan</dt><dd>${escapeHtml(record.stock.sourcePlan)}</dd></div>
+        <div><dt>ROI / profit</dt><dd>${record.economics.lowestRoi ? percent(record.economics.lowestRoi) : "TBC"} / ${money(record.economics.projectedProfit)}</dd></div>
+      </dl>
+      <p>${escapeHtml(record.stock.sourcePlanMessage)}</p>
+      <div class="record-progress">
+        <span>Matched ${record.stock.matchedQuantity}/${record.requirement.quantity}</span>
+        <meter min="0" max="100" value="${record.stock.matchedCoveragePercent}"></meter>
+        <span>Approved ${record.stock.approvedQuantity}/${record.requirement.quantity}</span>
+        <meter min="0" max="100" value="${record.stock.approvedCoveragePercent}"></meter>
+      </div>
+      <div class="dashboard-actions">
+        <button class="button primary" type="button" data-demand-select="${record.demandId}">Open matching workflow</button>
+        ${record.url ? `<a class="button secondary" href="${record.url}" target="_blank" rel="noopener">Open notice</a>` : ""}
+      </div>
+    </article>
+  `).join("");
 }
 
 function renderDemandQueue() {
@@ -2794,6 +2929,7 @@ function exportData() {
     candidates: state.candidates,
     feedback: state.feedback,
     runHistory: state.runHistory,
+    opportunityRecords: state.opportunityRecords,
     learningModel: state.learningModel,
     weights: state.weights,
   };
@@ -2819,6 +2955,7 @@ function importData(event) {
       state.candidates = Array.isArray(payload.candidates) ? payload.candidates : state.candidates;
       state.feedback = Array.isArray(payload.feedback) ? payload.feedback : state.feedback;
       state.runHistory = Array.isArray(payload.runHistory) ? payload.runHistory : state.runHistory;
+      state.opportunityRecords = Array.isArray(payload.opportunityRecords) ? payload.opportunityRecords : state.opportunityRecords;
       state.learningModel = normaliseLearningModel(payload.learningModel || payload.model || state.learningModel);
       state.weights = { ...DEFAULT_WEIGHTS, ...(payload.weights || state.weights) };
       persist();
@@ -2858,6 +2995,7 @@ function clearData() {
   state.candidates = [];
   state.feedback = [];
   state.runHistory = [];
+  state.opportunityRecords = [];
   state.learningModel = normaliseLearningModel({});
   state.weights = { ...DEFAULT_WEIGHTS };
   render();
@@ -2895,6 +3033,13 @@ demandList?.addEventListener("click", (event) => {
 
   const statusButton = event.target.closest("button[data-demand-status]");
   if (statusButton) updateDemandStatus(statusButton.dataset.demandId, statusButton.dataset.demandStatus);
+});
+opportunityRecordList?.addEventListener("click", (event) => {
+  const selectButton = event.target.closest("button[data-demand-select]");
+  if (selectButton) {
+    selectDemand(selectButton.dataset.demandSelect);
+    showWorkflowStep("agent");
+  }
 });
 candidateList?.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-status]");

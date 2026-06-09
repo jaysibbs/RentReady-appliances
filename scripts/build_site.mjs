@@ -3,10 +3,12 @@ import { join } from "node:path";
 
 const root = process.cwd();
 const dist = join(root, "dist");
+const websiteRoot = join(root, "website");
+const agentRoot = join(root, "agent");
+const sharedRoot = join(root, "shared");
 
 const files = [
   "_headers",
-  "_worker.js",
   "_redirects",
   "cookers-ovens.html",
   "delivery-haul-away.html",
@@ -24,11 +26,11 @@ const files = [
   "script.js",
   "site.webmanifest",
   "sitemap.xml",
-  "sourcing-dashboard.html",
-  "sourcing-dashboard.js",
   "styles.css",
   "terms.html",
   "theme-init.js",
+  "theme-options.css",
+  "theme-options.html",
   "warranty-returns.html",
   "washing-machines.html",
 ];
@@ -54,20 +56,24 @@ function copyDirectory(source, target, ignoredNames = new Set()) {
 }
 
 for (const file of files) {
-  cpSync(join(root, file), join(dist, file));
+  cpSync(join(websiteRoot, file), join(dist, file));
 }
 
 mkdirSync(join(dist, "assets"), { recursive: true });
-copyDirectory(join(root, "assets", "product-photos"), join(dist, "assets", "product-photos"), new Set(["source-crops"]));
-cpSync(join(root, "assets", "appliance-lineup.svg"), join(dist, "assets", "appliance-lineup.svg"));
+copyDirectory(join(websiteRoot, "assets", "product-photos"), join(dist, "assets", "product-photos"), new Set(["source-crops"]));
+cpSync(join(websiteRoot, "assets", "appliance-lineup.svg"), join(dist, "assets", "appliance-lineup.svg"));
 
 mkdirSync(join(dist, "brand"), { recursive: true });
 for (const file of ["rentalready_logo.svg", "rentalready_logo_square.svg", "rentalready_mark.svg"]) {
-  cpSync(join(root, "brand", file), join(dist, "brand", file));
+  cpSync(join(websiteRoot, "brand", file), join(dist, "brand", file));
 }
 
-if (existsSync(join(root, "functions"))) {
-  copyDirectory(join(root, "functions"), join(dist, "functions"));
+cpSync(join(sharedRoot, "cloudflare", "_worker.js"), join(dist, "_worker.js"));
+cpSync(join(agentRoot, "sourcing-dashboard.html"), join(dist, "sourcing-dashboard.html"));
+cpSync(join(agentRoot, "sourcing-dashboard.js"), join(dist, "sourcing-dashboard.js"));
+
+if (existsSync(join(agentRoot, "functions"))) {
+  copyDirectory(join(agentRoot, "functions"), join(dist, "functions"));
 }
 
 console.log(`Built RentalReady static site into ${dist}`);

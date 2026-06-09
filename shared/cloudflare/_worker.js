@@ -555,7 +555,7 @@ async function handleStockSearch(request) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const agentHost = url.hostname === "agent.rentalreadyappliances.com";
+    const agentHost = ["agent.rentalreadyappliances.com", "sourcing.rentalreadyappliances.com"].includes(url.hostname);
 
     if (url.pathname === "/api/tenders") {
       return handleTenderSearch(request);
