@@ -5,8 +5,8 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260609a/, "dashboard must load the local-authority opportunity search stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260609a/, "dashboard must load the local-authority opportunity search script version");
+assert.match(html, /styles\.css\?v=20260609b/, "dashboard must load the nationwide borough opportunity search stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260609b/, "dashboard must load the nationwide borough opportunity search script version");
 assert.match(html, /<option selected>Whole UK<\/option>/, "dashboard must default contract search area to Whole UK");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
@@ -15,7 +15,7 @@ assert.match(html, /Saved contract and tender opportunities/, "dashboard must sa
 assert.match(html, /Stock fulfilment agent/, "dashboard must rank stock against selected opportunities");
 assert.match(html, /Most viable live opportunities/, "highlighted contract area must be the live opportunity board");
 assert.match(html, /Run test-and-learn/, "dashboard must expose the full test-and-learn control");
-assert.match(html, /Local\/regional portals watchlist/, "dashboard must expose local and regional public-sector portal routes");
+assert.match(html, /Nationwide borough portals/, "dashboard must expose nationwide borough public-sector portal routes");
 assert.match(html, /Continuous learning loop/, "dashboard must expose continuous learning wording");
 assert.match(html, /id="modelHealth"/, "dashboard must expose model health panel");
 assert.match(html, /id="sourceLearning"/, "dashboard must expose source learning panel");
@@ -35,6 +35,17 @@ assert.match(script, /Leicester City Council procurement/, "front end must inclu
 assert.match(script, /Leicestershire County Council procurement/, "front end must include Leicestershire County Council procurement routes");
 assert.match(script, /Blaby District Council procurement/, "front end must include borough procurement routes");
 assert.match(script, /LOCAL_AUTHORITY_SWEEP/, "front end must run a focused local-authority buyer sweep");
+assert.match(script, /NATIONAL_BOROUGH_SWEEPS/, "front end must run nationwide borough buyer sweeps");
+assert.match(script, /NATIONAL_BOROUGH_PORTALS/, "front end must expose nationwide borough portal families");
+assert.match(script, /National ProContract portal/, "front end must include national ProContract coverage");
+assert.match(script, /The Chest - North West/, "front end must include North West borough portal coverage");
+assert.match(script, /YORtender coverage - Yorkshire and Humber/, "front end must include Yorkshire and Humber portal coverage");
+assert.match(script, /NEPO Open - North East/, "front end must include North East portal coverage");
+assert.match(script, /London Tenders Portal/, "front end must include London borough portal coverage");
+assert.match(script, /South East Business Portal/, "front end must include South East local authority portal coverage");
+assert.match(script, /Kent Business Portal/, "front end must include Kent portal coverage");
+assert.match(script, /Supplying the South West/, "front end must include South West local authority portal coverage");
+assert.match(script, /Nationwide borough watchlist generated/, "regional mode must explain nationwide borough coverage");
 assert.match(script, /Public Contracts Scotland/, "front end must include Scottish procurement watchlist routes");
 assert.match(script, /Sell2Wales/, "front end must include Welsh procurement watchlist routes");
 assert.match(script, /eTendersNI/, "front end must include Northern Ireland procurement watchlist routes");

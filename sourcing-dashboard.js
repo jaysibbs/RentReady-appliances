@@ -30,6 +30,86 @@ const FIND_TENDER_SEARCH_BASE = "https://www.find-tender.service.gov.uk/Search/R
 const CONTRACTS_FINDER_SEARCH_BASE = "https://www.contractsfinder.service.gov.uk/Search/Results";
 const LOCAL_AUTHORITY_SWEEP =
   "Leicester City Council OR Leicestershire County Council OR Blaby District Council OR Charnwood Borough Council OR Harborough District Council OR Hinckley and Bosworth Borough Council OR Melton Borough Council OR North West Leicestershire District Council OR Oadby and Wigston Borough Council OR Rutland County Council";
+const NATIONAL_BOROUGH_SWEEPS = [
+  {
+    name: "Northern borough buyer sweep",
+    remit: "Contracts Finder sweep across North West, Yorkshire, Humber, and North East borough buyers.",
+    buyerQuery: "Manchester City Council OR Liverpool City Council OR Leeds City Council OR Sheffield City Council OR Hull City Council OR Newcastle City Council OR Sunderland City Council OR Middlesbrough Council OR Cheshire East Council OR Lancashire County Council",
+  },
+  {
+    name: "Midlands borough buyer sweep",
+    remit: "Contracts Finder sweep across East Midlands and West Midlands local authority buyers.",
+    buyerQuery: "Birmingham City Council OR Coventry City Council OR Wolverhampton City Council OR Nottingham City Council OR Derby City Council OR Leicester City Council OR Leicestershire County Council OR Staffordshire County Council OR Warwickshire County Council OR Northamptonshire Council",
+  },
+  {
+    name: "London borough buyer sweep",
+    remit: "Contracts Finder sweep across London borough buyers for housing, temporary accommodation, and operational goods contracts.",
+    buyerQuery: "London Borough OR City of London Corporation OR Greater London Authority OR Westminster City Council OR Royal Borough of Greenwich OR London Borough of Barnet OR London Borough of Croydon OR London Borough of Waltham Forest",
+  },
+  {
+    name: "South and South West borough buyer sweep",
+    remit: "Contracts Finder sweep across South East, Kent, South Coast, and South West local authority buyers.",
+    buyerQuery: "Kent County Council OR Oxfordshire County Council OR Hampshire County Council OR Bristol City Council OR Plymouth City Council OR Cornwall Council OR Dorset Council OR Somerset Council OR Gloucestershire County Council OR Isle of Wight Council",
+  },
+];
+const NATIONAL_BOROUGH_PORTALS = [
+  {
+    name: "National ProContract portal",
+    mode: "watchlist",
+    remit: "Core ProContract route used by many local authorities and regional portals for supplier registration and opportunity alerts.",
+    cta: "Open ProContract",
+    urlFor: () => "https://procontract.due-north.com/SupplierPreLoginHome/",
+  },
+  {
+    name: "The Chest - North West",
+    mode: "watchlist",
+    remit: "North West local authority procurement portal for borough and council opportunities.",
+    cta: "Open The Chest",
+    urlFor: () => "https://www.the-chest.org.uk/index.html",
+  },
+  {
+    name: "YORtender coverage - Yorkshire and Humber",
+    mode: "watchlist",
+    remit: "Yorkshire and Humber coverage through the verified ProContract landing route plus the northern borough buyer sweep.",
+    cta: "Open ProContract",
+    urlFor: () => "https://procontract.due-north.com/SupplierPreLoginHome/",
+  },
+  {
+    name: "NEPO Open - North East",
+    mode: "watchlist",
+    remit: "North East procurement route replacing the legacy NEPO portal for local authority opportunities.",
+    cta: "Open NEPO",
+    urlFor: () => "https://www.nepo.org/open",
+  },
+  {
+    name: "London Tenders Portal",
+    mode: "watchlist",
+    remit: "London borough procurement portal for council contracts, registration, and tender documentation.",
+    cta: "Open London portal",
+    urlFor: () => "https://www.londontenders.org/",
+  },
+  {
+    name: "South East Business Portal",
+    mode: "watchlist",
+    remit: "South East local authority portal for forthcoming opportunities, contract registers, and supplier alerts.",
+    cta: "Open SEBP",
+    urlFor: () => "https://sebp.due-north.com/",
+  },
+  {
+    name: "Kent Business Portal",
+    mode: "watchlist",
+    remit: "Kent-area council portal for current opportunities, future tenders, and contract registers.",
+    cta: "Open Kent portal",
+    urlFor: () => "https://www.kentbusinessportal.org.uk/",
+  },
+  {
+    name: "Supplying the South West",
+    mode: "watchlist",
+    remit: "South West procurement portal for council and public-sector opportunities.",
+    cta: "Open South West",
+    urlFor: () => "https://www.supplyingthesouthwest.org.uk/",
+  },
+];
 const PUBLIC_PROCUREMENT_SOURCES = [
   {
     name: "Contracts Finder",
@@ -47,6 +127,7 @@ const PUBLIC_PROCUREMENT_SOURCES = [
     name: "East Midlands Tenders / ProContract",
     mode: "watchlist",
     remit: "Primary local-authority portal route for Leicester, Leicestershire, and nearby East Midlands councils.",
+    cta: "Open East Midlands",
     urlFor: () => "https://www.eastmidstenders.org/",
   },
   {
@@ -59,44 +140,58 @@ const PUBLIC_PROCUREMENT_SOURCES = [
     name: "Leicester City Council procurement",
     mode: "watchlist",
     remit: "City council supplier route for local contract opportunities, procurement guidance, and registration instructions.",
+    cta: "Open Leicester search",
     urlFor: () => "https://www.leicester.gov.uk/search?query=procurement",
   },
   {
     name: "Leicestershire County Council procurement",
     mode: "watchlist",
     remit: "County council buyer route checked through East Midlands Tenders and the local authority sweep.",
+    cta: "Open East Midlands",
     urlFor: () => "https://www.eastmidstenders.org/",
   },
   {
     name: "Blaby District Council procurement",
     mode: "watchlist",
     remit: "Local borough route for smaller district-level supply contracts and procurement notices.",
+    cta: "Open Blaby business",
     urlFor: () => "https://www.blaby.gov.uk/business-licensing-and-investment/",
   },
   {
     name: "Harborough District Council procurement",
     mode: "watchlist",
     remit: "District procurement route for local supply, facilities, housing, and operational contract notices.",
+    cta: "Open Harborough search",
     urlFor: () => "https://www.harborough.gov.uk/site_search/results/?q=procurement",
   },
   {
     name: "Hinckley and Bosworth procurement",
     mode: "watchlist",
     remit: "Borough procurement route for local contract opportunities and supplier guidance.",
+    cta: "Open H&B tenders",
     urlFor: () => "https://www.hinckley-bosworth.gov.uk/info/200023/contracts_and_tenders",
   },
   {
     name: "Melton Borough Council procurement",
     mode: "watchlist",
     remit: "Borough buyer route checked through East Midlands Tenders and the local authority sweep.",
+    cta: "Open East Midlands",
     urlFor: () => "https://www.eastmidstenders.org/",
   },
   {
     name: "Rutland County Council procurement",
     mode: "watchlist",
     remit: "Neighbouring county procurement route for goods and operational contracts within reachable delivery distance.",
+    cta: "Open Rutland search",
     urlFor: () => "https://www.rutland.gov.uk/search?query=procurement",
   },
+  ...NATIONAL_BOROUGH_SWEEPS.map((source) => ({
+    name: source.name,
+    mode: "watchlist",
+    remit: source.remit,
+    urlFor: (term, settings) => contractsFinderSearchUrl(`${term} ${source.buyerQuery}`, settings),
+  })),
+  ...NATIONAL_BOROUGH_PORTALS,
   {
     name: "Public Contracts Scotland",
     mode: "watchlist",
@@ -557,16 +652,19 @@ function sourceNameFor(record) {
 
 function procurementSourceLinks(terms, settings) {
   const uniqueTerms = [...new Set(terms.filter(Boolean))].slice(0, 4);
-  return PUBLIC_PROCUREMENT_SOURCES.map((source) => `
-    <div class="source-route-card ${source.mode}">
-      <strong>${source.name}</strong>
-      <span>${source.mode === "live" ? "Live feed" : source.mode === "watchlist" ? "Watchlist route" : "Supplier route"}</span>
-      <p>${source.remit}</p>
-      <div>
-        ${uniqueTerms.map((term) => `<a class="button secondary" href="${source.urlFor(term, settings)}" target="_blank" rel="noopener">${term}</a>`).join("")}
+  return PUBLIC_PROCUREMENT_SOURCES.map((source) => {
+    const links = source.cta
+      ? `<a class="button secondary" href="${source.urlFor(uniqueTerms[0] || "", settings)}" target="_blank" rel="noopener">${source.cta}</a>`
+      : uniqueTerms.map((term) => `<a class="button secondary" href="${source.urlFor(term, settings)}" target="_blank" rel="noopener">${term}</a>`).join("");
+    return `
+      <div class="source-route-card ${source.mode}">
+        <strong>${source.name}</strong>
+        <span>${source.mode === "live" ? "Live feed" : source.mode === "watchlist" ? "Watchlist route" : "Supplier route"}</span>
+        <p>${source.remit}</p>
+        <div>${links}</div>
       </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
 function stockSourceSummary(coverage, requiredQuantity = 1) {
@@ -1358,9 +1456,9 @@ async function fetchLiveTenders() {
   if (settings.source === "regional") {
     generateTenderSearches();
     if (liveTenderStatus) {
-      liveTenderStatus.innerHTML = `<strong>Local authority watchlist generated.</strong><span>East Midlands Tenders, Leicester/Leicestershire borough portals, Scotland, Wales, Northern Ireland, and CCS routes need portal-side verification before they can be treated as live fetched results. Run test-and-learn with Government goods routes for automatic Contracts Finder and Find a Tender consolidation.</span>`;
+      liveTenderStatus.innerHTML = `<strong>Nationwide borough watchlist generated.</strong><span>East Midlands Tenders, ProContract, The Chest, YORtender, NEPO Open, London Tenders, South East Business Portal, Kent Business Portal, South West, Scotland, Wales, Northern Ireland, and CCS routes need portal-side verification before they can be treated as live fetched results. Run test-and-learn with Government goods routes for automatic Contracts Finder and Find a Tender consolidation.</span>`;
     }
-    tenderResults.innerHTML = `<p class="empty-state">Local authority and regional portal links are ready above. Use them for manual source checking, then paste any relevant notice into the fallback if a portal does not expose a stable live feed.</p>`;
+    tenderResults.innerHTML = `<p class="empty-state">Nationwide borough, local authority, and regional portal links are ready above. Use them for manual source checking, then paste any relevant notice into the fallback if a portal does not expose a stable live feed.</p>`;
     activeTenderReview = null;
     renderTenderWorkspace(null);
     return [];

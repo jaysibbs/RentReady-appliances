@@ -32,7 +32,16 @@ The live automated feed currently consolidates:
 
 The watchlist/source route panel also opens:
 
+- National ProContract portal
 - East Midlands Tenders / ProContract
+- The Chest - North West
+- YORtender - Yorkshire and Humber
+- NEPO Open - North East
+- London Tenders Portal
+- South East Business Portal
+- Kent Business Portal
+- Supplying the South West
+- Northern, Midlands, London, and South/South West borough buyer sweeps through Contracts Finder
 - Leicester City Council procurement
 - Leicestershire County Council procurement
 - Blaby District Council procurement
@@ -46,7 +55,7 @@ The watchlist/source route panel also opens:
 - eTendersNI
 - Crown Commercial Service supplier routes
 
-Local authority, regional, and framework routes should be manually verified until a stable official feed is added for that portal. Treat borough portals as a daily sales lane: they can reveal smaller goods, equipment, housing, void-property, facilities, and temporary-accommodation supply needs before RentalReady is ready for large national frameworks.
+Local authority, regional, and framework routes should be manually verified until a stable official feed is added for that portal. Treat borough portals as a daily sales lane nationwide: they can reveal smaller goods, equipment, housing, void-property, facilities, and temporary-accommodation supply needs before RentalReady is ready for large national frameworks.
 
 ## Stock Source Coverage
 
