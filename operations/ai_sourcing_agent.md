@@ -84,6 +84,8 @@ The preferred first-contract value band is roughly 15,000-120,000 GBP, with 15,0
 
 Default search terms include CPV and route signals such as `39700000`, `39710000`, `temporary accommodation appliances`, `void property appliances`, and `housing association white goods`.
 
+Local borough portals are now a priority acquisition lane. The agent should check East Midlands Tenders / ProContract and the Leicester, Leicestershire, Blaby, Harborough, Hinckley and Bosworth, Melton, Rutland, Charnwood, North West Leicestershire, and Oadby and Wigston buyer routes alongside the live government feeds. These routes are useful for startup growth because they can surface smaller goods, equipment, housing, void-property, temporary-accommodation, facilities, and operational supply contracts before RentalReady has the track record required for larger frameworks.
+
 ## Agent Domain
 
 Use `agent.rentalreadyappliances.com` for the internal sourcing agent once the subdomain is added to Cloudflare Pages custom domains.
@@ -117,6 +119,7 @@ The live feed supports three modes:
 - `Goods contracts first`: merged Contracts Finder and Find a Tender results, ranked with goods opportunities ahead of service-heavy notices.
 - `Contracts Finder only`: useful for smaller below-threshold opportunities and local authority supply contracts.
 - `Find a Tender only`: useful for larger notices where the specification is clearly supply-led and stock coverage can be validated.
+- `Local/regional portals watchlist`: council, borough, devolved-government, and supplier-route links that must be checked portal-side before the result is treated as live fetched data.
 
 The goods-first score boosts signals such as supply, goods, equipment, appliances, white goods, fridges, washing machines, cookers, dishwashers, microwaves, materials, and stock. It downgrades service-heavy signals such as consultancy, transport, passenger assistant, staffing, cleaning service, managed service, mechanical works, maintenance service, and broad works packages.
 

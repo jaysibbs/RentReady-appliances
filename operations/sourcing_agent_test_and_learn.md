@@ -32,12 +32,21 @@ The live automated feed currently consolidates:
 
 The watchlist/source route panel also opens:
 
+- East Midlands Tenders / ProContract
+- Leicester City Council procurement
+- Leicestershire County Council procurement
+- Blaby District Council procurement
+- Harborough District Council procurement
+- Hinckley and Bosworth Borough Council procurement
+- Melton Borough Council procurement
+- Rutland County Council procurement
+- A focused Contracts Finder buyer sweep across Leicester, Leicestershire, Charnwood, North West Leicestershire, Oadby and Wigston, and neighbouring borough councils
 - Public Contracts Scotland
 - Sell2Wales
 - eTendersNI
 - Crown Commercial Service supplier routes
 
-Regional and framework routes should be manually verified until a stable official feed is added for that portal.
+Local authority, regional, and framework routes should be manually verified until a stable official feed is added for that portal. Treat borough portals as a daily sales lane: they can reveal smaller goods, equipment, housing, void-property, facilities, and temporary-accommodation supply needs before RentalReady is ready for large national frameworks.
 
 ## Stock Source Coverage
 

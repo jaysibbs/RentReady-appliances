@@ -28,6 +28,8 @@ const STARTUP_ANCHOR_MAX = 140000;
 const JOHN_PYE_SEARCH_BASE = "https://www.johnpye.co.uk/";
 const FIND_TENDER_SEARCH_BASE = "https://www.find-tender.service.gov.uk/Search/Results";
 const CONTRACTS_FINDER_SEARCH_BASE = "https://www.contractsfinder.service.gov.uk/Search/Results";
+const LOCAL_AUTHORITY_SWEEP =
+  "Leicester City Council OR Leicestershire County Council OR Blaby District Council OR Charnwood Borough Council OR Harborough District Council OR Hinckley and Bosworth Borough Council OR Melton Borough Council OR North West Leicestershire District Council OR Oadby and Wigston Borough Council OR Rutland County Council";
 const PUBLIC_PROCUREMENT_SOURCES = [
   {
     name: "Contracts Finder",
@@ -40,6 +42,60 @@ const PUBLIC_PROCUREMENT_SOURCES = [
     mode: "live",
     remit: "High-value UK public procurement notices and early engagement.",
     urlFor: (term, settings) => findTenderSearchUrl(term, settings),
+  },
+  {
+    name: "East Midlands Tenders / ProContract",
+    mode: "watchlist",
+    remit: "Primary local-authority portal route for Leicester, Leicestershire, and nearby East Midlands councils.",
+    urlFor: () => "https://www.eastmidstenders.org/",
+  },
+  {
+    name: "Leicester borough buyer sweep",
+    mode: "watchlist",
+    remit: "Contracts Finder sweep focused on Leicester, Leicestershire, and borough/district buyers where smaller goods contracts often appear.",
+    urlFor: (term, settings) => contractsFinderSearchUrl(`${term} ${LOCAL_AUTHORITY_SWEEP}`, settings),
+  },
+  {
+    name: "Leicester City Council procurement",
+    mode: "watchlist",
+    remit: "City council supplier route for local contract opportunities, procurement guidance, and registration instructions.",
+    urlFor: () => "https://www.leicester.gov.uk/business/procurement-and-tendering/",
+  },
+  {
+    name: "Leicestershire County Council procurement",
+    mode: "watchlist",
+    remit: "County council route for supplier registration, active opportunities, and procurement rules.",
+    urlFor: () => "https://www.leicestershire.gov.uk/business-and-consumers/selling-to-the-council",
+  },
+  {
+    name: "Blaby District Council procurement",
+    mode: "watchlist",
+    remit: "Local borough route for smaller district-level supply contracts and procurement notices.",
+    urlFor: () => "https://www.blaby.gov.uk/business-licensing-and-investment/doing-business-with-the-council/contracts-and-procurement/",
+  },
+  {
+    name: "Harborough District Council procurement",
+    mode: "watchlist",
+    remit: "District procurement route for local supply, facilities, housing, and operational contract notices.",
+    urlFor: () => "https://www.harborough.gov.uk/info/20005/business/90/procurement",
+  },
+  {
+    name: "Hinckley and Bosworth procurement",
+    mode: "watchlist",
+    remit: "Borough procurement route for local contract opportunities and supplier guidance.",
+    urlFor: () => "https://www.hinckley-bosworth.gov.uk/info/200023/contracts_and_tenders",
+  },
+  {
+    name: "Melton Borough Council procurement",
+    mode: "watchlist",
+    remit: "Borough procurement route for local supplier opportunities and tender notices.",
+    urlFor: () => "https://www.melton.gov.uk/business-licensing-and-investment/business/contracts-and-tenders/",
+  },
+  {
+    name: "Rutland County Council procurement",
+    mode: "watchlist",
+    remit: "Neighbouring county procurement route for goods and operational contracts within reachable delivery distance.",
+    urlFor: () => "https://www.rutland.gov.uk/business-licensing/procurement",
   },
   {
     name: "Public Contracts Scotland",
@@ -1071,7 +1127,7 @@ function renderTenderSummary() {
       <div><span>Region</span><strong>${settings.region}</strong></div>
       <div><span>Anchor cap</span><strong>${money(settings.valueCap)}</strong></div>
       <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong></div>
-      <div><span>Feed</span><strong>${settings.source === "contracts" ? "Contracts" : settings.source === "tenders" ? "Tenders" : settings.source === "regional" ? "Regional watch" : "Gov routes"}</strong></div>
+      <div><span>Feed</span><strong>${settings.source === "contracts" ? "Contracts" : settings.source === "tenders" ? "Tenders" : settings.source === "regional" ? "Local watch" : "Gov routes"}</strong></div>
       <div><span>Mode</span><strong>Test and learn</strong></div>
     </div>
     <p>Start UK-wide but stay practical: temporary accommodation, void-property, housing association, student accommodation, FM subcontract supply, and goods/material supply. The agent downgrades service-heavy notices unless the stock requirement can be fulfilled, priced, and delivered before submission and contract delivery dates.</p>
@@ -1302,9 +1358,9 @@ async function fetchLiveTenders() {
   if (settings.source === "regional") {
     generateTenderSearches();
     if (liveTenderStatus) {
-      liveTenderStatus.innerHTML = `<strong>Regional government watchlist generated.</strong><span>Scotland, Wales, Northern Ireland, CCS and local portal routes need portal-side verification before they can be treated as live fetched results. Run test-and-learn with Government goods routes for automatic Contracts Finder and Find a Tender consolidation.</span>`;
+      liveTenderStatus.innerHTML = `<strong>Local authority watchlist generated.</strong><span>East Midlands Tenders, Leicester/Leicestershire borough portals, Scotland, Wales, Northern Ireland, and CCS routes need portal-side verification before they can be treated as live fetched results. Run test-and-learn with Government goods routes for automatic Contracts Finder and Find a Tender consolidation.</span>`;
     }
-    tenderResults.innerHTML = `<p class="empty-state">Regional portal links are ready above. Use them for manual source checking, then paste any relevant notice into the fallback if a portal does not expose a stable live feed.</p>`;
+    tenderResults.innerHTML = `<p class="empty-state">Local authority and regional portal links are ready above. Use them for manual source checking, then paste any relevant notice into the fallback if a portal does not expose a stable live feed.</p>`;
     activeTenderReview = null;
     renderTenderWorkspace(null);
     return [];
