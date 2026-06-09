@@ -159,6 +159,26 @@
               <h3 id="opportunity-ledger-title">Opportunity record ledger</h3>
               <p>Every saved contract or tender becomes a structured opportunity record with requirement, value, stock coverage, ROI, bid status, and learning history.</p>
             </div>
+            <div class="opportunity-controls">
+              <label>
+                Record status
+                <select id="opportunityRecordFilter">
+                  <option value="all" selected>All opportunity records</option>
+                  <option value="active">Active opportunities</option>
+                  <option value="bid-ready">Bid ready</option>
+                  <option value="stock-gap">Stock gap</option>
+                  <option value="submitted">Submitted</option>
+                  <option value="won">Won</option>
+                  <option value="lost">Lost</option>
+                  <option value="no-bid">No bid</option>
+                </select>
+              </label>
+              <label>
+                Search records
+                <input id="opportunityRecordSearch" type="search" placeholder="Authority, item, source, postcode">
+              </label>
+            </div>
+            <div class="opportunity-record-detail" id="opportunityRecordDetail" aria-live="polite"></div>
             <div class="opportunity-record-list" id="opportunityRecordList"></div>
           </section>
         </section>

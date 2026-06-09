@@ -390,6 +390,9 @@ const outcomeLearning = document.querySelector("#outcomeLearning");
 const activeDemand = document.querySelector("#activeDemand");
 const demandList = document.querySelector("#demandList");
 const opportunityRecordList = document.querySelector("#opportunityRecordList");
+const opportunityRecordFilter = document.querySelector("#opportunityRecordFilter");
+const opportunityRecordSearch = document.querySelector("#opportunityRecordSearch");
+const opportunityRecordDetail = document.querySelector("#opportunityRecordDetail");
 const tenderSummary = document.querySelector("#tenderSummary");
 const tenderSearchLinks = document.querySelector("#tenderSearchLinks");
 const tenderResults = document.querySelector("#tenderResults");
@@ -401,6 +404,7 @@ const agentSummary = document.querySelector("#agentSummary");
 const agentSearchLinks = document.querySelector("#agentSearchLinks");
 const agentResults = document.querySelector("#agentResults");
 let activeTenderReview = null;
+let activeOpportunityRecordId = load("rentalready_sourcing_active_opportunity_record", "");
 const workflowTabs = [...document.querySelectorAll("[data-step-tab]")];
 const workflowPanels = [...document.querySelectorAll("[data-step-panel]")];
 const STEP_HASH_MAP = {
@@ -676,6 +680,132 @@ function syncOpportunityRecords() {
   state.opportunityRecords = records
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
     .slice(0, 250);
+}
+
+function opportunityRecordStatusKey(record) {
+  return normalise(record?.status || record?.bid?.decision || "review").replace(/\s+/g, "-");
+}
+
+function recordReadinessGates(record) {
+  const target = number(record?.economics?.roiTarget) || DEFAULT_ROI_TARGET;
+  const requiredQuantity = number(record?.requirement?.quantity) || 1;
+  const matchedQuantity = number(record?.stock?.matchedQuantity);
+  const approvedQuantity = number(record?.stock?.approvedQuantity);
+  const lowestRoi = number(record?.economics?.lowestRoi);
+  const totalValue = number(record?.requirement?.totalValue);
+  const landedCost = number(record?.economics?.landedCost);
+  const deadline = record?.requirement?.deadline || "";
+  return [
+    {
+      key: "value",
+      label: "Contract value confirmed",
+      pass: totalValue > 0,
+      detail: totalValue > 0 ? `${money(totalValue)} total value recorded` : "Add the contract value before committing stock.",
+    },
+    {
+      key: "deadline",
+      label: "Submission and delivery timing known",
+      pass: Boolean(deadline),
+      detail: deadline ? `Deadline: ${deadline}` : "Deadline is missing from the opportunity record.",
+    },
+    {
+      key: "stock",
+      label: "Viable stock covers requirement",
+      pass: matchedQuantity >= requiredQuantity,
+      detail: `${matchedQuantity}/${requiredQuantity} viable units matched from live and saved stock evidence.`,
+    },
+    {
+      key: "approval",
+      label: "Stock evidence approved",
+      pass: approvedQuantity >= requiredQuantity,
+      detail: `${approvedQuantity}/${requiredQuantity} units approved for bid-pack evidence.`,
+    },
+    {
+      key: "roi",
+      label: `ROI clears ${target}% target`,
+      pass: lowestRoi >= target,
+      detail: lowestRoi ? `${percent(lowestRoi)} lowest ROI against matched stock` : "ROI cannot be confirmed until stock is matched.",
+    },
+    {
+      key: "cost",
+      label: "Acquisition cost is known",
+      pass: landedCost > 0,
+      detail: landedCost > 0 ? `${money(landedCost)} estimated landed acquisition cost` : "No landed acquisition cost recorded yet.",
+    },
+  ];
+}
+
+function recordReadinessScore(record) {
+  const gates = recordReadinessGates(record);
+  const passScore = gates.filter((gate) => gate.pass).length / gates.length * 70;
+  const coverageScore = Math.min(number(record?.stock?.matchedCoveragePercent), 100) * 0.2;
+  const roiTarget = number(record?.economics?.roiTarget) || DEFAULT_ROI_TARGET;
+  const roiScore = Math.min(number(record?.economics?.lowestRoi) / Math.max(roiTarget, 1), 1) * 10;
+  return Math.round(clamp(passScore + coverageScore + roiScore));
+}
+
+function recordAction(record) {
+  const gates = recordReadinessGates(record);
+  const missing = gates.filter((gate) => !gate.pass).map((gate) => gate.key);
+  if (!missing.length) {
+    return {
+      tone: "pass",
+      label: "Bid pack ready",
+      detail: "The requirement, ROI, deadline, cost and approved stock evidence are strong enough to start the bid pack.",
+    };
+  }
+  if (missing.includes("stock")) {
+    return {
+      tone: "hold",
+      label: "Stock gap",
+      detail: "Do not bid yet. The agent needs more stock evidence before the contract can be fulfilled safely.",
+    };
+  }
+  if (missing.includes("approval")) {
+    return {
+      tone: "prepare",
+      label: "Approve stock evidence",
+      detail: "Matched stock exists, but the lots need review and approval before the bid pack can rely on them.",
+    };
+  }
+  if (missing.includes("roi") || missing.includes("cost")) {
+    return {
+      tone: "hold",
+      label: "Commercials incomplete",
+      detail: "The agent needs confirmed landed costs and ROI before this is safe to pursue.",
+    };
+  }
+  return {
+    tone: "prepare",
+    label: "Record needs completion",
+    detail: "Fill the missing opportunity details, then rerun stock matching and bid-pack readiness.",
+  };
+}
+
+function filteredOpportunityRecords() {
+  const filter = opportunityRecordFilter?.value || "all";
+  const search = normalise(opportunityRecordSearch?.value || "");
+  return state.opportunityRecords.filter((record) => {
+    const status = opportunityRecordStatusKey(record);
+    const score = recordReadinessScore(record);
+    const stockGap = number(record?.stock?.matchedQuantity) < number(record?.requirement?.quantity || 1);
+    const active = !["closed", "won", "lost", "no-bid"].includes(status);
+    const matchesFilter = filter === "all"
+      || (filter === "active" && active)
+      || (filter === "bid-ready" && score >= 85)
+      || (filter === "stock-gap" && stockGap)
+      || status === filter;
+    const haystack = normalise([
+      record.title,
+      record.authority,
+      record.source,
+      record.platform,
+      record.requirement?.category,
+      record.requirement?.postcode,
+      record.requirement?.region,
+    ].filter(Boolean).join(" "));
+    return matchesFilter && (!search || haystack.includes(search));
+  });
 }
 
 function demandValue(brief) {
@@ -2740,26 +2870,37 @@ function renderOpportunityRecords() {
   if (!opportunityRecordList) return;
   if (!state.opportunityRecords.length) {
     opportunityRecordList.innerHTML = `<p class="empty-state">No structured opportunity records yet. Save a live contract, tender, or manual opportunity to create the first record.</p>`;
+    if (opportunityRecordDetail) {
+      opportunityRecordDetail.innerHTML = `<p class="empty-state">Select or save an opportunity record to see readiness gates, stock-source coverage, ROI and bid actions.</p>`;
+    }
     return;
   }
 
-  opportunityRecordList.innerHTML = state.opportunityRecords.map((record) => `
-    <article class="opportunity-record-card ${record.stock.sourcePlanTone}">
+  if (!state.opportunityRecords.some((record) => record.id === activeOpportunityRecordId)) {
+    activeOpportunityRecordId = state.opportunityRecords[0]?.id || "";
+    save("rentalready_sourcing_active_opportunity_record", activeOpportunityRecordId);
+  }
+
+  const records = filteredOpportunityRecords();
+  opportunityRecordList.innerHTML = records.length ? records.map((record) => {
+    const action = recordAction(record);
+    const readiness = recordReadinessScore(record);
+    const isActive = record.id === activeOpportunityRecordId;
+    return `
+    <article class="opportunity-record-card ${action.tone} ${isActive ? "active" : ""}">
       <div class="candidate-topline">
         <span>${escapeHtml(record.status)}</span>
-        <strong>${Math.round(record.stock.matchedCoveragePercent)}% matched</strong>
+        <strong>${readiness}% ready</strong>
       </div>
       <h3>${escapeHtml(record.title)}</h3>
       <p>${escapeHtml(record.authority)} • ${escapeHtml(record.source)} • ${escapeHtml(record.requirement.region || "UK route")}</p>
-      <dl>
-        <div><dt>Record ID</dt><dd>${escapeHtml(record.id)}</dd></div>
-        <div><dt>Requirement</dt><dd>${record.requirement.quantity} x ${escapeHtml(record.requirement.category)}</dd></div>
-        <div><dt>Value</dt><dd>${record.requirement.totalValue ? money(record.requirement.totalValue) : "TBC"} total / ${record.requirement.unitValue ? money(record.requirement.unitValue) : "TBC"} unit</dd></div>
-        <div><dt>Deadline</dt><dd>${escapeHtml(record.requirement.deadline || "TBC")}</dd></div>
-        <div><dt>Stock plan</dt><dd>${escapeHtml(record.stock.sourcePlan)}</dd></div>
-        <div><dt>ROI / profit</dt><dd>${record.economics.lowestRoi ? percent(record.economics.lowestRoi) : "TBC"} / ${money(record.economics.projectedProfit)}</dd></div>
-      </dl>
-      <p>${escapeHtml(record.stock.sourcePlanMessage)}</p>
+      <div class="opportunity-record-strip">
+        <div><span>Requirement</span><strong>${record.requirement.quantity} x ${escapeHtml(record.requirement.category)}</strong></div>
+        <div><span>Value</span><strong>${record.requirement.totalValue ? money(record.requirement.totalValue) : "TBC"}</strong></div>
+        <div><span>Stock</span><strong>${record.stock.matchedQuantity}/${record.requirement.quantity}</strong></div>
+        <div><span>ROI</span><strong>${record.economics.lowestRoi ? percent(record.economics.lowestRoi) : "TBC"}</strong></div>
+      </div>
+      <p><strong>${escapeHtml(action.label)}:</strong> ${escapeHtml(action.detail)}</p>
       <div class="record-progress">
         <span>Matched ${record.stock.matchedQuantity}/${record.requirement.quantity}</span>
         <meter min="0" max="100" value="${record.stock.matchedCoveragePercent}"></meter>
@@ -2767,11 +2908,116 @@ function renderOpportunityRecords() {
         <meter min="0" max="100" value="${record.stock.approvedCoveragePercent}"></meter>
       </div>
       <div class="dashboard-actions">
-        <button class="button primary" type="button" data-demand-select="${record.demandId}">Open matching workflow</button>
-        ${record.url ? `<a class="button secondary" href="${record.url}" target="_blank" rel="noopener">Open notice</a>` : ""}
+        <button class="button primary" type="button" data-record-review="${record.id}">${isActive ? "Reviewing" : "Review record"}</button>
+        <button class="button secondary" type="button" data-demand-select="${record.demandId}">Open matching workflow</button>
+        <button class="button secondary" type="button" data-record-export="${record.id}">Export JSON</button>
       </div>
     </article>
-  `).join("");
+  `;
+  }).join("") : `<p class="empty-state">No opportunity records match the current filter.</p>`;
+
+  const detailRecord = state.opportunityRecords.find((record) => record.id === activeOpportunityRecordId) || records[0] || state.opportunityRecords[0];
+  renderOpportunityRecordDetail(detailRecord);
+}
+
+function renderOpportunityRecordDetail(record) {
+  if (!opportunityRecordDetail) return;
+  if (!record) {
+    opportunityRecordDetail.innerHTML = `<p class="empty-state">Select an opportunity record to see bid readiness.</p>`;
+    return;
+  }
+  const action = recordAction(record);
+  const readiness = recordReadinessScore(record);
+  const gates = recordReadinessGates(record);
+  const sources = Array.isArray(record.stock?.sources) ? record.stock.sources : [];
+  const sourceRows = sources.length ? sources.map((source) => `
+    <tr>
+      <td>${escapeHtml(source.name)}</td>
+      <td>${source.quantity}</td>
+      <td>${source.approvedQuantity}</td>
+      <td>${source.lowestRoi ? percent(source.lowestRoi) : "TBC"}</td>
+      <td>${money(source.projectedProfit)}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="5">No stock source evidence matched yet.</td></tr>`;
+
+  opportunityRecordDetail.innerHTML = `
+    <article class="opportunity-detail-card ${action.tone}">
+      <div class="detail-heading">
+        <div>
+          <p class="eyebrow">Active opportunity record</p>
+          <h3>${escapeHtml(record.title)}</h3>
+          <p>${escapeHtml(record.authority)} • ${escapeHtml(record.platform)} • ${escapeHtml(record.requirement.postcode || record.requirement.region || "UK fulfilment")}</p>
+        </div>
+        <div class="readiness-badge">
+          <strong>${readiness}%</strong>
+          <span>${escapeHtml(action.label)}</span>
+        </div>
+      </div>
+      <div class="detail-kpis">
+        <div><span>Contract value</span><strong>${record.requirement.totalValue ? money(record.requirement.totalValue) : "TBC"}</strong></div>
+        <div><span>Acquisition cost</span><strong>${record.economics.landedCost ? money(record.economics.landedCost) : "TBC"}</strong></div>
+        <div><span>Projected profit</span><strong>${money(record.economics.projectedProfit)}</strong></div>
+        <div><span>Lowest ROI</span><strong>${record.economics.lowestRoi ? percent(record.economics.lowestRoi) : "TBC"}</strong></div>
+        <div><span>Deadline</span><strong>${escapeHtml(record.requirement.deadline || "TBC")}</strong></div>
+      </div>
+      <p class="opportunity-action-note">${escapeHtml(action.detail)} ${escapeHtml(record.stock.sourcePlanMessage || "")}</p>
+      <div class="readiness-gates">
+        ${gates.map((gate) => `
+          <div class="readiness-gate ${gate.pass ? "pass" : "hold"}">
+            <span>${gate.pass ? "Pass" : "Hold"}</span>
+            <strong>${escapeHtml(gate.label)}</strong>
+            <em>${escapeHtml(gate.detail)}</em>
+          </div>
+        `).join("")}
+      </div>
+      <div class="source-coverage-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Stock source</th>
+              <th>Viable qty</th>
+              <th>Approved qty</th>
+              <th>Lowest ROI</th>
+              <th>Profit</th>
+            </tr>
+          </thead>
+          <tbody>${sourceRows}</tbody>
+        </table>
+      </div>
+      <div class="dashboard-actions">
+        <button class="button primary" type="button" data-demand-select="${record.demandId}">Open stock matching</button>
+        <button class="button secondary" type="button" data-demand-status="Bid Pack" data-demand-id="${record.demandId}">Move to bid pack</button>
+        <button class="button secondary" type="button" data-demand-status="Submitted" data-demand-id="${record.demandId}">Mark submitted</button>
+        <button class="button secondary" type="button" data-demand-status="No Bid" data-demand-id="${record.demandId}">No bid</button>
+        <button class="button secondary" type="button" data-record-export="${record.id}">Export record JSON</button>
+        ${record.url ? `<a class="button secondary" href="${escapeHtml(record.url)}" target="_blank" rel="noopener">Open notice</a>` : ""}
+      </div>
+    </article>
+  `;
+}
+
+function exportOpportunityRecord(recordId) {
+  const record = state.opportunityRecords.find((item) => item.id === recordId);
+  if (!record) return;
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    brand: "RentalReady AI Sourcing Agent",
+    record,
+    readiness: {
+      score: recordReadinessScore(record),
+      action: recordAction(record),
+      gates: recordReadinessGates(record),
+    },
+    linkedStockCandidates: state.candidates.filter((candidate) => (record.stock.records || []).includes(candidate.id)),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const safeTitle = normalise(record.title || record.id).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  link.href = url;
+  link.download = `rentalready-opportunity-record-${safeTitle || record.id}-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function renderDemandQueue() {
@@ -3035,12 +3281,37 @@ demandList?.addEventListener("click", (event) => {
   if (statusButton) updateDemandStatus(statusButton.dataset.demandId, statusButton.dataset.demandStatus);
 });
 opportunityRecordList?.addEventListener("click", (event) => {
+  const reviewButton = event.target.closest("button[data-record-review]");
+  if (reviewButton) {
+    activeOpportunityRecordId = reviewButton.dataset.recordReview;
+    save("rentalready_sourcing_active_opportunity_record", activeOpportunityRecordId);
+    renderOpportunityRecords();
+  }
+
+  const exportButton = event.target.closest("button[data-record-export]");
+  if (exportButton) exportOpportunityRecord(exportButton.dataset.recordExport);
+
   const selectButton = event.target.closest("button[data-demand-select]");
   if (selectButton) {
     selectDemand(selectButton.dataset.demandSelect);
     showWorkflowStep("agent");
   }
 });
+opportunityRecordDetail?.addEventListener("click", (event) => {
+  const exportButton = event.target.closest("button[data-record-export]");
+  if (exportButton) exportOpportunityRecord(exportButton.dataset.recordExport);
+
+  const selectButton = event.target.closest("button[data-demand-select]");
+  if (selectButton) {
+    selectDemand(selectButton.dataset.demandSelect);
+    showWorkflowStep("agent");
+  }
+
+  const statusButton = event.target.closest("button[data-demand-status]");
+  if (statusButton) updateDemandStatus(statusButton.dataset.demandId, statusButton.dataset.demandStatus);
+});
+opportunityRecordFilter?.addEventListener("change", renderOpportunityRecords);
+opportunityRecordSearch?.addEventListener("input", renderOpportunityRecords);
 candidateList?.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-status]");
   if (button) updateStatus(button.dataset.id, button.dataset.status);

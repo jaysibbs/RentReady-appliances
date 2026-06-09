@@ -2721,6 +2721,25 @@ section {
   margin-top: 18px;
 }
 
+.opportunity-controls {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) minmax(220px, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.opportunity-controls label {
+  color: var(--dash-muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.opportunity-controls select,
+.opportunity-controls input {
+  margin-top: 6px;
+}
+
 .opportunity-record-list {
   display: grid;
   gap: 12px;
@@ -2747,9 +2766,46 @@ section {
   border-color: rgba(255, 207, 107, .4);
 }
 
+.opportunity-record-card.active {
+  box-shadow: inset 4px 0 0 var(--dash-success);
+}
+
 .opportunity-record-card p {
   margin: 0;
   color: var(--dash-muted);
+}
+
+.opportunity-record-strip,
+.detail-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.opportunity-record-strip div,
+.detail-kpis div {
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--dash-card-soft);
+}
+
+.opportunity-record-strip span,
+.detail-kpis span {
+  display: block;
+  color: var(--dash-muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.opportunity-record-strip strong,
+.detail-kpis strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--dash-text);
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .record-progress {
@@ -2760,6 +2816,142 @@ section {
   color: var(--dash-muted);
   font-size: 12px;
   font-weight: 800;
+}
+
+.opportunity-record-detail {
+  display: grid;
+}
+
+.opportunity-detail-card {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 18px;
+  background: linear-gradient(135deg, var(--dash-card), var(--dash-card-soft));
+}
+
+.opportunity-detail-card.pass {
+  border-color: rgba(91, 214, 155, .45);
+}
+
+.opportunity-detail-card.prepare {
+  border-color: rgba(98, 169, 255, .45);
+}
+
+.opportunity-detail-card.hold {
+  border-color: rgba(255, 207, 107, .45);
+}
+
+.detail-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+}
+
+.detail-heading h3 {
+  margin: 0 0 6px;
+}
+
+.detail-heading p,
+.opportunity-action-note {
+  margin: 0;
+  color: var(--dash-muted);
+}
+
+.readiness-badge {
+  min-width: 132px;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  background: var(--dash-card-soft);
+}
+
+.readiness-badge strong {
+  display: block;
+  color: var(--dash-success);
+  font-size: 34px;
+  line-height: 1;
+}
+
+.readiness-badge span {
+  display: block;
+  margin-top: 6px;
+  color: var(--dash-text);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.detail-kpis {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.readiness-gates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.readiness-gate {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--dash-card-soft);
+}
+
+.readiness-gate span {
+  width: max-content;
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: var(--dash-bg);
+  background: var(--dash-warning);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.readiness-gate.pass span {
+  background: var(--dash-success);
+}
+
+.readiness-gate strong {
+  color: var(--dash-text);
+}
+
+.readiness-gate em {
+  color: var(--dash-muted);
+  font-style: normal;
+  font-size: 13px;
+}
+
+.source-coverage-table {
+  overflow-x: auto;
+}
+
+.source-coverage-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+
+.source-coverage-table th,
+.source-coverage-table td {
+  border-bottom: 1px solid var(--dash-border);
+  padding: 10px;
+  color: var(--dash-text);
+  text-align: left;
+}
+
+.source-coverage-table th {
+  color: var(--dash-warning);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .demand-match {
@@ -3764,6 +3956,11 @@ meter::-webkit-meter-optimum-value {
   .agent-run-grid,
   .model-health,
   .candidate-card dl,
+  .opportunity-controls,
+  .opportunity-record-strip,
+  .detail-heading,
+  .detail-kpis,
+  .readiness-gates,
   .roi-strip,
   .agent-kpis {
     grid-template-columns: 1fr;

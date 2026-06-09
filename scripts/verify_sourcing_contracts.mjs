@@ -107,6 +107,14 @@ assert.match(tenderSearch, /procurementRegion/, "Pages tender function must norm
 const agentSource = await readFile("agent/sourcing-dashboard.js", "utf8");
 assert.match(agentSource, /opportunityRecords/, "agent source must maintain saved opportunity records");
 assert.match(agentSource, /syncOpportunityRecords/, "agent source must sync saved opportunity records from demand and stock state");
+assert.match(agentSource, /filteredOpportunityRecords/, "agent source must filter saved opportunity records for review");
+assert.match(agentSource, /recordReadinessGates/, "agent source must explain opportunity bid-readiness gates");
+assert.match(agentSource, /exportOpportunityRecord/, "agent source must export individual opportunity records");
+assert.match(agentSource, /rentalready_sourcing_active_opportunity_record/, "agent source must persist the active opportunity record");
+
+const agentHtml = await readFile("agent/sourcing-dashboard.html", "utf8");
+assert.match(agentHtml, /opportunityRecordFilter/, "agent dashboard must expose opportunity record filters");
+assert.match(agentHtml, /opportunityRecordDetail/, "agent dashboard must expose opportunity record detail review");
 
 await readFile("website/index.html", "utf8");
 await readFile("shared/cloudflare/_worker.js", "utf8");
