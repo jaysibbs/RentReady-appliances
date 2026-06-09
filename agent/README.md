@@ -17,3 +17,5 @@ Opportunity records now include a review ledger with:
 - a single detail panel for the selected record, including readiness percentage, bid gates, value, deadline, stock coverage, acquisition cost, ROI and projected profit;
 - source coverage rows showing whether the contract can be fulfilled from one stock source or needs multiple sources;
 - JSON export for an individual record, including linked stock candidates and readiness evidence for bid-package audit trails.
+
+The bid desk now produces both a human-readable text pack and a structured JSON bid package. The structured package includes the decision summary, commercial model, compliance matrix, stock evidence, delivery schedule, risk register, draft response points and clarification questions.

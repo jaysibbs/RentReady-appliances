@@ -2186,6 +2186,266 @@ function bidReadiness(demand) {
   return { checks, score, decision, coverage, requiredQuantity, details, timedViableQuantity, timedApprovedQuantity };
 }
 
+function bidPackageData(demand, readiness) {
+  const tender = demand?.tender || {};
+  const brief = demand?.brief || {};
+  const record = state.opportunityRecords.find((item) => item.demandId === demand?.id) || opportunityRecordForDemand(demand);
+  const sourceSummary = stockSourceSummary(readiness.coverage, readiness.requiredQuantity);
+  const targetUnitValue = number(brief.budget) || opportunityUnitValue(tender);
+  const totalValue = number(tender.value) || demandValue(brief);
+  const currentSettings = currentAgentSettings();
+  const stockRows = readiness.coverage.viable.map((candidate) => ({
+    title: candidate.candidate?.title || candidate.candidate?.category || "Matched stock",
+    source: sourceNameFor(candidate),
+    quantity: recordQuantity(candidate),
+    location: candidate.candidate?.location || "TBC",
+    availableBy: candidate.candidate?.availableBy || "TBC",
+    beforeDeadline: recordMeetsDeadline(candidate, tender.deadline),
+    landedCost: number(candidate.result?.financials?.landed),
+    roi: number(candidate.result?.financials?.roi),
+    status: candidate.status,
+    url: candidate.candidate?.url || "",
+  }));
+  const evidenceRows = (tender.stockEvidence?.records || []).map((candidate) => ({
+    title: candidate.candidate?.title || "Live stock lead",
+    source: candidate.candidate?.supplier || "Auction source",
+    quantity: recordQuantity(candidate),
+    landedCost: number(candidate.result?.financials?.landed),
+    roi: number(candidate.result?.financials?.roi),
+    url: candidate.candidate?.url || "",
+    recommendation: candidate.result?.recommendation || "Verify before using in bid pack.",
+  }));
+  const missingChecks = readiness.checks.filter((item) => !item.pass);
+  const complianceMatrix = readiness.checks.map((item) => ({
+    requirement: item.label,
+    status: item.pass ? "Ready" : "Gap",
+    evidence: item.pass ? "Evidence currently held in opportunity record and stock review." : item.advice,
+    action: item.pass ? "Retain evidence for submission pack." : item.advice,
+  }));
+  const deliverySchedule = [
+    {
+      stage: "Notice review and portal confirmation",
+      owner: "RentalReady",
+      timing: tender.deadline ? `Complete before ${tender.deadline}` : "Complete before any bid decision",
+      evidence: "Notice link, specification, award criteria, buyer questions, and deadline saved in the record.",
+    },
+    {
+      stage: "Stock reservation decision",
+      owner: "RentalReady",
+      timing: "Before bid submission or before any purchase commitment",
+      evidence: `${readiness.coverage.approvedQuantity}/${readiness.requiredQuantity} approved units currently attached.`,
+    },
+    {
+      stage: "Collection, testing and cleaning",
+      owner: "RentalReady operations",
+      timing: tender.deadline ? `Allow buffer after ${tender.deadline} and before buyer delivery date` : "Schedule after buyer delivery date is confirmed",
+      evidence: "Auction collection windows, testing/refurb buffer, delivery route and substitution plan.",
+    },
+    {
+      stage: "Buyer delivery and close-out",
+      owner: "RentalReady delivery",
+      timing: "According to contract delivery schedule",
+      evidence: "Delivery note, invoice wording, model/serial references where available, and replacement/refund route.",
+    },
+  ];
+  const riskRegister = [
+    ...missingChecks.map((item) => ({
+      risk: item.label,
+      level: "High",
+      mitigation: item.advice,
+    })),
+    {
+      risk: "Auction stock may be sold before award or purchase approval",
+      level: readiness.coverage.approvedQuantity >= readiness.requiredQuantity ? "Medium" : "High",
+      mitigation: "Keep substitute stock searches open and do not promise exact lots unless they are reserved and still available.",
+    },
+    {
+      risk: "Goods may not match buyer's new/refurbished/warranty expectation",
+      level: "Medium",
+      mitigation: "Ask clarification questions and exclude lots with unclear condition, damage, missing parts, or no power-test evidence.",
+    },
+    {
+      risk: "Delivery scope may include installation, removal, PAT testing or disposal",
+      level: "Medium",
+      mitigation: "Price only the stated goods scope unless service obligations are confirmed and costed.",
+    },
+  ];
+
+  return {
+    generatedAt: new Date().toISOString(),
+    opportunityRecordId: record.id,
+    decision: {
+      readinessScore: readiness.score,
+      recommendation: readiness.decision,
+      action: recordAction(record),
+      proceed: readiness.decision.includes("Proceed"),
+    },
+    opportunity: {
+      authority: brief.customer || tender.authority || "TBC",
+      title: tender.title || record.title || "TBC",
+      source: brief.source || tender.source || record.source || "TBC",
+      platform: tender.platform || tender.opportunityType || record.platform || "Contract / tender",
+      url: tender.url || record.url || "",
+      deadline: tender.deadline || brief.deadline || record.requirement?.deadline || "",
+      category: brief.item || tender.item || record.requirement?.category || "Goods TBC",
+      quantity: readiness.requiredQuantity,
+      totalValue,
+      unitValue: targetUnitValue,
+      region: tender.region || record.requirement?.region || "",
+    },
+    commercialModel: {
+      roiTarget: number(currentSettings.targetRoi) || DEFAULT_ROI_TARGET,
+      maxSafeBid: targetUnitValue ? maxSafeBid({ ...currentSettings, targetSale: targetUnitValue }) : 0,
+      maxLandedCost: targetUnitValue ? maxLandedCost({ ...currentSettings, targetSale: targetUnitValue }) : 0,
+      matchedQuantity: readiness.coverage.quantityAvailable,
+      approvedQuantity: readiness.coverage.approvedQuantity,
+      lowestRoi: readiness.coverage.lowestRoi,
+      landedCost: readiness.coverage.landedCost,
+      projectedRevenue: readiness.coverage.targetSale || totalValue,
+      projectedProfit: readiness.coverage.projectedProfit,
+      sourcePlan: sourceSummary.decision,
+      sourcePlanMessage: sourceSummary.message,
+    },
+    complianceMatrix,
+    stockRows,
+    evidenceRows,
+    deliverySchedule,
+    riskRegister,
+    draftResponse: {
+      executiveSummary: "RentalReady Appliances proposes a stock-led fulfilment model for the buyer's goods requirement, using verified auction and clearance inventory only where quantity, condition, timing and commercial return can be evidenced before purchase commitment.",
+      fulfilmentMethod: [
+        "Confirm specification, quantity, delivery location, condition standard, warranty expectation and exclusions.",
+        "Approve only lots that pass fee, condition, VAT, logistics, timing and ROI gates.",
+        "Build a delivery schedule with collection, testing, cleaning and substitution buffer.",
+        "Document delivery evidence, invoice wording, replacement/refund route and buyer close-out notes.",
+      ],
+      clarificationQuestions: [
+        "Are equivalent brands/models acceptable if they meet or exceed the required performance and condition?",
+        "Is graded/refurbished stock acceptable, or must all goods be new?",
+        "Are installation, removal, PAT testing, disposal, packaging or phased deliveries included in scope?",
+        "What delivery evidence is required: photos, model references, serial numbers, delivery note, warranty statement or invoice?",
+      ],
+    },
+  };
+}
+
+function bidPackageJsonText(demand, readiness) {
+  return JSON.stringify(bidPackageData(demand, readiness), null, 2);
+}
+
+function renderBidPackageWorkspace(demand, readiness) {
+  const pack = bidPackageData(demand, readiness);
+  const complianceRows = pack.complianceMatrix.map((row) => `
+    <tr class="${row.status === "Ready" ? "pass" : "hold"}">
+      <td>${escapeHtml(row.requirement)}</td>
+      <td>${escapeHtml(row.status)}</td>
+      <td>${escapeHtml(row.evidence)}</td>
+      <td>${escapeHtml(row.action)}</td>
+    </tr>
+  `).join("");
+  const stockRows = pack.stockRows.length ? pack.stockRows.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.title)}</td>
+      <td>${escapeHtml(row.source)}</td>
+      <td>${row.quantity}</td>
+      <td>${escapeHtml(row.location)}</td>
+      <td>${escapeHtml(row.availableBy)}</td>
+      <td>${row.beforeDeadline ? "Yes" : "No / unknown"}</td>
+      <td>${money(row.landedCost)}</td>
+      <td>${row.roi ? percent(row.roi) : "TBC"}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="8">No viable matched stock has been attached to this opportunity yet.</td></tr>`;
+  const scheduleRows = pack.deliverySchedule.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.stage)}</td>
+      <td>${escapeHtml(row.owner)}</td>
+      <td>${escapeHtml(row.timing)}</td>
+      <td>${escapeHtml(row.evidence)}</td>
+    </tr>
+  `).join("");
+  const riskRows = pack.riskRegister.map((row) => `
+    <tr class="${normalise(row.level)}">
+      <td>${escapeHtml(row.risk)}</td>
+      <td>${escapeHtml(row.level)}</td>
+      <td>${escapeHtml(row.mitigation)}</td>
+    </tr>
+  `).join("");
+
+  return `
+    <section class="bid-package-workspace" aria-label="Structured bid package">
+      <div class="bid-package-grid">
+        <article>
+          <span>Decision</span>
+          <strong>${escapeHtml(pack.decision.recommendation)}</strong>
+          <em>${pack.decision.readinessScore}% ready</em>
+        </article>
+        <article>
+          <span>Contract value</span>
+          <strong>${pack.opportunity.totalValue ? money(pack.opportunity.totalValue) : "TBC"}</strong>
+          <em>${pack.opportunity.unitValue ? `${money(pack.opportunity.unitValue)} per unit` : "Unit value TBC"}</em>
+        </article>
+        <article>
+          <span>Stock coverage</span>
+          <strong>${pack.commercialModel.approvedQuantity}/${pack.opportunity.quantity}</strong>
+          <em>${pack.commercialModel.sourcePlan}</em>
+        </article>
+        <article>
+          <span>Profit / ROI</span>
+          <strong>${money(pack.commercialModel.projectedProfit)}</strong>
+          <em>${pack.commercialModel.lowestRoi ? `${percent(pack.commercialModel.lowestRoi)} lowest ROI` : "ROI TBC"}</em>
+        </article>
+      </div>
+      <details class="bid-package-section" open>
+        <summary>Compliance and submission matrix</summary>
+        <div class="source-coverage-table">
+          <table>
+            <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Action</th></tr></thead>
+            <tbody>${complianceRows}</tbody>
+          </table>
+        </div>
+      </details>
+      <details class="bid-package-section" open>
+        <summary>Stock evidence and commercial coverage</summary>
+        <div class="source-coverage-table">
+          <table>
+            <thead><tr><th>Stock</th><th>Source</th><th>Qty</th><th>Location</th><th>Available</th><th>Before deadline</th><th>Landed</th><th>ROI</th></tr></thead>
+            <tbody>${stockRows}</tbody>
+          </table>
+        </div>
+      </details>
+      <details class="bid-package-section">
+        <summary>Delivery schedule</summary>
+        <div class="source-coverage-table">
+          <table>
+            <thead><tr><th>Stage</th><th>Owner</th><th>Timing</th><th>Evidence needed</th></tr></thead>
+            <tbody>${scheduleRows}</tbody>
+          </table>
+        </div>
+      </details>
+      <details class="bid-package-section">
+        <summary>Risk register</summary>
+        <div class="source-coverage-table">
+          <table>
+            <thead><tr><th>Risk</th><th>Level</th><th>Mitigation</th></tr></thead>
+            <tbody>${riskRows}</tbody>
+          </table>
+        </div>
+      </details>
+      <details class="bid-package-section">
+        <summary>Draft buyer response</summary>
+        <p>${escapeHtml(pack.draftResponse.executiveSummary)}</p>
+        <ul>
+          ${pack.draftResponse.fulfilmentMethod.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+        </ul>
+        <strong>Clarification questions</strong>
+        <ul>
+          ${pack.draftResponse.clarificationQuestions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+        </ul>
+      </details>
+    </section>
+  `;
+}
+
 function bidPackText(demand, readiness) {
   const tender = demand?.tender || {};
   const brief = demand?.brief || {};
@@ -2295,6 +2555,7 @@ function renderBidPack() {
     </div>
     ${renderTenderDetails(demand.tender)}
     ${renderStockCoverage(demand, readiness)}
+    ${renderBidPackageWorkspace(demand, readiness)}
     <div class="roi-strip">
       <div><span>Required</span><strong>${readiness.requiredQuantity}</strong></div>
       <div><span>Matched</span><strong>${readiness.coverage.quantityAvailable}</strong></div>
@@ -2318,6 +2579,7 @@ function renderBidPack() {
     <div class="dashboard-actions">
       ${demand.tender.url ? `<a class="button secondary" href="${demand.tender.url}" target="_blank" rel="noopener">Open opportunity details</a>` : ""}
       <button class="button secondary" type="button" id="exportBidPack">Export bid pack</button>
+      <button class="button secondary" type="button" id="exportBidPackageJson">Export bid package JSON</button>
     </div>
   `;
 }
@@ -3230,6 +3492,20 @@ function exportActiveBidPack() {
   URL.revokeObjectURL(url);
 }
 
+function exportActiveBidPackageJson() {
+  const demand = activeDemandRecord();
+  if (!demand?.tender) return;
+  const readiness = bidReadiness(demand);
+  const blob = new Blob([bidPackageJsonText(demand, readiness)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const safeOpportunity = normalise(demand.brief?.customer || demand.tender?.title || "contract").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  link.href = url;
+  link.download = `rentalready-bid-package-${safeOpportunity || "contract"}-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function clearData() {
   if (!confirm("Clear all saved sourcing dashboard data in this browser?")) return;
   Object.keys(localStorage)
@@ -3344,6 +3620,7 @@ tenderWorkspace?.addEventListener("click", (event) => {
 });
 bidPack?.addEventListener("click", (event) => {
   if (event.target.closest("#exportBidPack")) exportActiveBidPack();
+  if (event.target.closest("#exportBidPackageJson")) exportActiveBidPackageJson();
 });
 document.querySelector("#exportData")?.addEventListener("click", exportData);
 document.querySelector("#importData")?.addEventListener("change", importData);

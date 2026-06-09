@@ -5,8 +5,8 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260609b/, "dashboard must load the nationwide borough opportunity search stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260609b/, "dashboard must load the nationwide borough opportunity search script version");
+assert.match(html, /styles\.css\?v=20260609c/, "dashboard must load the latest bid package stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260609c/, "dashboard must load the latest bid package script version");
 assert.match(html, /<option selected>Whole UK<\/option>/, "dashboard must default contract search area to Whole UK");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
@@ -111,10 +111,14 @@ assert.match(agentSource, /filteredOpportunityRecords/, "agent source must filte
 assert.match(agentSource, /recordReadinessGates/, "agent source must explain opportunity bid-readiness gates");
 assert.match(agentSource, /exportOpportunityRecord/, "agent source must export individual opportunity records");
 assert.match(agentSource, /rentalready_sourcing_active_opportunity_record/, "agent source must persist the active opportunity record");
+assert.match(agentSource, /bidPackageData/, "agent source must create structured bid package data");
+assert.match(agentSource, /renderBidPackageWorkspace/, "agent source must render a structured bid package workspace");
+assert.match(agentSource, /exportActiveBidPackageJson/, "agent source must export bid package JSON evidence");
 
 const agentHtml = await readFile("agent/sourcing-dashboard.html", "utf8");
 assert.match(agentHtml, /opportunityRecordFilter/, "agent dashboard must expose opportunity record filters");
 assert.match(agentHtml, /opportunityRecordDetail/, "agent dashboard must expose opportunity record detail review");
+assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260609c/, "agent dashboard must reference the latest sourcing-dashboard asset version");
 
 await readFile("website/index.html", "utf8");
 await readFile("shared/cloudflare/_worker.js", "utf8");
