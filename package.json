@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build_site.mjs",
+    "build:agent": "node scripts/build_agent_site.mjs",
     "verify:sourcing-contracts": "node scripts/verify_sourcing_contracts.mjs"
   }
 }

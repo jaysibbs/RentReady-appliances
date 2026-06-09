@@ -1,0 +1,3 @@
+name = "rentalready-ai-agent"
+pages_build_output_dir = "dist-agent"
+compatibility_date = "2026-05-20"
