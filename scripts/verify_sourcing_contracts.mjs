@@ -4,9 +4,11 @@ import { readFile } from "node:fs/promises";
 const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
+const headers = await readFile("dist/_headers", "utf8");
 
-assert.match(html, /styles\.css\?v=20260610f/, "dashboard must load the latest saved-last workflow stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260610f/, "dashboard must load the latest saved-last workflow script version");
+assert.match(html, /styles\.css\?v=20260610g/, "dashboard must load the latest Safari cache-bust stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260610g/, "dashboard must load the latest Safari cache-bust script version");
+assert.match(html, /http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/, "dashboard shell must include Safari no-cache meta tags");
 assert.match(html, /data-step-tab="tenders"[\s\S]*Step 1[\s\S]*Contracts[\s\S]*data-step-tab="agent"[\s\S]*Step 2[\s\S]*Stock Agent[\s\S]*data-step-tab="candidate"[\s\S]*Step 3[\s\S]*Candidate[\s\S]*data-step-tab="shortlist"[\s\S]*Step 4[\s\S]*Shortlist[\s\S]*data-step-tab="demand"[\s\S]*Step 5[\s\S]*Saved/, "workflow tabs must follow contract-first sourcing flow");
 assert.doesNotMatch(html, /data-step-tab="brief"/, "manual entry must not appear as a primary workflow tile");
 assert.doesNotMatch(html, /Step 6/, "dashboard must not present a sixth workflow step after Saved");
@@ -139,7 +141,8 @@ assert.match(agentSource, /exportDailyBidReportJson/, "agent source must export 
 const agentHtml = await readFile("agent/sourcing-dashboard.html", "utf8");
 assert.match(agentHtml, /opportunityRecordFilter/, "agent dashboard must expose opportunity record filters");
 assert.match(agentHtml, /opportunityRecordDetail/, "agent dashboard must expose opportunity record detail review");
-assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610f/, "agent dashboard must reference the latest sourcing-dashboard asset version");
+assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610g/, "agent dashboard must reference the latest sourcing-dashboard asset version");
+assert.match(headers, /\/sourcing-dashboard\s+[\s\S]*?Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0/, "extensionless sourcing dashboard route must not be cached");
 
 await readFile("website/index.html", "utf8");
 await readFile("shared/cloudflare/_worker.js", "utf8");

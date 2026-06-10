@@ -19,10 +19,22 @@
 /script.js
   Cache-Control: public, max-age=300
 
+/
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0
+
+/index.html
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0
+
+/sourcing-dashboard
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0
+
 /sourcing-dashboard.html
   X-Robots-Tag: noindex, nofollow
-  Cache-Control: private, no-store
+  Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0
 
 /sourcing-dashboard.js
   X-Robots-Tag: noindex, nofollow
-  Cache-Control: private, no-store
+  Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0
