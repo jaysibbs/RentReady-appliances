@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0d141d">
     <link rel="icon" href="brand/rentalready_mark.svg" type="image/svg+xml">
     <script src="theme-init.js?v=20260526b"></script>
-    <link rel="stylesheet" href="styles.css?v=20260609c">
+    <link rel="stylesheet" href="styles.css?v=20260610a">
   </head>
   <body class="dashboard-body">
     <header class="site-header dashboard-header">
@@ -438,6 +438,15 @@ kitchen equipment supply</textarea>
             <h3>Model health</h3>
             <div class="model-health" id="modelHealth"></div>
           </article>
+          <article class="dashboard-panel learning-wide">
+            <h3>Daily bid report</h3>
+            <div class="daily-bid-report" id="dailyBidReport" aria-live="polite"></div>
+            <div class="dashboard-actions">
+              <button class="button secondary" type="button" id="refreshDailyBidReport">Refresh report</button>
+              <button class="button secondary" type="button" id="exportDailyBidReport">Export daily report</button>
+              <button class="button secondary" type="button" id="exportDailyBidReportJson">Export report JSON</button>
+            </div>
+          </article>
           <article class="dashboard-panel">
             <h3>Current scoring weights</h3>
             <div class="weights-list" id="weightsList"></div>
@@ -470,6 +479,6 @@ kitchen equipment supply</textarea>
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260609c"></script>
+    <script src="sourcing-dashboard.js?v=20260610a"></script>
   </body>
 </html>

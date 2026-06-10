@@ -5,8 +5,8 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260609c/, "dashboard must load the latest bid package stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260609c/, "dashboard must load the latest bid package script version");
+assert.match(html, /styles\.css\?v=20260610a/, "dashboard must load the latest daily bid report stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260610a/, "dashboard must load the latest daily bid report script version");
 assert.match(html, /<option selected>Whole UK<\/option>/, "dashboard must default contract search area to Whole UK");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
@@ -17,6 +17,7 @@ assert.match(html, /Most viable live opportunities/, "highlighted contract area 
 assert.match(html, /Run test-and-learn/, "dashboard must expose the full test-and-learn control");
 assert.match(html, /Nationwide borough portals/, "dashboard must expose nationwide borough public-sector portal routes");
 assert.match(html, /Continuous learning loop/, "dashboard must expose continuous learning wording");
+assert.match(html, /Daily bid report/, "dashboard must expose the daily bid report panel");
 assert.match(html, /id="modelHealth"/, "dashboard must expose model health panel");
 assert.match(html, /id="sourceLearning"/, "dashboard must expose source learning panel");
 assert.match(html, /id="routeLearning"/, "dashboard must expose route learning panel");
@@ -114,11 +115,13 @@ assert.match(agentSource, /rentalready_sourcing_active_opportunity_record/, "age
 assert.match(agentSource, /bidPackageData/, "agent source must create structured bid package data");
 assert.match(agentSource, /renderBidPackageWorkspace/, "agent source must render a structured bid package workspace");
 assert.match(agentSource, /exportActiveBidPackageJson/, "agent source must export bid package JSON evidence");
+assert.match(agentSource, /dailyBidReportData/, "agent source must create daily bid report data");
+assert.match(agentSource, /exportDailyBidReportJson/, "agent source must export daily bid report JSON");
 
 const agentHtml = await readFile("agent/sourcing-dashboard.html", "utf8");
 assert.match(agentHtml, /opportunityRecordFilter/, "agent dashboard must expose opportunity record filters");
 assert.match(agentHtml, /opportunityRecordDetail/, "agent dashboard must expose opportunity record detail review");
-assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260609c/, "agent dashboard must reference the latest sourcing-dashboard asset version");
+assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610a/, "agent dashboard must reference the latest sourcing-dashboard asset version");
 
 await readFile("website/index.html", "utf8");
 await readFile("shared/cloudflare/_worker.js", "utf8");

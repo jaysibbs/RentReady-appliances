@@ -3970,6 +3970,59 @@ meter::-webkit-meter-optimum-value {
   gap: 10px;
 }
 
+.daily-bid-report {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.daily-report-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.daily-report-kpis div,
+.daily-report-row {
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--dash-card-soft);
+}
+
+.daily-report-kpis span,
+.daily-report-row span {
+  display: block;
+  color: var(--dash-warning);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.daily-report-kpis strong,
+.daily-report-row strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--dash-text);
+}
+
+.daily-report-kpis strong {
+  font-size: 24px;
+}
+
+.daily-report-list {
+  display: grid;
+  gap: 10px;
+}
+
+.daily-report-row em {
+  display: block;
+  margin-top: 5px;
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-style: normal;
+}
+
 .learning-row strong {
   display: block;
   color: var(--dash-text);
@@ -4043,6 +4096,7 @@ meter::-webkit-meter-optimum-value {
   .detail-kpis,
   .readiness-gates,
   .bid-package-grid,
+  .daily-report-kpis,
   .roi-strip,
   .agent-kpis {
     grid-template-columns: 1fr;

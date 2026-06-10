@@ -19,3 +19,5 @@ Opportunity records now include a review ledger with:
 - JSON export for an individual record, including linked stock candidates and readiness evidence for bid-package audit trails.
 
 The bid desk now produces both a human-readable text pack and a structured JSON bid package. The structured package includes the decision summary, commercial model, compliance matrix, stock evidence, delivery schedule, risk register, draft response points and clarification questions.
+
+Daily bid reporting is built into the learning area. It ranks saved opportunities into pass, review and hold buckets, highlights stock gaps and readiness, and exports the daily report as text or JSON so accept/reject feedback can train the agent over time.

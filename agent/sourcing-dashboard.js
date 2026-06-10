@@ -384,6 +384,7 @@ const candidateList = document.querySelector("#candidateList");
 const weightsList = document.querySelector("#weightsList");
 const memoryStats = document.querySelector("#memoryStats");
 const modelHealth = document.querySelector("#modelHealth");
+const dailyBidReport = document.querySelector("#dailyBidReport");
 const sourceLearning = document.querySelector("#sourceLearning");
 const routeLearning = document.querySelector("#routeLearning");
 const outcomeLearning = document.querySelector("#outcomeLearning");
@@ -3416,6 +3417,146 @@ function renderLearning() {
   if (outcomeLearning) {
     outcomeLearning.innerHTML = topLearningRows(state.learningModel.outcomeStats, "No bid outcomes recorded yet.");
   }
+  renderDailyBidReport();
+}
+
+function dailyBidReportData() {
+  const records = [...state.opportunityRecords]
+    .map((record) => {
+      const readiness = recordReadinessScore(record);
+      const action = recordAction(record);
+      const gates = recordReadinessGates(record);
+      const blockers = gates.filter((gate) => !gate.pass);
+      const deadlineDays = record.requirement?.deadline ? daysUntil(record.requirement.deadline) : null;
+      const urgencyScore = deadlineDays === null ? 4 : deadlineDays < 3 ? -18 : deadlineDays <= 7 ? 14 : deadlineDays <= 21 ? 10 : 4;
+      const valueScore = number(record.requirement?.totalValue) >= STARTUP_ANCHOR_MIN ? 8 : 0;
+      const rankScore = clamp(readiness + urgencyScore + valueScore, 0, 100);
+      return {
+        id: record.id,
+        demandId: record.demandId,
+        title: record.title,
+        authority: record.authority,
+        source: record.source,
+        url: record.url,
+        status: record.status,
+        category: record.requirement?.category,
+        quantity: number(record.requirement?.quantity) || 1,
+        totalValue: number(record.requirement?.totalValue),
+        deadline: record.requirement?.deadline || "",
+        deadlineDays,
+        matchedQuantity: number(record.stock?.matchedQuantity),
+        approvedQuantity: number(record.stock?.approvedQuantity),
+        coveragePercent: Math.round(number(record.stock?.matchedCoveragePercent)),
+        approvedCoveragePercent: Math.round(number(record.stock?.approvedCoveragePercent)),
+        lowestRoi: number(record.economics?.lowestRoi),
+        projectedProfit: number(record.economics?.projectedProfit),
+        sourcePlan: record.stock?.sourcePlan || "Stock plan TBC",
+        readiness,
+        rankScore,
+        decision: action.label,
+        actionDetail: action.detail,
+        blockers: blockers.map((gate) => ({ label: gate.label, detail: gate.detail })),
+      };
+    })
+    .sort((a, b) => b.rankScore - a.rankScore);
+  const pass = records.filter((record) => record.readiness >= 85 && record.approvedQuantity >= record.quantity);
+  const review = records.filter((record) => record.readiness >= 55 && !pass.some((item) => item.id === record.id));
+  const reject = records.filter((record) => record.readiness < 55);
+  const today = new Date().toLocaleDateString("en-GB", { dateStyle: "full" });
+  return {
+    generatedAt: new Date().toISOString(),
+    reportDate: today,
+    totals: {
+      records: records.length,
+      pass: pass.length,
+      review: review.length,
+      reject: reject.length,
+      bidReady: pass.length,
+      stockGaps: records.filter((record) => record.matchedQuantity < record.quantity).length,
+      submitted: state.demands.filter((item) => item.status === "Submitted").length,
+      won: state.demands.filter((item) => item.status === "Won").length,
+      lost: state.demands.filter((item) => item.status === "Lost").length,
+    },
+    pass,
+    review,
+    reject,
+    topActions: records.slice(0, 6).map((record) => ({
+      title: record.title,
+      decision: record.decision,
+      action: record.blockers[0]?.detail || record.actionDetail,
+      readiness: record.readiness,
+      rankScore: record.rankScore,
+    })),
+    learning: {
+      confidence: modelConfidence(),
+      decisions: state.feedback.length,
+      runHistory: state.runHistory.length,
+      lastRun: state.runHistory[0] || null,
+    },
+  };
+}
+
+function dailyBidReportText(data = dailyBidReportData()) {
+  const sectionLines = (label, rows) => [
+    `${label}`,
+    ...(rows.length ? rows.map((record, index) => [
+      `${index + 1}. ${record.title}`,
+      `   Authority: ${record.authority || "TBC"}`,
+      `   Decision: ${record.decision} | readiness ${record.readiness}% | rank ${record.rankScore}%`,
+      `   Value: ${record.totalValue ? money(record.totalValue) : "TBC"} | quantity ${record.quantity} | stock ${record.approvedQuantity}/${record.quantity} approved, ${record.matchedQuantity}/${record.quantity} matched`,
+      `   ROI/profit: ${record.lowestRoi ? percent(record.lowestRoi) : "TBC"} / ${money(record.projectedProfit)}`,
+      `   Deadline: ${record.deadline || "TBC"}${record.deadlineDays !== null ? ` (${record.deadlineDays} day(s))` : ""}`,
+      `   Next action: ${record.blockers[0]?.detail || record.actionDetail}`,
+    ].join("\n")) : ["No records in this bucket."]),
+  ].flat();
+
+  return [
+    `RentalReady AI Sourcing Agent - Daily bid report`,
+    `Report date: ${data.reportDate}`,
+    `Generated: ${new Date(data.generatedAt).toLocaleString("en-GB")}`,
+    ``,
+    `Summary`,
+    `Total records: ${data.totals.records}`,
+    `Pass / bid-ready: ${data.totals.pass}`,
+    `Review: ${data.totals.review}`,
+    `Reject / no-bid for now: ${data.totals.reject}`,
+    `Stock gaps: ${data.totals.stockGaps}`,
+    `Submitted / won / lost: ${data.totals.submitted} / ${data.totals.won} / ${data.totals.lost}`,
+    `Learning confidence: ${data.learning.confidence}% from ${data.learning.decisions} stock decisions and ${data.learning.runHistory} test runs`,
+    ``,
+    ...sectionLines("PASS - progress toward bid package", data.pass),
+    ``,
+    ...sectionLines("REVIEW - improve stock, value, deadline or evidence", data.review),
+    ``,
+    ...sectionLines("REJECT / HOLD - do not spend time today", data.reject),
+  ].join("\n");
+}
+
+function renderDailyBidReport() {
+  if (!dailyBidReport) return;
+  const data = dailyBidReportData();
+  if (!data.totals.records) {
+    dailyBidReport.innerHTML = `<p class="empty-state">No opportunity records yet. Fetch contracts or save a manual opportunity to generate the first daily bid report.</p>`;
+    return;
+  }
+  const topRows = data.topActions.map((item) => `
+    <div class="daily-report-row">
+      <span>${item.rankScore}% rank • ${item.readiness}% ready</span>
+      <strong>${escapeHtml(item.title)}</strong>
+      <em>${escapeHtml(item.decision)} - ${escapeHtml(item.action)}</em>
+    </div>
+  `).join("");
+  dailyBidReport.innerHTML = `
+    <div class="daily-report-kpis">
+      <div><span>Records</span><strong>${data.totals.records}</strong></div>
+      <div><span>Pass</span><strong>${data.totals.pass}</strong></div>
+      <div><span>Review</span><strong>${data.totals.review}</strong></div>
+      <div><span>Hold</span><strong>${data.totals.reject}</strong></div>
+      <div><span>Stock gaps</span><strong>${data.totals.stockGaps}</strong></div>
+      <div><span>Confidence</span><strong>${data.learning.confidence}%</strong></div>
+    </div>
+    <div class="daily-report-list">${topRows || `<p class="empty-state">No ranked actions yet.</p>`}</div>
+  `;
 }
 
 function syncAgentDefaults() {
@@ -3446,6 +3587,28 @@ function exportData() {
   const link = document.createElement("a");
   link.href = url;
   link.download = `rentalready-sourcing-feedback-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportDailyBidReport() {
+  const data = dailyBidReportData();
+  const blob = new Blob([dailyBidReportText(data)], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `rentalready-daily-bid-report-${new Date().toISOString().slice(0, 10)}.txt`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportDailyBidReportJson() {
+  const data = dailyBidReportData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `rentalready-daily-bid-report-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -3623,6 +3786,9 @@ bidPack?.addEventListener("click", (event) => {
   if (event.target.closest("#exportBidPackageJson")) exportActiveBidPackageJson();
 });
 document.querySelector("#exportData")?.addEventListener("click", exportData);
+document.querySelector("#refreshDailyBidReport")?.addEventListener("click", renderDailyBidReport);
+document.querySelector("#exportDailyBidReport")?.addEventListener("click", exportDailyBidReport);
+document.querySelector("#exportDailyBidReportJson")?.addEventListener("click", exportDailyBidReportJson);
 document.querySelector("#importData")?.addEventListener("change", importData);
 document.querySelector("#clearData")?.addEventListener("click", clearData);
 
