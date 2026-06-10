@@ -3436,7 +3436,7 @@ function renderDemandQueue() {
 
   if (!demandList) return;
   if (!state.demands.length) {
-    demandList.innerHTML = `<p class="empty-state">No saved contract or tender opportunities yet. Fetch live contracts in Step 1 or save a manual opportunity.</p>`;
+    demandList.innerHTML = `<p class="empty-state">No saved bid records yet. Fetch live contracts in Step 1, shortlist stock, then save or mark the bid outcome here.</p>`;
     return;
   }
 

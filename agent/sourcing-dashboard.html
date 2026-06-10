@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0d141d">
     <link rel="icon" href="brand/rentalready_mark.svg" type="image/svg+xml">
     <script src="theme-init.js?v=20260526b"></script>
-    <link rel="stylesheet" href="styles.css?v=20260610e">
+    <link rel="stylesheet" href="styles.css?v=20260610f">
   </head>
   <body class="dashboard-body">
     <header class="site-header dashboard-header">
@@ -23,7 +23,6 @@
         <a href="#candidate">Candidate</a>
         <a href="#shortlist">Shortlist</a>
         <a href="#demand">Saved</a>
-        <a href="#brief">Manual</a>
         <a href="#learning">Learning</a>
       </nav>
       <div class="header-actions">
@@ -65,16 +64,12 @@
           <span>Step 5</span>
           <strong>Saved</strong>
         </button>
-        <button type="button" data-step-tab="brief" aria-controls="briefForm">
-          <span>Step 6</span>
-          <strong>Manual</strong>
-        </button>
       </nav>
 
       <section class="dashboard-grid" id="brief" aria-labelledby="brief-title">
         <form class="dashboard-panel sourcing-form step-panel" id="briefForm" data-step-panel="brief">
           <div class="panel-heading">
-            <p class="eyebrow">Step 6</p>
+            <p class="eyebrow">Manual fallback</p>
             <h2 id="brief-title">Manual contract opportunity</h2>
             <p>Use this only when a contract or tender has come from outside the live feed. The main workflow starts from Step 1.</p>
           </div>
@@ -148,20 +143,20 @@
         <section class="dashboard-panel demand-panel step-panel" id="demand" data-step-panel="demand" aria-labelledby="demand-title">
           <div class="panel-heading">
             <p class="eyebrow">Step 5</p>
-            <h2 id="demand-title">Saved contract and tender opportunities</h2>
-            <p>Select the contract or tender you want to fulfil before ranking stock. The agent checks quantity, value, deadline, ROI, and whether fulfilment needs one or multiple sources.</p>
+            <h2 id="demand-title">Saved bid and opportunity records</h2>
+            <p>Review the contracts you liked, shortlisted, attempted, submitted, lost, won, or marked no-bid. Saved keeps the evidence, stock coverage, ROI status, bid stage, and learning outcome in one place.</p>
           </div>
           <div class="active-demand" id="activeDemand" aria-live="polite">No contract or tender selected yet.</div>
           <div class="demand-list" id="demandList"></div>
           <section class="opportunity-ledger" aria-labelledby="opportunity-ledger-title">
             <div class="panel-heading compact-heading">
-              <p class="eyebrow">Saved data foundation</p>
-              <h3 id="opportunity-ledger-title">Opportunity record ledger</h3>
-              <p>Every saved contract or tender becomes a structured opportunity record with requirement, value, stock coverage, ROI, bid status, and learning history.</p>
+              <p class="eyebrow">Bid memory</p>
+              <h3 id="opportunity-ledger-title">Saved record ledger</h3>
+              <p>Use this archive to reopen good opportunities, track failed bids, export evidence, and teach the agent which routes are worth repeating.</p>
             </div>
             <div class="opportunity-controls">
               <label>
-                Record status
+                Bid record status
                 <select id="opportunityRecordFilter">
                   <option value="all" selected>All opportunity records</option>
                   <option value="active">Active opportunities</option>
@@ -239,7 +234,6 @@ kitchen equipment supply</textarea>
             <button class="button secondary" type="button" id="generateTenderSearches">Generate contract searches</button>
             <button class="button primary" type="button" id="fetchLiveTenders">Fetch live contracts</button>
             <button class="button primary" type="button" id="runTestLearn">Run test-and-learn</button>
-            <button class="button secondary" type="button" id="rankTenders">Rank manual fallback</button>
             <button class="button secondary" type="button" id="prepareBidPack">Prepare bid pack</button>
           </div>
           <div class="agent-summary span-2" id="tenderSummary" aria-live="polite">Use Contracts Finder for startup-fit anchor contracts first. Prioritise supply-led opportunities where stock can be validated before the bid.</div>
@@ -263,6 +257,9 @@ kitchen equipment supply</textarea>
               Paste Contracts Finder or Find a Tender opportunities only when the live feed misses one
               <textarea id="tenderImport" rows="6" placeholder="Fallback only. Example: Leicester City Council | White goods supply for temporary accommodation | Value £18,000 | East Midlands | Deadline 2026-06-18 | https://www.contractsfinder.service.gov.uk/..."></textarea>
             </label>
+            <div class="dashboard-actions">
+              <button class="button secondary" type="button" id="rankTenders">Rank manual fallback</button>
+            </div>
           </details>
           <label class="span-2">
             Contract detail notes
@@ -479,6 +476,6 @@ kitchen equipment supply</textarea>
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260610e"></script>
+    <script src="sourcing-dashboard.js?v=20260610f"></script>
   </body>
 </html>

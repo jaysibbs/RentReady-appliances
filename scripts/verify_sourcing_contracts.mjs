@@ -5,14 +5,16 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260610e/, "dashboard must load the latest source-health stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260610e/, "dashboard must load the latest source-health script version");
+assert.match(html, /styles\.css\?v=20260610f/, "dashboard must load the latest saved-last workflow stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260610f/, "dashboard must load the latest saved-last workflow script version");
 assert.match(html, /data-step-tab="tenders"[\s\S]*Step 1[\s\S]*Contracts[\s\S]*data-step-tab="agent"[\s\S]*Step 2[\s\S]*Stock Agent[\s\S]*data-step-tab="candidate"[\s\S]*Step 3[\s\S]*Candidate[\s\S]*data-step-tab="shortlist"[\s\S]*Step 4[\s\S]*Shortlist[\s\S]*data-step-tab="demand"[\s\S]*Step 5[\s\S]*Saved/, "workflow tabs must follow contract-first sourcing flow");
+assert.doesNotMatch(html, /data-step-tab="brief"/, "manual entry must not appear as a primary workflow tile");
+assert.doesNotMatch(html, /Step 6/, "dashboard must not present a sixth workflow step after Saved");
 assert.match(html, /<option selected>Whole UK<\/option>/, "dashboard must default contract search area to Whole UK");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
 assert.match(html, /Goods contract matcher/, "dashboard must use contract-first wording");
-assert.match(html, /Saved contract and tender opportunities/, "dashboard must save opportunities instead of buyer records");
+assert.match(html, /Saved bid and opportunity records/, "dashboard must end with a saved bid/opportunity archive");
 assert.match(html, /Stock fulfilment agent/, "dashboard must rank stock against selected opportunities");
 assert.match(html, /Most viable live opportunities/, "highlighted contract area must be the live opportunity board");
 assert.match(html, /Run test-and-learn/, "dashboard must expose the full test-and-learn control");
@@ -137,7 +139,7 @@ assert.match(agentSource, /exportDailyBidReportJson/, "agent source must export 
 const agentHtml = await readFile("agent/sourcing-dashboard.html", "utf8");
 assert.match(agentHtml, /opportunityRecordFilter/, "agent dashboard must expose opportunity record filters");
 assert.match(agentHtml, /opportunityRecordDetail/, "agent dashboard must expose opportunity record detail review");
-assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610e/, "agent dashboard must reference the latest sourcing-dashboard asset version");
+assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610f/, "agent dashboard must reference the latest sourcing-dashboard asset version");
 
 await readFile("website/index.html", "utf8");
 await readFile("shared/cloudflare/_worker.js", "utf8");
