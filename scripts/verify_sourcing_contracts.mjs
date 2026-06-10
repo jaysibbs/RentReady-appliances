@@ -5,8 +5,8 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260610b/, "dashboard must load the latest regional sweep stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260610b/, "dashboard must load the latest regional sweep script version");
+assert.match(html, /styles\.css\?v=20260610c/, "dashboard must load the latest regional sweep timeout-fix stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260610c/, "dashboard must load the latest regional sweep timeout-fix script version");
 assert.match(html, /<option selected>Whole UK<\/option>/, "dashboard must default contract search area to Whole UK");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
@@ -99,6 +99,7 @@ assert.match(worker, /trade-price-plus-buyer-premium/, "manual-deploy worker mus
 assert.match(worker, /DEFAULT_ACQUISITION_KEYWORDS/, "worker must default to acquisition-focused procurement searches");
 assert.match(worker, /REGIONAL_BUYER_SWEEPS/, "worker must expose regional buyer sweep searches");
 assert.match(worker, /fetchRegionalBuyerSweepResults/, "worker must fetch regional buyer sweep results");
+assert.match(worker, /REGIONAL_SWEEP_TIMEOUT_MS/, "worker must keep regional sweep calls bounded to avoid Cloudflare timeouts");
 assert.match(worker, /parseContractsFinderResults/, "manual-deploy worker must parse Contracts Finder results");
 assert.match(worker, /www\.contractsfinder\.service\.gov\.uk/, "detail loader must allow Contracts Finder notice URLs");
 assert.match(worker, /agent\.rentalreadyappliances\.com/, "worker must route the agent subdomain to the sourcing dashboard");
@@ -115,6 +116,7 @@ assert.match(stockSearch, /manual verification route/, "Pages function must dist
 assert.match(tenderSearch, /procurementRegion/, "Pages tender function must normalise UK-wide procurement searches");
 assert.match(tenderSearch, /REGIONAL_BUYER_SWEEPS/, "Pages tender function must expose regional buyer sweep searches");
 assert.match(tenderSearch, /fetchRegionalBuyerSweepResults/, "Pages tender function must fetch regional buyer sweep results");
+assert.match(tenderSearch, /REGIONAL_SWEEP_TIMEOUT_MS/, "Pages tender function must keep regional sweep calls bounded");
 
 const agentSource = await readFile("agent/sourcing-dashboard.js", "utf8");
 assert.match(agentSource, /opportunityRecords/, "agent source must maintain saved opportunity records");
@@ -132,7 +134,7 @@ assert.match(agentSource, /exportDailyBidReportJson/, "agent source must export 
 const agentHtml = await readFile("agent/sourcing-dashboard.html", "utf8");
 assert.match(agentHtml, /opportunityRecordFilter/, "agent dashboard must expose opportunity record filters");
 assert.match(agentHtml, /opportunityRecordDetail/, "agent dashboard must expose opportunity record detail review");
-assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610b/, "agent dashboard must reference the latest sourcing-dashboard asset version");
+assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610c/, "agent dashboard must reference the latest sourcing-dashboard asset version");
 
 await readFile("website/index.html", "utf8");
 await readFile("shared/cloudflare/_worker.js", "utf8");

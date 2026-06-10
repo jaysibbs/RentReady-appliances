@@ -2,6 +2,8 @@ const FIND_TENDER_RESULTS_URL = "https://www.find-tender.service.gov.uk/Search/R
 const CONTRACTS_FINDER_RESULTS_URL = "https://www.contractsfinder.service.gov.uk/Search/Results";
 const CONTRACTS_FINDER_API_URL = "https://www.contractsfinder.service.gov.uk/api/rest/2/search_notices/json";
 const DEFAULT_ACQUISITION_KEYWORDS = "white goods supply OR domestic appliances 39700000 OR electrical domestic appliances 39710000 OR temporary accommodation appliances OR void property appliances OR housing association white goods";
+const PUBLIC_FEED_TIMEOUT_MS = 8500;
+const REGIONAL_SWEEP_TIMEOUT_MS = 22000;
 const REGIONAL_BUYER_SWEEPS = [
   {
     name: "East Midlands district buyers",
@@ -44,6 +46,18 @@ const REGIONAL_BUYER_SWEEPS = [
     buyerQuery: "university OR college OR academy trust OR school trust OR student accommodation OR estates department OR facilities management",
   },
 ];
+const REGIONAL_SWEEP_LIVE_QUERIES = {
+  "East Midlands district buyers": "Leicester Leicestershire Rutland Nottingham Derby Lincolnshire Northamptonshire council housing supply",
+  "West Midlands council and housing buyers": "Birmingham Coventry Wolverhampton Sandwell Walsall Dudley Solihull Warwickshire Staffordshire council housing supply",
+  "Yorkshire and Humber councils": "Leeds Sheffield Bradford York Wakefield Kirklees Barnsley Doncaster Hull East Riding council housing supply",
+  "North East and Cumbria councils": "Newcastle Gateshead Sunderland Durham Northumberland Middlesbrough Cumberland Cumbria council housing supply",
+  "East of England councils": "Cambridgeshire Peterborough Norfolk Suffolk Essex Hertfordshire Luton Bedfordshire Southend Thurrock council housing supply",
+  "London boroughs": "London borough housing temporary accommodation appliances supply",
+  "South East councils": "Surrey Sussex Brighton Hampshire Portsmouth Southampton Oxfordshire Buckinghamshire Milton Keynes council housing supply",
+  "South West councils": "Bristol Bath Gloucestershire Somerset Dorset Devon Plymouth Cornwall Wiltshire council housing supply",
+  "Housing and temporary accommodation buyers": "housing association registered provider temporary accommodation homelessness void property supported living appliance supply",
+  "Education and public estates buyers": "university college academy school student accommodation estates facilities appliance equipment supply",
+};
 const AUCTION_STOCK_SOURCES = [
   {
     name: "John Pye general auctions",
@@ -117,6 +131,32 @@ function normalise(value = "") {
 function procurementRegion(value = "") {
   const region = String(value || "").trim();
   return /^(whole uk|uk-wide|united kingdom|national small lots)$/i.test(region) ? "" : region;
+}
+
+async function fetchWithTimeout(resource, options = {}, timeoutMs = PUBLIC_FEED_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(resource, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error(`Public feed timed out after ${Math.round(timeoutMs / 1000)} seconds`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function compactRegionalKeywords(keywords, sweep) {
+  const baseTerms = String(keywords || DEFAULT_ACQUISITION_KEYWORDS)
+    .replace(/\bOR\b/gi, " ")
+    .replace(/\b397\d+\b/g, " ")
+    .replace(/[^a-z0-9\s-]/gi, " ")
+    .split(/\s+/)
+    .filter((term) => term.length > 2 && !["the", "and", "for", "with", "supply"].includes(term.toLowerCase()));
+  const uniqueBaseTerms = [...new Set(baseTerms)].slice(0, 8).join(" ");
+  return `${uniqueBaseTerms || "white goods domestic appliances"} ${REGIONAL_SWEEP_LIVE_QUERIES[sweep.name] || sweep.name}`;
 }
 
 function number(value) {
@@ -379,7 +419,7 @@ async function fetchFindTenderResults(keywords, region) {
   search.searchParams.set("keywords", [keywords, region].filter(Boolean).join(" "));
   search.searchParams.set("sort", "unix_published_date:DESC");
 
-  const response = await fetch(search.toString(), {
+  const response = await fetchWithTimeout(search.toString(), {
     headers: {
       "accept": "text/html,application/xhtml+xml",
       "user-agent": "RentalReadyAppliancesTenderMatcher/1.0 (+https://rentalreadyappliances.com)",
@@ -394,7 +434,7 @@ async function fetchFindTenderResults(keywords, region) {
   };
 }
 
-async function fetchContractsFinderResults(keywords, region, postcode, valueCap, widened = false) {
+async function fetchContractsFinderResults(keywords, region, postcode, valueCap, widened = false, timeoutMs = PUBLIC_FEED_TIMEOUT_MS) {
   region = procurementRegion(region);
   if (!region) postcode = "";
   const sourceUrl = new URL(CONTRACTS_FINDER_RESULTS_URL);
@@ -417,7 +457,7 @@ async function fetchContractsFinderResults(keywords, region, postcode, valueCap,
     size: 12,
   };
 
-  const response = await fetch(CONTRACTS_FINDER_API_URL, {
+  const response = await fetchWithTimeout(CONTRACTS_FINDER_API_URL, {
     method: "POST",
     headers: {
       "accept": "application/json",
@@ -425,7 +465,7 @@ async function fetchContractsFinderResults(keywords, region, postcode, valueCap,
       "user-agent": "RentalReadyAppliancesContractMatcher/1.0 (+https://rentalreadyappliances.com)",
     },
     body: JSON.stringify(body),
-  });
+  }, timeoutMs);
 
   if (!response.ok) throw new Error(`Contracts Finder returned HTTP ${response.status}`);
 
@@ -438,8 +478,8 @@ async function fetchContractsFinderResults(keywords, region, postcode, valueCap,
 
 async function fetchRegionalBuyerSweepResults(keywords, valueCap) {
   const sweeps = REGIONAL_BUYER_SWEEPS.map((sweep) => {
-    const sweepKeywords = `${keywords} ${sweep.buyerQuery}`;
-    return fetchContractsFinderResults(sweepKeywords, "", "", valueCap, true)
+    const sweepKeywords = compactRegionalKeywords(keywords, sweep);
+    return fetchContractsFinderResults(sweepKeywords, "", "", valueCap, true, REGIONAL_SWEEP_TIMEOUT_MS)
       .then((result) => ({
         sourceUrl: result.sourceUrl,
         results: result.results.map((item) => ({
