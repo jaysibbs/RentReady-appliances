@@ -5,8 +5,8 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260610d/, "dashboard must load the latest workflow-order stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260610d/, "dashboard must load the latest workflow-order script version");
+assert.match(html, /styles\.css\?v=20260610e/, "dashboard must load the latest source-health stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260610e/, "dashboard must load the latest source-health script version");
 assert.match(html, /data-step-tab="tenders"[\s\S]*Step 1[\s\S]*Contracts[\s\S]*data-step-tab="agent"[\s\S]*Step 2[\s\S]*Stock Agent[\s\S]*data-step-tab="candidate"[\s\S]*Step 3[\s\S]*Candidate[\s\S]*data-step-tab="shortlist"[\s\S]*Step 4[\s\S]*Shortlist[\s\S]*data-step-tab="demand"[\s\S]*Step 5[\s\S]*Saved/, "workflow tabs must follow contract-first sourcing flow");
 assert.match(html, /<option selected>Whole UK<\/option>/, "dashboard must default contract search area to Whole UK");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
@@ -55,6 +55,8 @@ assert.match(script, /Kent Business Portal/, "front end must include Kent portal
 assert.match(script, /Supplying the South West/, "front end must include South West local authority portal coverage");
 assert.match(script, /Fetching regional council opportunities/, "regional mode must fetch regional buyer sweep opportunities");
 assert.match(script, /regional council and public-estate buyer sweeps/, "regional mode must label live regional sweep results");
+assert.match(script, /renderTenderSourceHealth/, "front end must show live source health for partial regional feed coverage");
+assert.match(script, /Partial live coverage/, "source health must explain partial live feed coverage");
 assert.match(script, /Public Contracts Scotland/, "front end must include Scottish procurement watchlist routes");
 assert.match(script, /Sell2Wales/, "front end must include Welsh procurement watchlist routes");
 assert.match(script, /eTendersNI/, "front end must include Northern Ireland procurement watchlist routes");
@@ -135,7 +137,7 @@ assert.match(agentSource, /exportDailyBidReportJson/, "agent source must export 
 const agentHtml = await readFile("agent/sourcing-dashboard.html", "utf8");
 assert.match(agentHtml, /opportunityRecordFilter/, "agent dashboard must expose opportunity record filters");
 assert.match(agentHtml, /opportunityRecordDetail/, "agent dashboard must expose opportunity record detail review");
-assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610d/, "agent dashboard must reference the latest sourcing-dashboard asset version");
+assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610e/, "agent dashboard must reference the latest sourcing-dashboard asset version");
 
 await readFile("website/index.html", "utf8");
 await readFile("shared/cloudflare/_worker.js", "utf8");

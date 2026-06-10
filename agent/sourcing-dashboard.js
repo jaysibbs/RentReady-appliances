@@ -1792,15 +1792,21 @@ async function fetchLiveTenders() {
       return [];
     }
 
-    const warning = payload.warnings?.length ? ` Partial feed warning: ${payload.warnings.join(" | ")}` : "";
     const sourceLabel = settings.source === "all"
       ? "Contracts Finder, Find a Tender, and regional buyer sweeps"
       : settings.source === "regional"
         ? "regional council and public-estate buyer sweeps"
         : settings.source;
-    renderTenderMatches(tenders, settings, `Live results from ${sourceLabel}.${warning} Source: ${payload.sourceUrl}`);
+    renderTenderMatches(tenders, settings, `Live results from ${sourceLabel}.`, {
+      sourceLabel,
+      sourceUrls: payload.sourceUrls || [],
+      warnings: payload.warnings || [],
+      returnedResults: tenders.length,
+      fetchedAt: new Date().toISOString(),
+    });
     if (liveTenderStatus) {
-      liveTenderStatus.innerHTML = `<strong>${tenders.length} live contract result(s) loaded.</strong><span>Goods-based opportunities are ranked ahead of service-heavy notices. Review stock coverage before starting a bid pack.</span>`;
+      const warningNote = payload.warnings?.length ? ` ${payload.warnings.length} source route(s) were slow or unavailable and are shown in source health.` : "";
+      liveTenderStatus.innerHTML = `<strong>${tenders.length} live contract result(s) loaded.</strong><span>Goods-based opportunities are ranked ahead of service-heavy notices. Review stock coverage before starting a bid pack.${warningNote}</span>`;
     }
     return tenders;
   } catch (error) {
@@ -2797,7 +2803,46 @@ function rankTenders() {
   renderTenderMatches(tenders, settings, "Manual fallback opportunities ranked locally.");
 }
 
-function renderTenderMatches(tenders, settings, sourceNote = "") {
+function renderTenderSourceHealth(meta = {}) {
+  const sourceUrls = Array.isArray(meta.sourceUrls) ? meta.sourceUrls.filter(Boolean) : [];
+  const warnings = Array.isArray(meta.warnings) ? meta.warnings.filter(Boolean) : [];
+  if (!sourceUrls.length && !warnings.length) return "";
+  const statusTone = warnings.length ? "prepare" : "pass";
+  const healthLabel = warnings.length
+    ? "Partial live coverage"
+    : "Live coverage healthy";
+  const sourceLinks = sourceUrls.slice(0, 8).map((url, index) => `
+    <a href="${escapeHtml(url)}" target="_blank" rel="noopener">Source ${index + 1}</a>
+  `).join("");
+  const warningRows = warnings.length ? `
+    <details>
+      <summary>${warnings.length} warning(s) to verify</summary>
+      <ul>
+        ${warnings.slice(0, 8).map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")}
+      </ul>
+    </details>
+  ` : "";
+  return `
+    <section class="tender-source-health ${statusTone}" aria-label="Live source health">
+      <div>
+        <span>Source health</span>
+        <strong>${healthLabel}</strong>
+        <em>${escapeHtml(meta.sourceLabel || "Live contract routes")} • ${meta.returnedResults || 0} result(s) returned</em>
+      </div>
+      <div>
+        <span>Routes returned</span>
+        <strong>${sourceUrls.length}</strong>
+        <em>${warnings.length ? `${warnings.length} route(s) need manual check` : "No feed warnings"}</em>
+      </div>
+      <div class="tender-source-links">
+        ${sourceLinks || "<em>Source links unavailable</em>"}
+      </div>
+      ${warningRows}
+    </section>
+  `;
+}
+
+function renderTenderMatches(tenders, settings, sourceNote = "", feedMeta = null) {
   const ranked = tenders
     .map((tender) => {
       const result = tenderScore(tender, settings);
@@ -2810,6 +2855,7 @@ function renderTenderMatches(tenders, settings, sourceNote = "") {
   state.lastTenderRun = ranked;
   tenderResults.innerHTML = `
     ${sourceNote ? `<div class="live-tender-source">${escapeHtml(sourceNote)}</div>` : ""}
+    ${feedMeta ? renderTenderSourceHealth(feedMeta) : ""}
     <div class="tender-result-list">
     ${ranked.map((item, index) => {
     const required = number(item.tender.quantity) || 1;

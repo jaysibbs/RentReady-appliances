@@ -3188,6 +3188,100 @@ section {
   background: rgba(91, 214, 155, .07);
 }
 
+.tender-source-health {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(140px, .6fr) minmax(220px, 1.5fr);
+  gap: 10px;
+  align-items: stretch;
+  border: 1px solid rgba(255, 209, 102, .34);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--dash-muted);
+  background: rgba(255, 209, 102, .07);
+}
+
+.tender-source-health.pass {
+  border-color: rgba(91, 214, 155, .34);
+  background: rgba(91, 214, 155, .07);
+}
+
+.tender-source-health > div,
+.tender-source-health details {
+  min-width: 0;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--dash-card-soft);
+}
+
+.tender-source-health span,
+.tender-source-health summary {
+  display: block;
+  color: var(--dash-warning);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tender-source-health.pass span,
+.tender-source-health.pass summary {
+  color: var(--dash-success);
+}
+
+.tender-source-health strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--dash-text);
+  font-size: 15px;
+}
+
+.tender-source-health em,
+.tender-source-links em {
+  display: block;
+  margin-top: 4px;
+  color: var(--dash-muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.tender-source-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: flex-start;
+}
+
+.tender-source-links a {
+  border: 1px solid var(--dash-border);
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: var(--dash-text);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  background: var(--dash-card);
+}
+
+.tender-source-health details {
+  grid-column: 1 / -1;
+}
+
+.tender-source-health summary {
+  cursor: pointer;
+}
+
+.tender-source-health ul {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.tender-source-health li {
+  color: var(--dash-muted);
+  font-size: 12px;
+}
+
 .agent-search-links strong {
   color: var(--dash-warning);
 }
@@ -4086,6 +4180,7 @@ meter::-webkit-meter-optimum-value {
   .tender-fact-grid,
   .eligibility-grid,
   .source-coverage-grid,
+  .tender-source-health,
   .source-route-grid,
   .agent-run-grid,
   .model-health,
