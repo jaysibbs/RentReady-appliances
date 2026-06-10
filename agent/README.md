@@ -21,3 +21,5 @@ Opportunity records now include a review ledger with:
 The bid desk now produces both a human-readable text pack and a structured JSON bid package. The structured package includes the decision summary, commercial model, compliance matrix, stock evidence, delivery schedule, risk register, draft response points and clarification questions.
 
 Daily bid reporting is built into the learning area. It ranks saved opportunities into pass, review and hold buckets, highlights stock gaps and readiness, and exports the daily report as text or JSON so accept/reject feedback can train the agent over time.
+
+Regional sourcing now combines live Contracts Finder buyer sweeps with portal watchlists. The agent searches council, housing, education, NHS/public estate, and regional borough buyer clusters across the UK, while linking out to portal families such as ProContract, The Chest, YORtender, NEPO Open, London Tenders, South East Business Portal, In-Tend, Delta, BlueLight, NHS Atamis and devolved procurement routes for manual portal-side verification.

@@ -5,8 +5,8 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260610a/, "dashboard must load the latest daily bid report stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260610a/, "dashboard must load the latest daily bid report script version");
+assert.match(html, /styles\.css\?v=20260610b/, "dashboard must load the latest regional sweep stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260610b/, "dashboard must load the latest regional sweep script version");
 assert.match(html, /<option selected>Whole UK<\/option>/, "dashboard must default contract search area to Whole UK");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
@@ -43,10 +43,17 @@ assert.match(script, /The Chest - North West/, "front end must include North Wes
 assert.match(script, /YORtender coverage - Yorkshire and Humber/, "front end must include Yorkshire and Humber portal coverage");
 assert.match(script, /NEPO Open - North East/, "front end must include North East portal coverage");
 assert.match(script, /London Tenders Portal/, "front end must include London borough portal coverage");
+assert.match(script, /West Midlands Finditin route/, "front end must include West Midlands public-sector opportunity routes");
+assert.match(script, /CSW-JETS In-Tend/, "front end must include Coventry Solihull Warwickshire portal coverage");
+assert.match(script, /In-Tend public-sector portals/, "front end must include In-Tend public-sector portal coverage");
+assert.match(script, /Delta eSourcing public sector/, "front end must include Delta public-sector portal coverage");
+assert.match(script, /BlueLight emergency services portal/, "front end must include emergency-services public-sector route coverage");
+assert.match(script, /NHS Atamis supplier route/, "front end must include NHS/public-health procurement route coverage");
 assert.match(script, /South East Business Portal/, "front end must include South East local authority portal coverage");
 assert.match(script, /Kent Business Portal/, "front end must include Kent portal coverage");
 assert.match(script, /Supplying the South West/, "front end must include South West local authority portal coverage");
-assert.match(script, /Nationwide borough watchlist generated/, "regional mode must explain nationwide borough coverage");
+assert.match(script, /Fetching regional council opportunities/, "regional mode must fetch regional buyer sweep opportunities");
+assert.match(script, /regional council and public-estate buyer sweeps/, "regional mode must label live regional sweep results");
 assert.match(script, /Public Contracts Scotland/, "front end must include Scottish procurement watchlist routes");
 assert.match(script, /Sell2Wales/, "front end must include Welsh procurement watchlist routes");
 assert.match(script, /eTendersNI/, "front end must include Northern Ireland procurement watchlist routes");
@@ -90,6 +97,8 @@ assert.match(worker, /johnpyetrade\.co\.uk\/product-category\/uncategorized/, "m
 assert.match(worker, /parseJohnPyeTradeCandidates/, "manual-deploy worker must parse John Pye Trade product cards");
 assert.match(worker, /trade-price-plus-buyer-premium/, "manual-deploy worker must expose trade price plus buyer premium confidence");
 assert.match(worker, /DEFAULT_ACQUISITION_KEYWORDS/, "worker must default to acquisition-focused procurement searches");
+assert.match(worker, /REGIONAL_BUYER_SWEEPS/, "worker must expose regional buyer sweep searches");
+assert.match(worker, /fetchRegionalBuyerSweepResults/, "worker must fetch regional buyer sweep results");
 assert.match(worker, /parseContractsFinderResults/, "manual-deploy worker must parse Contracts Finder results");
 assert.match(worker, /www\.contractsfinder\.service\.gov\.uk/, "detail loader must allow Contracts Finder notice URLs");
 assert.match(worker, /agent\.rentalreadyappliances\.com/, "worker must route the agent subdomain to the sourcing dashboard");
@@ -104,6 +113,8 @@ assert.match(stockSearch, /John Pye Trade latest stock/, "Pages function must in
 assert.match(stockSearch, /parseJohnPyeTradeCandidates/, "Pages function must parse John Pye Trade product cards");
 assert.match(stockSearch, /manual verification route/, "Pages function must distinguish manual verification routes");
 assert.match(tenderSearch, /procurementRegion/, "Pages tender function must normalise UK-wide procurement searches");
+assert.match(tenderSearch, /REGIONAL_BUYER_SWEEPS/, "Pages tender function must expose regional buyer sweep searches");
+assert.match(tenderSearch, /fetchRegionalBuyerSweepResults/, "Pages tender function must fetch regional buyer sweep results");
 
 const agentSource = await readFile("agent/sourcing-dashboard.js", "utf8");
 assert.match(agentSource, /opportunityRecords/, "agent source must maintain saved opportunity records");
@@ -121,7 +132,7 @@ assert.match(agentSource, /exportDailyBidReportJson/, "agent source must export 
 const agentHtml = await readFile("agent/sourcing-dashboard.html", "utf8");
 assert.match(agentHtml, /opportunityRecordFilter/, "agent dashboard must expose opportunity record filters");
 assert.match(agentHtml, /opportunityRecordDetail/, "agent dashboard must expose opportunity record detail review");
-assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610a/, "agent dashboard must reference the latest sourcing-dashboard asset version");
+assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610b/, "agent dashboard must reference the latest sourcing-dashboard asset version");
 
 await readFile("website/index.html", "utf8");
 await readFile("shared/cloudflare/_worker.js", "utf8");

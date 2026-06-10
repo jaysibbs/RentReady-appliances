@@ -33,9 +33,24 @@ const LOCAL_AUTHORITY_SWEEP =
   "Leicester City Council OR Leicestershire County Council OR Blaby District Council OR Charnwood Borough Council OR Harborough District Council OR Hinckley and Bosworth Borough Council OR Melton Borough Council OR North West Leicestershire District Council OR Oadby and Wigston Borough Council OR Rutland County Council";
 const NATIONAL_BOROUGH_SWEEPS = [
   {
+    name: "East Midlands district buyer sweep",
+    remit: "Contracts Finder sweep across Leicester, Leicestershire, Rutland, Nottinghamshire, Derbyshire, Lincolnshire, and Northamptonshire council buyers.",
+    buyerQuery: "Leicester City Council OR Leicestershire County Council OR Rutland County Council OR Nottingham City Council OR Nottinghamshire County Council OR Derby City Council OR Derbyshire County Council OR Lincolnshire County Council OR West Northamptonshire Council OR North Northamptonshire Council",
+  },
+  {
     name: "Northern borough buyer sweep",
     remit: "Contracts Finder sweep across North West, Yorkshire, Humber, and North East borough buyers.",
     buyerQuery: "Manchester City Council OR Liverpool City Council OR Leeds City Council OR Sheffield City Council OR Hull City Council OR Newcastle City Council OR Sunderland City Council OR Middlesbrough Council OR Cheshire East Council OR Lancashire County Council",
+  },
+  {
+    name: "Yorkshire and Humber council sweep",
+    remit: "Contracts Finder sweep across Yorkshire and Humber councils where housing, FM, education, and operational goods contracts often appear.",
+    buyerQuery: "Leeds City Council OR Sheffield City Council OR City of Bradford Metropolitan District Council OR City of York Council OR Wakefield Council OR Kirklees Council OR Barnsley Council OR Doncaster Council OR Hull City Council OR East Riding of Yorkshire Council",
+  },
+  {
+    name: "North East and Cumbria council sweep",
+    remit: "Contracts Finder sweep across North East and Cumbria public buyers for smaller operational supply contracts.",
+    buyerQuery: "Newcastle City Council OR Gateshead Council OR Sunderland City Council OR Durham County Council OR Northumberland County Council OR Middlesbrough Council OR Redcar and Cleveland Borough Council OR Cumberland Council OR Westmorland and Furness Council",
   },
   {
     name: "Midlands borough buyer sweep",
@@ -43,14 +58,44 @@ const NATIONAL_BOROUGH_SWEEPS = [
     buyerQuery: "Birmingham City Council OR Coventry City Council OR Wolverhampton City Council OR Nottingham City Council OR Derby City Council OR Leicester City Council OR Leicestershire County Council OR Staffordshire County Council OR Warwickshire County Council OR Northamptonshire Council",
   },
   {
+    name: "West Midlands housing and council sweep",
+    remit: "Contracts Finder sweep focused on West Midlands councils, housing bodies, and combined-authority routes.",
+    buyerQuery: "Birmingham City Council OR Coventry City Council OR City of Wolverhampton Council OR Sandwell Metropolitan Borough Council OR Walsall Council OR Dudley Metropolitan Borough Council OR Solihull Metropolitan Borough Council OR Warwickshire County Council OR Staffordshire County Council OR West Midlands Combined Authority",
+  },
+  {
+    name: "East of England council sweep",
+    remit: "Contracts Finder sweep across East of England councils for housing, temporary accommodation, education, and operational goods routes.",
+    buyerQuery: "Cambridgeshire County Council OR Peterborough City Council OR Norfolk County Council OR Suffolk County Council OR Essex County Council OR Hertfordshire County Council OR Luton Borough Council OR Central Bedfordshire Council OR Southend-on-Sea City Council OR Thurrock Council",
+  },
+  {
     name: "London borough buyer sweep",
     remit: "Contracts Finder sweep across London borough buyers for housing, temporary accommodation, and operational goods contracts.",
-    buyerQuery: "London Borough OR City of London Corporation OR Greater London Authority OR Westminster City Council OR Royal Borough of Greenwich OR London Borough of Barnet OR London Borough of Croydon OR London Borough of Waltham Forest",
+    buyerQuery: "London Borough OR City of London Corporation OR Greater London Authority OR Westminster City Council OR Royal Borough of Greenwich OR London Borough of Barnet OR London Borough of Croydon OR London Borough of Waltham Forest OR London Borough of Newham OR London Borough of Southwark OR London Borough of Lambeth",
   },
   {
     name: "South and South West borough buyer sweep",
     remit: "Contracts Finder sweep across South East, Kent, South Coast, and South West local authority buyers.",
     buyerQuery: "Kent County Council OR Oxfordshire County Council OR Hampshire County Council OR Bristol City Council OR Plymouth City Council OR Cornwall Council OR Dorset Council OR Somerset Council OR Gloucestershire County Council OR Isle of Wight Council",
+  },
+  {
+    name: "South East council sweep",
+    remit: "Contracts Finder sweep across South East council buyers and county routes for high-fit goods opportunities.",
+    buyerQuery: "Surrey County Council OR West Sussex County Council OR East Sussex County Council OR Brighton and Hove City Council OR Hampshire County Council OR Portsmouth City Council OR Southampton City Council OR Oxfordshire County Council OR Buckinghamshire Council OR Milton Keynes City Council",
+  },
+  {
+    name: "South West council sweep",
+    remit: "Contracts Finder sweep across South West councils for housing, estates, education, and operational supply opportunities.",
+    buyerQuery: "Bristol City Council OR Bath and North East Somerset Council OR South Gloucestershire Council OR Gloucestershire County Council OR Somerset Council OR Dorset Council OR Devon County Council OR Plymouth City Council OR Cornwall Council OR Wiltshire Council",
+  },
+  {
+    name: "Housing and temporary accommodation sweep",
+    remit: "Contracts Finder sweep focused on housing associations, registered providers, temporary accommodation, and void-property goods demand.",
+    buyerQuery: "housing association OR registered provider OR temporary accommodation OR homelessness accommodation OR void property OR private sector leasing OR supported living OR social housing",
+  },
+  {
+    name: "Education and public estates sweep",
+    remit: "Contracts Finder sweep across universities, colleges, schools, estates teams, and student accommodation buyers.",
+    buyerQuery: "university OR college OR academy trust OR school trust OR student accommodation OR estates department OR facilities management",
   },
 ];
 const NATIONAL_BOROUGH_PORTALS = [
@@ -71,9 +116,9 @@ const NATIONAL_BOROUGH_PORTALS = [
   {
     name: "YORtender coverage - Yorkshire and Humber",
     mode: "watchlist",
-    remit: "Yorkshire and Humber coverage through the verified ProContract landing route plus the northern borough buyer sweep.",
-    cta: "Open ProContract",
-    urlFor: () => "https://procontract.due-north.com/SupplierPreLoginHome/",
+    remit: "Yorkshire and Humber supplier route plus regional buyer sweeps for council and housing opportunities.",
+    cta: "Open YORtender",
+    urlFor: () => "https://yortender.eu-supply.com/",
   },
   {
     name: "NEPO Open - North East",
@@ -88,6 +133,55 @@ const NATIONAL_BOROUGH_PORTALS = [
     remit: "London borough procurement portal for council contracts, registration, and tender documentation.",
     cta: "Open London portal",
     urlFor: () => "https://www.londontenders.org/",
+  },
+  {
+    name: "West Midlands Finditin route",
+    mode: "watchlist",
+    remit: "West Midlands business and public-sector opportunity route for council and regional supply notices.",
+    cta: "Open Finditin",
+    urlFor: () => "https://www.finditinbirmingham.com/",
+  },
+  {
+    name: "CSW-JETS In-Tend",
+    mode: "watchlist",
+    remit: "Coventry, Solihull, Warwickshire and regional In-Tend route for council supplier opportunities.",
+    cta: "Open CSW-JETS",
+    urlFor: () => "https://in-tendhost.co.uk/csw-jets/aspx/Home",
+  },
+  {
+    name: "In-Tend public-sector portals",
+    mode: "watchlist",
+    remit: "Portal family used by many councils, colleges, universities, housing bodies, and NHS/public estate teams.",
+    cta: "Open In-Tend",
+    urlFor: () => "https://in-tendhost.co.uk/",
+  },
+  {
+    name: "Delta eSourcing public sector",
+    mode: "watchlist",
+    remit: "Public-sector tendering route used by councils, public bodies, and framework buyers.",
+    cta: "Open Delta",
+    urlFor: () => "https://www.delta-esourcing.com/",
+  },
+  {
+    name: "MyTenders public-sector notices",
+    mode: "watchlist",
+    remit: "Additional public-sector notice route for local and regional contract discovery.",
+    cta: "Open MyTenders",
+    urlFor: () => "https://www.mytenders.co.uk/",
+  },
+  {
+    name: "BlueLight emergency services portal",
+    mode: "watchlist",
+    remit: "Police, fire, ambulance, and emergency services procurement route for operational goods and estates needs.",
+    cta: "Open BlueLight",
+    urlFor: () => "https://uk.eu-supply.com/login.asp?B=BLUELIGHT",
+  },
+  {
+    name: "NHS Atamis supplier route",
+    mode: "watchlist",
+    remit: "NHS and health-family procurement route for operational supplies, estates, and equipment opportunities.",
+    cta: "Open Atamis",
+    urlFor: () => "https://health-family.force.com/s/Welcome",
   },
   {
     name: "South East Business Portal",
@@ -1444,10 +1538,10 @@ function renderTenderSummary() {
       <div><span>Region</span><strong>${settings.region}</strong></div>
       <div><span>Anchor cap</span><strong>${money(settings.valueCap)}</strong></div>
       <div><span>ROI gate</span><strong>${percent(settings.roi)}</strong></div>
-      <div><span>Feed</span><strong>${settings.source === "contracts" ? "Contracts" : settings.source === "tenders" ? "Tenders" : settings.source === "regional" ? "Local watch" : "Gov routes"}</strong></div>
+      <div><span>Feed</span><strong>${settings.source === "contracts" ? "Contracts" : settings.source === "tenders" ? "Tenders" : settings.source === "regional" ? "Regional live" : "Gov + regional"}</strong></div>
       <div><span>Mode</span><strong>Test and learn</strong></div>
     </div>
-    <p>Start UK-wide but stay practical: temporary accommodation, void-property, housing association, student accommodation, FM subcontract supply, and goods/material supply. The agent downgrades service-heavy notices unless the stock requirement can be fulfilled, priced, and delivered before submission and contract delivery dates.</p>
+    <p>Start UK-wide but stay practical: temporary accommodation, void-property, housing association, student accommodation, FM subcontract supply, council estates, education estates, and goods/material supply. The agent now includes live regional buyer sweeps plus portal watchlists, then downgrades service-heavy notices unless the stock requirement can be fulfilled, priced, and delivered before submission and contract delivery dates.</p>
   `;
 }
 
@@ -1675,15 +1769,11 @@ async function fetchLiveTenders() {
   if (settings.source === "regional") {
     generateTenderSearches();
     if (liveTenderStatus) {
-      liveTenderStatus.innerHTML = `<strong>Nationwide borough watchlist generated.</strong><span>East Midlands Tenders, ProContract, The Chest, YORtender, NEPO Open, London Tenders, South East Business Portal, Kent Business Portal, South West, Scotland, Wales, Northern Ireland, and CCS routes need portal-side verification before they can be treated as live fetched results. Run test-and-learn with Government goods routes for automatic Contracts Finder and Find a Tender consolidation.</span>`;
+      liveTenderStatus.innerHTML = `<strong>Fetching regional council opportunities...</strong><span>Running live Contracts Finder buyer sweeps across East Midlands, West Midlands, North, London, South East, South West, housing, education, and estates routes while also showing portal watchlists for manual verification.</span>`;
     }
-    tenderResults.innerHTML = `<p class="empty-state">Nationwide borough, local authority, and regional portal links are ready above. Use them for manual source checking, then paste any relevant notice into the fallback if a portal does not expose a stable live feed.</p>`;
-    activeTenderReview = null;
-    renderTenderWorkspace(null);
-    return [];
   }
   if (liveTenderStatus) {
-    liveTenderStatus.innerHTML = `<strong>Fetching live contract opportunities...</strong><span>Searching ${escapeHtml(tenderKeywordsQuery(settings))} across ${escapeHtml(settings.region)} with ${escapeHtml(settings.source === "all" ? "Contracts Finder + Find a Tender" : settings.source)}.</span>`;
+    liveTenderStatus.innerHTML = `<strong>Fetching live contract opportunities...</strong><span>Searching ${escapeHtml(tenderKeywordsQuery(settings))} across ${escapeHtml(settings.region)} with ${escapeHtml(settings.source === "all" ? "Contracts Finder + Find a Tender + regional sweeps" : settings.source === "regional" ? "regional borough/council sweeps" : settings.source)}.</span>`;
   }
 
   try {
@@ -1703,7 +1793,12 @@ async function fetchLiveTenders() {
     }
 
     const warning = payload.warnings?.length ? ` Partial feed warning: ${payload.warnings.join(" | ")}` : "";
-    renderTenderMatches(tenders, settings, `Live results from ${settings.source === "all" ? "Contracts Finder and Find a Tender" : settings.source}.${warning} Source: ${payload.sourceUrl}`);
+    const sourceLabel = settings.source === "all"
+      ? "Contracts Finder, Find a Tender, and regional buyer sweeps"
+      : settings.source === "regional"
+        ? "regional council and public-estate buyer sweeps"
+        : settings.source;
+    renderTenderMatches(tenders, settings, `Live results from ${sourceLabel}.${warning} Source: ${payload.sourceUrl}`);
     if (liveTenderStatus) {
       liveTenderStatus.innerHTML = `<strong>${tenders.length} live contract result(s) loaded.</strong><span>Goods-based opportunities are ranked ahead of service-heavy notices. Review stock coverage before starting a bid pack.</span>`;
     }

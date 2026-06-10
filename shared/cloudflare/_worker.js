@@ -2,6 +2,48 @@ const FIND_TENDER_RESULTS_URL = "https://www.find-tender.service.gov.uk/Search/R
 const CONTRACTS_FINDER_RESULTS_URL = "https://www.contractsfinder.service.gov.uk/Search/Results";
 const CONTRACTS_FINDER_API_URL = "https://www.contractsfinder.service.gov.uk/api/rest/2/search_notices/json";
 const DEFAULT_ACQUISITION_KEYWORDS = "white goods supply OR domestic appliances 39700000 OR electrical domestic appliances 39710000 OR temporary accommodation appliances OR void property appliances OR housing association white goods";
+const REGIONAL_BUYER_SWEEPS = [
+  {
+    name: "East Midlands district buyers",
+    buyerQuery: "Leicester City Council OR Leicestershire County Council OR Rutland County Council OR Nottingham City Council OR Nottinghamshire County Council OR Derby City Council OR Derbyshire County Council OR Lincolnshire County Council OR West Northamptonshire Council OR North Northamptonshire Council",
+  },
+  {
+    name: "West Midlands council and housing buyers",
+    buyerQuery: "Birmingham City Council OR Coventry City Council OR City of Wolverhampton Council OR Sandwell Metropolitan Borough Council OR Walsall Council OR Dudley Metropolitan Borough Council OR Solihull Metropolitan Borough Council OR Warwickshire County Council OR Staffordshire County Council OR West Midlands Combined Authority",
+  },
+  {
+    name: "Yorkshire and Humber councils",
+    buyerQuery: "Leeds City Council OR Sheffield City Council OR City of Bradford Metropolitan District Council OR City of York Council OR Wakefield Council OR Kirklees Council OR Barnsley Council OR Doncaster Council OR Hull City Council OR East Riding of Yorkshire Council",
+  },
+  {
+    name: "North East and Cumbria councils",
+    buyerQuery: "Newcastle City Council OR Gateshead Council OR Sunderland City Council OR Durham County Council OR Northumberland County Council OR Middlesbrough Council OR Redcar and Cleveland Borough Council OR Cumberland Council OR Westmorland and Furness Council",
+  },
+  {
+    name: "East of England councils",
+    buyerQuery: "Cambridgeshire County Council OR Peterborough City Council OR Norfolk County Council OR Suffolk County Council OR Essex County Council OR Hertfordshire County Council OR Luton Borough Council OR Central Bedfordshire Council OR Southend-on-Sea City Council OR Thurrock Council",
+  },
+  {
+    name: "London boroughs",
+    buyerQuery: "London Borough OR City of London Corporation OR Greater London Authority OR Westminster City Council OR Royal Borough of Greenwich OR London Borough of Barnet OR London Borough of Croydon OR London Borough of Waltham Forest OR London Borough of Newham OR London Borough of Southwark OR London Borough of Lambeth",
+  },
+  {
+    name: "South East councils",
+    buyerQuery: "Surrey County Council OR West Sussex County Council OR East Sussex County Council OR Brighton and Hove City Council OR Hampshire County Council OR Portsmouth City Council OR Southampton City Council OR Oxfordshire County Council OR Buckinghamshire Council OR Milton Keynes City Council",
+  },
+  {
+    name: "South West councils",
+    buyerQuery: "Bristol City Council OR Bath and North East Somerset Council OR South Gloucestershire Council OR Gloucestershire County Council OR Somerset Council OR Dorset Council OR Devon County Council OR Plymouth City Council OR Cornwall Council OR Wiltshire Council",
+  },
+  {
+    name: "Housing and temporary accommodation buyers",
+    buyerQuery: "housing association OR registered provider OR temporary accommodation OR homelessness accommodation OR void property OR private sector leasing OR supported living OR social housing",
+  },
+  {
+    name: "Education and public estates buyers",
+    buyerQuery: "university OR college OR academy trust OR school trust OR student accommodation OR estates department OR facilities management",
+  },
+];
 const AUCTION_STOCK_SOURCES = [
   {
     name: "John Pye general auctions",
@@ -394,6 +436,27 @@ async function fetchContractsFinderResults(keywords, region, postcode, valueCap,
   };
 }
 
+async function fetchRegionalBuyerSweepResults(keywords, valueCap) {
+  const sweeps = REGIONAL_BUYER_SWEEPS.map((sweep) => {
+    const sweepKeywords = `${keywords} ${sweep.buyerQuery}`;
+    return fetchContractsFinderResults(sweepKeywords, "", "", valueCap, true)
+      .then((result) => ({
+        sourceUrl: result.sourceUrl,
+        results: result.results.map((item) => ({
+          ...item,
+          platform: `${item.platform} - ${sweep.name}`,
+          description: [item.description, `Regional buyer sweep: ${sweep.name}`].filter(Boolean).join(" "),
+        })),
+      }));
+  });
+  const settled = await Promise.allSettled(sweeps);
+  return {
+    sourceUrls: settled.filter((item) => item.status === "fulfilled").map((item) => item.value.sourceUrl),
+    results: settled.flatMap((item) => item.status === "fulfilled" ? item.value.results : []),
+    warnings: settled.filter((item) => item.status === "rejected").map((item) => item.reason.message),
+  };
+}
+
 function uniqueResults(results) {
   const seen = new Set();
   return results.filter((item) => {
@@ -424,14 +487,18 @@ async function handleTenderSearch(request) {
       }));
     }
     if (source === "all" || source === "tenders") fetches.push(fetchFindTenderResults(keywords, apiRegion));
+    if (source === "all" || source === "regional") fetches.push(fetchRegionalBuyerSweepResults(keywords, valueCap));
     const settled = await Promise.allSettled(fetches);
     const results = uniqueResults(settled.flatMap((item) => item.status === "fulfilled" ? item.value.results : [])).slice(0, 18);
     const sourceUrls = settled
       .filter((item) => item.status === "fulfilled")
-      .map((item) => item.value.sourceUrl);
+      .flatMap((item) => item.value.sourceUrls || item.value.sourceUrl || []);
     const errors = settled
       .filter((item) => item.status === "rejected")
-      .map((item) => item.reason.message);
+      .map((item) => item.reason.message)
+      .concat(settled
+        .filter((item) => item.status === "fulfilled")
+        .flatMap((item) => item.value.warnings || []));
 
     if (!results.length && errors.length) {
       return Response.json(
