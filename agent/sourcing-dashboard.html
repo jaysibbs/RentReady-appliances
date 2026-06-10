@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0d141d">
     <link rel="icon" href="brand/rentalready_mark.svg" type="image/svg+xml">
     <script src="theme-init.js?v=20260526b"></script>
-    <link rel="stylesheet" href="styles.css?v=20260610c">
+    <link rel="stylesheet" href="styles.css?v=20260610d">
   </head>
   <body class="dashboard-body">
     <header class="site-header dashboard-header">
@@ -18,12 +18,12 @@
         <span class="brand-name"><strong>RentalReady</strong><em>Appliances</em></span>
       </a>
       <nav aria-label="Dashboard navigation">
-        <a href="#brief">Manual</a>
-        <a href="#demand">Saved</a>
         <a href="#tenders">Contracts</a>
-        <a href="#agent">Agent</a>
+        <a href="#agent">Stock agent</a>
         <a href="#candidate">Candidate</a>
         <a href="#shortlist">Shortlist</a>
+        <a href="#demand">Saved</a>
+        <a href="#brief">Manual</a>
         <a href="#learning">Learning</a>
       </nav>
       <div class="header-actions">
@@ -45,38 +45,38 @@
       </section>
 
       <nav class="workflow-tabs" aria-label="Sourcing workflow steps">
-        <button type="button" data-step-tab="brief" aria-controls="briefForm">
-          <span>Step 1</span>
-          <strong>Manual</strong>
-        </button>
-        <button type="button" data-step-tab="demand" aria-controls="demand">
-          <span>Step 2</span>
-          <strong>Saved</strong>
-        </button>
         <button type="button" data-step-tab="tenders" aria-controls="tenders">
-          <span>Step 3</span>
+          <span>Step 1</span>
           <strong>Contracts</strong>
         </button>
         <button type="button" data-step-tab="agent" aria-controls="agent">
-          <span>Step 4</span>
+          <span>Step 2</span>
           <strong>Stock Agent</strong>
         </button>
         <button type="button" data-step-tab="candidate" aria-controls="candidateForm">
-          <span>Step 5</span>
+          <span>Step 3</span>
           <strong>Candidate</strong>
         </button>
         <button type="button" data-step-tab="shortlist" aria-controls="shortlist">
-          <span>Step 6</span>
+          <span>Step 4</span>
           <strong>Shortlist</strong>
+        </button>
+        <button type="button" data-step-tab="demand" aria-controls="demand">
+          <span>Step 5</span>
+          <strong>Saved</strong>
+        </button>
+        <button type="button" data-step-tab="brief" aria-controls="briefForm">
+          <span>Step 6</span>
+          <strong>Manual</strong>
         </button>
       </nav>
 
       <section class="dashboard-grid" id="brief" aria-labelledby="brief-title">
         <form class="dashboard-panel sourcing-form step-panel" id="briefForm" data-step-panel="brief">
           <div class="panel-heading">
-            <p class="eyebrow">Step 1</p>
+            <p class="eyebrow">Step 6</p>
             <h2 id="brief-title">Manual contract opportunity</h2>
-            <p>Use this only when a contract or tender has come from outside the live feed. The main workflow starts from Step 3.</p>
+            <p>Use this only when a contract or tender has come from outside the live feed. The main workflow starts from Step 1.</p>
           </div>
 
           <label>
@@ -147,7 +147,7 @@
 
         <section class="dashboard-panel demand-panel step-panel" id="demand" data-step-panel="demand" aria-labelledby="demand-title">
           <div class="panel-heading">
-            <p class="eyebrow">Step 2</p>
+            <p class="eyebrow">Step 5</p>
             <h2 id="demand-title">Saved contract and tender opportunities</h2>
             <p>Select the contract or tender you want to fulfil before ranking stock. The agent checks quantity, value, deadline, ROI, and whether fulfilment needs one or multiple sources.</p>
           </div>
@@ -185,7 +185,7 @@
 
         <section class="dashboard-panel sourcing-form tender-panel step-panel" id="tenders" data-step-panel="tenders" aria-labelledby="tender-title">
           <div class="panel-heading">
-            <p class="eyebrow">Step 3</p>
+            <p class="eyebrow">Step 1</p>
             <h2 id="tender-title">Goods contract matcher</h2>
             <p>Search government procurement routes for anchor contracts RentalReady can realistically win as a startup: housing, temporary accommodation, void-property, FM subcontract, and appliance/material supply opportunities.</p>
           </div>
@@ -273,7 +273,7 @@ kitchen equipment supply</textarea>
 
         <section class="dashboard-panel sourcing-form agent-panel step-panel" id="agent" data-step-panel="agent" aria-labelledby="agent-title">
           <div class="panel-heading">
-            <p class="eyebrow">Step 4</p>
+            <p class="eyebrow">Step 2</p>
             <h2 id="agent-title">Stock fulfilment agent</h2>
             <p>Match John Pye general/trade auctions, BPI, BidSpotter, i-bidder, William George, Eddisons, NCM, or similar stock to the selected contract/tender. The agent checks full quantity coverage, submission timing, and maximum safe bid before anything moves to purchase review.</p>
           </div>
@@ -325,7 +325,7 @@ kitchen equipment supply</textarea>
 
         <form class="dashboard-panel sourcing-form step-panel" id="candidateForm" data-step-panel="candidate">
           <div class="panel-heading">
-            <p class="eyebrow">Step 5</p>
+            <p class="eyebrow">Step 3</p>
             <h2 id="candidate">Supplier candidate</h2>
             <p>Paste product details from John Pye or similar sources. The assistant scores fit and risk.</p>
           </div>
@@ -419,7 +419,7 @@ kitchen equipment supply</textarea>
 
       <section class="dashboard-results step-panel" id="shortlist" data-step-panel="shortlist" aria-labelledby="shortlist-title">
         <div class="section-heading">
-          <p class="eyebrow">Step 6</p>
+          <p class="eyebrow">Step 4</p>
           <h2 id="shortlist-title">Contract fulfilment shortlist</h2>
           <p class="section-copy">Approve the stock you would actually use to fulfil the selected contract or tender. Rejections matter too: the assistant adjusts future scoring based on your selections.</p>
         </div>
@@ -479,6 +479,6 @@ kitchen equipment supply</textarea>
       </section>
     </main>
 
-    <script src="sourcing-dashboard.js?v=20260610c"></script>
+    <script src="sourcing-dashboard.js?v=20260610d"></script>
   </body>
 </html>

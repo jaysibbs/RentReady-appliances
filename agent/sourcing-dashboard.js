@@ -644,11 +644,11 @@ function stepFromHash(hash = window.location.hash) {
 }
 
 function activeWorkflowStep() {
-  return stepFromHash() || load("rentalready_sourcing_active_step", "brief");
+  return stepFromHash() || "tenders";
 }
 
 function showWorkflowStep(step, updateHash = true) {
-  const nextStep = STEP_HASH_MAP[step] || "brief";
+  const nextStep = STEP_HASH_MAP[step] || "tenders";
   workflowPanels.forEach((panel) => {
     panel.hidden = panel.dataset.stepPanel !== nextStep;
   });
@@ -3390,7 +3390,7 @@ function renderDemandQueue() {
 
   if (!demandList) return;
   if (!state.demands.length) {
-    demandList.innerHTML = `<p class="empty-state">No saved contract or tender opportunities yet. Fetch live contracts in Step 3 or save a manual opportunity.</p>`;
+    demandList.innerHTML = `<p class="empty-state">No saved contract or tender opportunities yet. Fetch live contracts in Step 1 or save a manual opportunity.</p>`;
     return;
   }
 

@@ -5,8 +5,9 @@ const html = await readFile("dist/sourcing-dashboard.html", "utf8");
 const script = await readFile("dist/sourcing-dashboard.js", "utf8");
 const worker = await readFile("dist/_worker.js", "utf8");
 
-assert.match(html, /styles\.css\?v=20260610c/, "dashboard must load the latest regional sweep timeout-fix stylesheet version");
-assert.match(html, /sourcing-dashboard\.js\?v=20260610c/, "dashboard must load the latest regional sweep timeout-fix script version");
+assert.match(html, /styles\.css\?v=20260610d/, "dashboard must load the latest workflow-order stylesheet version");
+assert.match(html, /sourcing-dashboard\.js\?v=20260610d/, "dashboard must load the latest workflow-order script version");
+assert.match(html, /data-step-tab="tenders"[\s\S]*Step 1[\s\S]*Contracts[\s\S]*data-step-tab="agent"[\s\S]*Step 2[\s\S]*Stock Agent[\s\S]*data-step-tab="candidate"[\s\S]*Step 3[\s\S]*Candidate[\s\S]*data-step-tab="shortlist"[\s\S]*Step 4[\s\S]*Shortlist[\s\S]*data-step-tab="demand"[\s\S]*Step 5[\s\S]*Saved/, "workflow tabs must follow contract-first sourcing flow");
 assert.match(html, /<option selected>Whole UK<\/option>/, "dashboard must default contract search area to Whole UK");
 assert.match(html, /id="opportunitySource"/, "dashboard must include the opportunity source selector");
 assert.match(html, /Contracts Finder only/, "dashboard must expose Contracts Finder mode");
@@ -134,7 +135,7 @@ assert.match(agentSource, /exportDailyBidReportJson/, "agent source must export 
 const agentHtml = await readFile("agent/sourcing-dashboard.html", "utf8");
 assert.match(agentHtml, /opportunityRecordFilter/, "agent dashboard must expose opportunity record filters");
 assert.match(agentHtml, /opportunityRecordDetail/, "agent dashboard must expose opportunity record detail review");
-assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610c/, "agent dashboard must reference the latest sourcing-dashboard asset version");
+assert.match(agentHtml, /sourcing-dashboard\.js\?v=20260610d/, "agent dashboard must reference the latest sourcing-dashboard asset version");
 
 await readFile("website/index.html", "utf8");
 await readFile("shared/cloudflare/_worker.js", "utf8");
